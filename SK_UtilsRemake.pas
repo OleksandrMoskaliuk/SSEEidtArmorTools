@@ -34,7 +34,7 @@
   makeBreakdown        (item: IInterface): IInterface;														// creates new COBJ record to allow breaking item to its material
 }
 
-unit SkyrimUtils;
+unit SK_UtilsRemake;
 
 // =Settings
 const
