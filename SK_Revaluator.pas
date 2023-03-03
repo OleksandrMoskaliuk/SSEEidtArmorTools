@@ -1,4 +1,6 @@
-// Wil pick fair armor price, based on armor rating
+{
+ ReValuate item based on armor rating, and make it more like vanilla item price
+}
 unit SK_Revaluator;
 
 uses SK_UtilsRemake;
@@ -19,7 +21,7 @@ end;
 // Runs when the script starts
 function Initialize: integer;
 begin
-AddMessage('---ReEvaluator More Vanilla Price---');
+AddMessage('---Revaluator fair  Price---');
 Result := 0;
 end;
 
@@ -53,7 +55,7 @@ end;
 // Runs when the script ends
 function Finalize: integer;
 begin
-AddMessage('---ReEvaluator process ended---');
+AddMessage('---Revaluator process ended---');
 Result := 0;
 end;
 
