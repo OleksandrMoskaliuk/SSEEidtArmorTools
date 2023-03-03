@@ -1,5 +1,5 @@
 # SSEEidtArmorTools
-This is a remake of SkyrimUtils made to work on SSEEdit 4.0.4 or higher.
+This is a remake of SkyrimUtils made to work on SSEEdit 4.0.4.
 
 Reevaluate price for armor 'SK_Revaluator':
 Change item value.
