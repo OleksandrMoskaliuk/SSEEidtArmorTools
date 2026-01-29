@@ -709,6 +709,57 @@ begin
 	end;
 end;
 {========================================================}
+{ ADD KEYWORD                                            }
+{========================================================}
+function addKeyword(itemRecord: IInterface; keyword: IInterface): Integer;
+var
+    kwCollection, newEntry: IInterface;
+begin
+    Result := 0;
+    if not Assigned(itemRecord) or not Assigned(keyword) then Exit;
+
+    { 1. Check if the item already has this keyword using the Keyword's actual EditorID }
+    if HasKeyword(itemRecord, EditorID(keyword)) then Exit;
+
+    { 2. Get the KWDA block (Keywords array) }
+    kwCollection := ElementBySignature(itemRecord, 'KWDA');
+    if not Assigned(kwCollection) then
+        kwCollection := Add(itemRecord, 'KWDA', True);
+
+    { 3. Add the keyword }
+    if Assigned(kwCollection) then begin
+        newEntry := ElementAssign(kwCollection, HighInteger, nil, False);
+        SetEditValue(newEntry, IntToHex(FixedFormID(keyword), 8));
+        Result := 1;
+    end;
+end;
+
+function GetKeywordByEditorID(aEditorID: string): IInterface;
+var
+    i, j: Integer;
+    currFile, kwGroup, rec: IInterface;
+begin
+    Result := nil;
+    for i := 0 to FileCount - 1 do begin
+        currFile := FileByIndex(i);
+        
+        { Find the Keyword group in this file }
+        kwGroup := GroupBySignature(currFile, 'KYWD');
+        if not Assigned(kwGroup) then continue;
+
+        { Iterate through every keyword in the group }
+        for j := 0 to ElementCount(kwGroup) - 1 do begin
+            rec := ElementByIndex(kwGroup, j);
+            if EditorID(rec) = aEditorID then begin
+                Result := rec;
+                Exit;
+            end;
+        end;
+    end;
+    AddMessage('Critical Warning: ' + aEditorID + ' not found even in deep search!');
+end;
+
+{========================================================}
 { END                                                    }
 {========================================================}
 function Finalize: integer;
