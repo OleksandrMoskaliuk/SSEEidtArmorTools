@@ -876,13 +876,155 @@ begin
     end;
     AddMessage('Critical Warning: ' + aEditorID + ' not found even in deep search!');
 end;
+{========================================================}
+{ CREATE CRAFTING RECIPE (COBJ)                          }
+{========================================================}
+function MakeCraftableV2(itemRecord: IInterface): IInterface;
+var
+	recipeCraft, recipeItems, tmpKeywordsCollection, tmp: IInterface;
+	itemSignature, currentKeywordEDID: string;
+	amountOfMainComponent, amountOfAdditionalComponent, amountOfLeatherComponent, i: integer;
+begin
+	itemSignature := Signature(itemRecord);
 
+	{ 1. Filter: Only allow Weapons or Armor }
+	if not ((itemSignature = 'WEAP') or (itemSignature = 'ARMO')) then
+		Exit;
+
+	{ 2. Create the base COBJ record }
+	recipeCraft := createRecipe(itemRecord);
+	if not Assigned(recipeCraft) then Exit;
+
+	{ 3. Initialize Required Items list }
+	Add(recipeCraft, 'items', True);
+	recipeItems := ElementByPath(recipeCraft, 'items');
+
+	{ 4. Calculate material quantities based on item value }
+	amountOfMainComponent := 1 + Round(GetElementEditValues(itemRecord, 'DATA\Value') * 0.025);
+	if amountOfMainComponent < 1 then amountOfMainComponent := 1;
+
+	amountOfAdditionalComponent := Round(amountOfMainComponent / 2);
+	if amountOfAdditionalComponent < 1 then amountOfAdditionalComponent := 1;
+
+	amountOfLeatherComponent := Round(amountOfMainComponent / 2);
+	if amountOfLeatherComponent < 1 then amountOfLeatherComponent := 1;
+
+	{ 5. Process Material Keywords for Perk requirements }
+	tmpKeywordsCollection := ElementBySignature(itemRecord, 'KWDA');
+
+	{ --- WEAPON LOGIC --- }
+	if (itemSignature = 'WEAP') then begin
+		SetElementEditValues(recipeCraft, 'EDID', 'RecipeWeapon' + GetElementEditValues(itemRecord, 'EDID'));
+		SetElementEditValues(recipeCraft, 'BNAM', GetEditValue(getRecordByFormID(WEAPON_CRAFTING_WORKBENCH_FORM_ID)));
+
+		for i := 0 to ElementCount(tmpKeywordsCollection) - 1 do begin
+			currentKeywordEDID := GetElementEditValues(LinksTo(ElementByIndex(tmpKeywordsCollection, i)), 'EDID');
+
+			if ((currentKeywordEDID = 'WeapMaterialSteel') or (currentKeywordEDID = 'WeapMaterialImperial') or 
+				(currentKeywordEDID = 'WeapMaterialDraugr') or (currentKeywordEDID = 'WeapMaterialDraugrHoned')) then begin
+				addPerkCondition(recipeCraft, getRecordByFormID('000CB40D')); // Steel Smithing
+				Break;
+			end else if (currentKeywordEDID = 'WeapMaterialElven') then begin
+				addPerkCondition(recipeCraft, getRecordByFormID('000CB40F')); // Elven Smithing
+				Break;
+			end else if (currentKeywordEDID = 'DLC2WeaponMaterialNordic') then begin
+				addPerkCondition(recipeCraft, getRecordByFormID('000CB414')); // Advanced Armors
+				Break;
+			end else if (currentKeywordEDID = 'WeapMaterialDwarven') then begin
+				addPerkCondition(recipeCraft, getRecordByFormID('000CB40E')); // Dwarven Smithing
+				Break;
+			end else if (currentKeywordEDID = 'WeapMaterialEbony') then begin
+				addPerkCondition(recipeCraft, getRecordByFormID('000CB412')); // Ebony Smithing
+				Break;
+			end else if (currentKeywordEDID = 'WeapMaterialDaedric') then begin
+				addPerkCondition(recipeCraft, getRecordByFormID('000CB413')); // Daedric Smithing
+				Break;
+			end else if ((currentKeywordEDID = 'WeapMaterialOrcish') or (currentKeywordEDID = 'DLC2WeaponMaterialStalhrim')) then begin
+				addPerkCondition(recipeCraft, getRecordByFormID('000CB410')); // Orcish Smithing
+				Break;
+			end else if (currentKeywordEDID = 'WeapMaterialGlass') then begin
+				addPerkCondition(recipeCraft, getRecordByFormID('000CB411')); // Glass Smithing
+				Break;
+			end else if (currentKeywordEDID = 'DLC1WeapMaterialDragonbone') then begin
+				addPerkCondition(recipeCraft, getRecordByFormID('00052190')); // Dragon Armor
+				Break;
+			end;
+		end;
+
+	{ --- ARMOR LOGIC --- }
+	end else if (itemSignature = 'ARMO') then begin
+		amountOfAdditionalComponent := amountOfAdditionalComponent + 1;
+		SetElementEditValues(recipeCraft, 'EDID', 'RecipeArmor' + GetElementEditValues(itemRecord, 'EDID'));
+		SetElementEditValues(recipeCraft, 'BNAM', GetEditValue(getRecordByFormID(ARMOR_CRAFTING_WORKBENCH_FORM_ID)));
+
+		for i := 0 to ElementCount(tmpKeywordsCollection) - 1 do begin
+			currentKeywordEDID := GetElementEditValues(LinksTo(ElementByIndex(tmpKeywordsCollection, i)), 'EDID');
+
+			if ((currentKeywordEDID = 'ArmorMaterialSteel') or (currentKeywordEDID = 'DLC2ArmorMaterialBonemoldLight') or 
+				(currentKeywordEDID = 'DLC2ArmorMaterialBonemoldHeavy') or (currentKeywordEDID = 'ArmorMaterialImperialHeavy') or 
+				(currentKeywordEDID = 'ArmorMaterialImperialLight') or (currentKeywordEDID = 'ArmorMaterialStormcloak') or 
+				(currentKeywordEDID = 'ArmorMaterialImperialStudded') or (currentKeywordEDID = 'DLC1ArmorMaterialDawnguard') or 
+				(currentKeywordEDID = 'ArmorMaterialLeather')) then begin
+				addPerkCondition(recipeCraft, getRecordByFormID('000CB40D')); // Steel Smithing
+				Break;
+			end else if ((currentKeywordEDID = 'ArmorMaterialScaled') or (currentKeywordEDID = 'DLC2ArmorMaterialNordicLight') or 
+				(currentKeywordEDID = 'DLC2ArmorMaterialNordicHeavy') or (currentKeywordEDID = 'ArmorMaterialSteelPlate')) then begin
+				addPerkCondition(recipeCraft, getRecordByFormID('000CB414')); // Advanced Armors
+				Break;
+			end else if (currentKeywordEDID = 'ArmorMaterialDwarven') then begin
+				addPerkCondition(recipeCraft, getRecordByFormID('000CB40E')); // Dwarven Smithing
+				Break;
+			end else if ((currentKeywordEDID = 'ArmorMaterialEbony') or (currentKeywordEDID = 'DLC2ArmorMaterialStalhrimLight') or 
+				(currentKeywordEDID = 'DLC2ArmorMaterialStalhrimHeavy')) then begin
+				addPerkCondition(recipeCraft, getRecordByFormID('000CB412')); // Ebony Smithing
+				Break;
+			end else if (currentKeywordEDID = 'ArmorMaterialDaedric') then begin
+				addPerkCondition(recipeCraft, getRecordByFormID('000CB413')); // Daedric Smithing
+				Break;
+			end else if (currentKeywordEDID = 'ArmorMaterialOrcish') then begin
+				addPerkCondition(recipeCraft, getRecordByFormID('000CB410')); // Orcish Smithing
+				Break;
+			end else if (currentKeywordEDID = 'ArmorMaterialGlass') then begin
+				addPerkCondition(recipeCraft, getRecordByFormID('000CB411')); // Glass Smithing
+				Break;
+			end else if ((currentKeywordEDID = 'ArmorMaterialDragonscale') or (currentKeywordEDID = 'ArmorMaterialDragonplate')) then begin
+				addPerkCondition(recipeCraft, getRecordByFormID('00052190')); // Dragon Armor
+				Break;
+			end else if ((currentKeywordEDID = 'ArmorMaterialElven') or (currentKeywordEDID = 'ArmorMaterialElvenGilded') or 
+				(currentKeywordEDID = 'DLC2ArmorMaterialChitinLight') or (currentKeywordEDID = 'DLC2ArmorMaterialChitinHeavy')) then begin
+				addPerkCondition(recipeCraft, getRecordByFormID('000CB40F')); // Elven Smithing
+				Break;
+			end;
+		end;
+	end;
+
+	{ 6. Finalize Item Ingredients }
+	tmp := getMainMaterial(itemRecord);
+	if not Assigned(tmp) then begin
+		warn('Main component missing for: ' + Name(recipeCraft));
+	end else begin
+		addItem(recipeItems, tmp, amountOfMainComponent);
+	end;
+
+	{ Add common secondary materials }
+	addItem(recipeItems, getRecordByFormID('000800E4'), amountOfAdditionalComponent); // Leather Strips
+	addItem(recipeItems, getRecordByFormID('000DB5D2'), amountOfLeatherComponent);    // Leather
+
+	{ 7. Cleanup and Validation }
+	removeInvalidEntries(recipeCraft);
+
+	if GetElementEditValues(recipeCraft, 'COCT') = '' then begin
+		warn('No item requirements specified for: ' + Name(recipeCraft));
+	end;
+
+	Result := recipeCraft;
+end;
 {========================================================}
 { END                                                    }
 {========================================================}
 function Finalize: integer;
 begin
-	AddMessage('SCRIPT PROCESSED ' + IntToStr(GlobalProcessedRecords) + ' RECORDS');
+	AddMessage('--- SCRIPT PROCESSED ' + IntToStr(GlobalProcessedRecords) + ' RECORDS ---');
 	Result := 0;
 end;
 end.
