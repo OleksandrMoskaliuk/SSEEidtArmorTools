@@ -269,6 +269,19 @@ begin
 		end;
 		Exit;
 	end;
+	
+	if HasKeyword(e,'ArmorMaterialSteelPlate') then begin
+		if Pos('Body ', Slots) > 0 then Result := 40 + GlobalArmorBonus;
+		if Pos('Head ', Slots) > 0 then Result := 19 + GlobalArmorBonus;
+		if Pos('Hands ', Slots) > 0 then Result := 14 + GlobalArmorBonus;
+		if Pos('Feet ', Slots) > 0 then Result := 14 + GlobalArmorBonus;
+		if Pos('Circlet ', Slots) > 0 then Result := 19 + GlobalArmorBonus;
+		if Pos('Forearms ', Slots) > 0 then begin
+			if GlobalHasHands then Result := 0
+			else Result := 14 / GlobalForearmsDebuffMultiplier + GlobalArmorBonus;
+		end;
+		Exit;
+	end;
 
 	if HasKeyword(e,'ArmorMaterialEbony') then begin
 		if Pos('Body ', Slots) > 0 then Result := 43 + GlobalArmorBonus;
@@ -424,6 +437,19 @@ begin
 		end;
 		Exit;
 	end;
+	
+	if HasKeyword(e,'ArmorMaterialSteelPlate') then begin
+		if Pos('Body ', Slots) > 0 then Result := 38 - m_WeightReduceHeavy;
+		if Pos('Head ', Slots) > 0 then Result := 9;
+		if Pos('Hands ', Slots) > 0 then Result := 6;
+		if Pos('Feet ', Slots) > 0 then Result := 6;
+		if Pos('Circlet ', Slots) > 0 then Result := 6;
+		if Pos('Forearms ', Slots) > 0 then begin
+			if GlobalHasHands then Result := 0
+			else Result := 6 / GlobalForearmsDebuffMultiplier;
+		end;
+		Exit;
+	end;
 
 	if HasKeyword(e,'ArmorMaterialEbony') then begin
 		if Pos('Body ', Slots) > 0 then Result := 38 - m_WeightReduceHeavy;
@@ -573,6 +599,19 @@ begin
 		if Pos('Forearms ', Slots) > 0 then begin
 			if GlobalHasHands then Result := 0
 			else Result := 200;
+		end;
+		Exit;
+	end;
+	
+	if HasKeyword(e,'ArmorMaterialSteelPlate') then begin
+		if Pos('Body ', Slots) > 0 then Result := 625;
+		if Pos('Head ', Slots) > 0 then Result := 300;
+		if Pos('Hands ', Slots) > 0 then Result := 125;
+		if Pos('Feet ', Slots) > 0 then Result := 125;
+		if Pos('Circlet ', Slots) > 0 then Result := 300;
+		if Pos('Forearms ', Slots) > 0 then begin
+			if GlobalHasHands then Result := 0
+			else Result := 125;
 		end;
 		Exit;
 	end;
