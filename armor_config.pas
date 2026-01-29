@@ -129,41 +129,36 @@ var
 	i: Integer;
 	slotName: string;
 begin
-  Result := False;
-
-  // Empty slot string = visual-only item
-  if Trim(armor) = '' then begin
-    Result := True;
-    Exit;
-  end;
-
-  slots := TStringList.Create;
-  try
-    slots.StrictDelimiter := True;
-    slots.Delimiter := ' ';
-    slots.DelimitedText := Trim(armor);
-
-    for i := 0 to slots.Count - 1 do begin
-      slotName := slots[i];
-
-      // Allowed gameplay slots ONLY
-      if not (
-        (slotName = 'Head') or
-        (slotName = 'Body') or
-        (slotName = 'Hands') or
-        (slotName = 'Forearms') or
-        (slotName = 'Feet') or
+	Result := False;
+	// Empty slot string = visual-only item
+	if Trim(armor) = '' then begin
+		Result := True;
+		Exit;
+	end;
+	slots := TStringList.Create;
+	try
+		slots.StrictDelimiter := True;
+		slots.Delimiter := ' ';
+		slots.DelimitedText := Trim(armor);
+	for i := 0 to slots.Count - 1 do begin
+		slotName := slots[i];
+		// Allowed gameplay slots ONLY
+		if not (
+		(slotName = 'Head') or
+		(slotName = 'Body') or
+		(slotName = 'Hands') or
+		((slotName = 'Forearms') and not GlobalHasHands) or
+		(slotName = 'Feet') or
 		(slotName = 'Circlet') or
-        (slotName = 'Shield')
-      ) then begin
-        Result := True; // any unknown slot → visual
-        Exit;
-      end;
+		(slotName = 'Shield'))
+		then begin
+			Result := True; // any unknown slot → visual
+			Exit;
+		end;
     end;
-
-  finally
-    slots.Free;
-  end;
+	finally
+		slots.Free;
+	end;
 end;
 {========================================================}
 { MATERIAL CHECKS                                        }
