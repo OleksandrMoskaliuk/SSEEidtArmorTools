@@ -518,6 +518,158 @@ begin
 	end;
 end;
 {========================================================}
+{ GET VANILLA ARMOR PRICE (GOLD VALUE)                   }
+{========================================================}
+function GetVanillaAPrice(e: IInterface; Slots: string): Float;
+begin
+	Result := 0.0;
+
+	{==================== HEAVY ====================}
+	if HasKeyword(e,'ArmorMaterialIron') then begin
+		if Pos('Body ', Slots) > 0 then Result := 125;
+		if Pos('Head ', Slots) > 0 then Result := 60;
+		if Pos('Hands ', Slots) > 0 then Result := 25;
+		if Pos('Feet ', Slots) > 0 then Result := 25;
+		if Pos('Circlet ', Slots) > 0 then Result := 60;
+		if Pos('Forearms ', Slots) > 0 then begin
+			if GlobalHasHands then Result := 0
+			else Result := 25;
+		end;
+		Exit;
+	end;
+
+	if HasKeyword(e,'ArmorMaterialSteel') then begin
+		if Pos('Body ', Slots) > 0 then Result := 275;
+		if Pos('Head ', Slots) > 0 then Result := 125;
+		if Pos('Hands ', Slots) > 0 then Result := 55;
+		if Pos('Feet ', Slots) > 0 then Result := 55;
+		if Pos('Circlet ', Slots) > 0 then Result := 125;
+		if Pos('Forearms ', Slots) > 0 then begin
+			if GlobalHasHands then Result := 0
+			else Result := 55;
+		end;
+		Exit;
+	end;
+
+	if HasKeyword(e,'ArmorMaterialDwarven') then begin
+		if Pos('Body ', Slots) > 0 then Result := 400;
+		if Pos('Head ', Slots) > 0 then Result := 200;
+		if Pos('Hands ', Slots) > 0 then Result := 85;
+		if Pos('Feet ', Slots) > 0 then Result := 85;
+		if Pos('Circlet ', Slots) > 0 then Result := 200;
+		if Pos('Forearms ', Slots) > 0 then begin
+			if GlobalHasHands then Result := 0
+			else Result := 85;
+		end;
+		Exit;
+	end;
+
+	if HasKeyword(e,'ArmorMaterialOrcish') then begin
+		if Pos('Body ', Slots) > 0 then Result := 1000;
+		if Pos('Head ', Slots) > 0 then Result := 500;
+		if Pos('Hands ', Slots) > 0 then Result := 200;
+		if Pos('Feet ', Slots) > 0 then Result := 200;
+		if Pos('Circlet ', Slots) > 0 then Result := 500;
+		if Pos('Forearms ', Slots) > 0 then begin
+			if GlobalHasHands then Result := 0
+			else Result := 200;
+		end;
+		Exit;
+	end;
+
+	if HasKeyword(e,'ArmorMaterialEbony') then begin
+		if Pos('Body ', Slots) > 0 then Result := 1500;
+		if Pos('Head ', Slots) > 0 then Result := 750;
+		if Pos('Hands ', Slots) > 0 then Result := 275;
+		if Pos('Feet ', Slots) > 0 then Result := 275;
+		if Pos('Circlet ', Slots) > 0 then Result := 750;
+		if Pos('Forearms ', Slots) > 0 then begin
+			if GlobalHasHands then Result := 0
+			else Result := 275;
+		end;
+		Exit;
+	end;
+
+	if HasKeyword(e,'ArmorMaterialDaedric') then begin
+		if Pos('Body ', Slots) > 0 then Result := 3200;
+		if Pos('Head ', Slots) > 0 then Result := 1600;
+		if Pos('Hands ', Slots) > 0 then Result := 625;
+		if Pos('Feet ', Slots) > 0 then Result := 625;
+		if Pos('Circlet ', Slots) > 0 then Result := 1600;
+		if Pos('Forearms ', Slots) > 0 then begin
+			if GlobalHasHands then Result := 0
+			else Result := 625;
+		end;
+		Exit;
+	end;
+
+	{==================== LIGHT ====================}
+	if HasKeyword(e,'ArmorMaterialLeather') then begin
+		if Pos('Body ', Slots) > 0 then Result := 125;
+		if Pos('Head ', Slots) > 0 then Result := 60;
+		if Pos('Hands ', Slots) > 0 then Result := 25;
+		if Pos('Feet ', Slots) > 0 then Result := 25;
+		if Pos('Circlet ', Slots) > 0 then Result := 60;
+		if Pos('Forearms ', Slots) > 0 then begin
+			if GlobalHasHands then Result := 0
+			else Result := 25;
+		end;
+		Exit;
+	end;
+
+	if HasKeyword(e,'ArmorMaterialScaled') then begin
+		if Pos('Body ', Slots) > 0 then Result := 350;
+		if Pos('Head ', Slots) > 0 then Result := 175;
+		if Pos('Hands ', Slots) > 0 then Result := 70;
+		if Pos('Feet ', Slots) > 0 then Result := 70;
+		if Pos('Circlet ', Slots) > 0 then Result := 175;
+		if Pos('Forearms ', Slots) > 0 then begin
+			if GlobalHasHands then Result := 0
+			else Result := 70;
+		end;
+		Exit;
+	end;
+
+	if HasKeyword(e,'ArmorMaterialElven') then begin
+		if Pos('Body ', Slots) > 0 then Result := 225;
+		if Pos('Head ', Slots) > 0 then Result := 110;
+		if Pos('Hands ', Slots) > 0 then Result := 45;
+		if Pos('Feet ', Slots) > 0 then Result := 45;
+		if Pos('Circlet ', Slots) > 0 then Result := 110;
+		if Pos('Forearms ', Slots) > 0 then begin
+			if GlobalHasHands then Result := 0
+			else Result := 45;
+		end;
+		Exit;
+	end;
+
+	if HasKeyword(e,'ArmorMaterialGlass') then begin
+		if Pos('Body ', Slots) > 0 then Result := 900;
+		if Pos('Head ', Slots) > 0 then Result := 450;
+		if Pos('Hands ', Slots) > 0 then Result := 190;
+		if Pos('Feet ', Slots) > 0 then Result := 190;
+		if Pos('Circlet ', Slots) > 0 then Result := 450;
+		if Pos('Forearms ', Slots) > 0 then begin
+			if GlobalHasHands then Result := 0
+			else Result := 190;
+		end;
+		Exit;
+	end;
+
+	if HasKeyword(e,'ArmorMaterialDragonscale') then begin
+		if Pos('Body ', Slots) > 0 then Result := 1500;
+		if Pos('Head ', Slots) > 0 then Result := 750;
+		if Pos('Hands ', Slots) > 0 then Result := 300;
+		if Pos('Feet ', Slots) > 0 then Result := 300;
+		if Pos('Circlet ', Slots) > 0 then Result := 750;
+		if Pos('Forearms ', Slots) > 0 then begin
+			if GlobalHasHands then Result := 0
+			else Result := 300;
+		end;
+		Exit;
+	end;
+end;
+{========================================================}
 { END                                                    }
 {========================================================}
 function Finalize: integer;
