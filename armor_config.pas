@@ -5,12 +5,15 @@ uses SK_UtilsRemake;
 {========================================================}
 const
 	DEFAULT_SMITHING = 5;
+	FOREARMS_DEBUFF_MULTIPLIER = 2.5;
 var
 	GlobalSmithingReq: Integer;
 	GlobalArmorBonus: Float;
 	GlobalHasHands: Boolean;
 	GlobalHasHandsWasExecuted: Boolean;
 	GlobalProcessedRecords: Integer;
+	GlobalForearmsDebuffMultiplier: Float;
+	
 {========================================================}
 { INITIALIZE                                             }
 {========================================================}
@@ -22,7 +25,8 @@ begin
 	GlobalHasHands := false;
 	GlobalHasHandsWasExecuted := false;
 	GlobalProcessedRecords := 0;
-  
+	GlobalForearmsDebuffMultiplier := FOREARMS_DEBUFF_MULTIPLIER;
+	
 	AddMessage('SMITHING REQUIREMENT = ' + IntToStr(DEFAULT_SMITHING));
 	AddMessage('ARMOR BONUS = ' + FloatToStr(GlobalArmorBonus));
 
@@ -94,7 +98,7 @@ begin
 	
 	// GET AR TEST
 	// GetVanillaAR(e: IInterface; Slots: string; hasHands: Boolean): Float;
-	AddMessage('AR = ' + FloatToStr(
+	AddMessage('AWeight = ' + FloatToStr(
 		GetVanillaAWeight(selectedRecord, GetFirstPersonFlags(selectedRecord))));
 	Result := 0;
 end;
@@ -223,7 +227,7 @@ begin
 		if Pos('Circlet ', Slots) > 0 then Result := 15 + GlobalArmorBonus;
 		if Pos('Forearms ', Slots) > 0 then begin
 			if GlobalHasHands then Result := 0
-			else Result := 10 / 2.5 + GlobalArmorBonus;
+			else Result := 10 / GlobalForearmsDebuffMultiplier + GlobalArmorBonus;
 		end;
 		Exit;
 	end;
@@ -236,7 +240,7 @@ begin
 		if Pos('Circlet ', Slots) > 0 then Result := 17 + GlobalArmorBonus;
 		if Pos('Forearms ', Slots) > 0 then begin
 			if GlobalHasHands then Result := 0
-			else Result := 12 / 2.5 + GlobalArmorBonus;
+			else Result := 12 / GlobalForearmsDebuffMultiplier + GlobalArmorBonus;
 		end;
 		Exit;
 	end;
@@ -249,7 +253,7 @@ begin
 		if Pos('Circlet ', Slots) > 0 then Result := 19 + GlobalArmorBonus;
 		if Pos('Forearms ', Slots) > 0 then begin
 			if GlobalHasHands then Result := 0
-			else Result := 13 / 2.5 + GlobalArmorBonus;
+			else Result := 13 / GlobalForearmsDebuffMultiplier + GlobalArmorBonus;
 		end;
 		Exit;
 	end;
@@ -262,7 +266,7 @@ begin
 		if Pos('Circlet ', Slots) > 0 then Result := 20 + GlobalArmorBonus;
 		if Pos('Forearms ', Slots) > 0 then begin
 			if GlobalHasHands then Result := 0
-			else Result := 15 / 2.5 + GlobalArmorBonus;
+			else Result := 15 / GlobalForearmsDebuffMultiplier + GlobalArmorBonus;
 		end;
 		Exit;
 	end;
@@ -275,7 +279,7 @@ begin
 		if Pos('Circlet ', Slots) > 0 then Result := 23 + GlobalArmorBonus;
 		if Pos('Forearms ', Slots) > 0 then begin
 			if GlobalHasHands then Result := 0
-			else Result := 17 / 2.5 + GlobalArmorBonus;
+			else Result := 17 / GlobalForearmsDebuffMultiplier + GlobalArmorBonus;
 		end;
 		Exit;
 	end;
@@ -288,7 +292,7 @@ begin
 		if Pos('Circlet ', Slots) > 0 then Result := 25 + GlobalArmorBonus;
 		if Pos('Forearms ', Slots) > 0 then begin
 			if GlobalHasHands then Result := 0
-			else Result := 18 / 2.5 + GlobalArmorBonus;
+			else Result := 18 / GlobalForearmsDebuffMultiplier + GlobalArmorBonus;
 		end;
 		Exit;
 	end;
@@ -303,7 +307,7 @@ begin
 		if Pos('Circlet ', Slots) > 0 then Result := 12 + GlobalArmorBonus;
 		if Pos('Forearms ', Slots) > 0 then begin
 			if GlobalHasHands then Result := 0
-			else Result := 7 / 2.5 + GlobalArmorBonus;
+			else Result := 7 / GlobalForearmsDebuffMultiplier + GlobalArmorBonus;
 		end;
 		Exit;
 	end;
@@ -316,7 +320,7 @@ begin
 		if Pos('Circlet ', Slots) > 0 then Result := 16 + GlobalArmorBonus;
 		if Pos('Forearms ', Slots) > 0 then begin
 			if GlobalHasHands then Result := 0
-			else Result := 9 / 2.5 + GlobalArmorBonus;
+			else Result := 9 / GlobalForearmsDebuffMultiplier + GlobalArmorBonus;
 		end;
 		Exit;
 	end;
@@ -329,7 +333,7 @@ begin
 		if Pos('Circlet ', Slots) > 0 then Result := 15 + GlobalArmorBonus;
 		if Pos('Forearms ', Slots) > 0 then begin
 			if GlobalHasHands then Result := 0
-			else Result := 8 / 2.5 + GlobalArmorBonus;
+			else Result := 8 / GlobalForearmsDebuffMultiplier + GlobalArmorBonus;
 		end;
 		Exit;
 	end;
@@ -342,7 +346,7 @@ begin
 		if Pos('Circlet ', Slots) > 0 then Result := 18 + GlobalArmorBonus;
 		if Pos('Forearms ', Slots) > 0 then begin
 			if GlobalHasHands then Result := 0;
-			else Result := 11 / 2.5 + GlobalArmorBonus;
+			else Result := 11 / GlobalForearmsDebuffMultiplier + GlobalArmorBonus;
 		end;
 		Exit;
 	end;
@@ -355,7 +359,7 @@ begin
 		if Pos('Circlet ', Slots) > 0 then Result := 19 + GlobalArmorBonus;
 		if Pos('Forearms ', Slots) > 0 then begin
 			if GlobalHasHands then Result := 0
-			else Result := 12 / 2.5 + GlobalArmorBonus;
+			else Result := 12 / GlobalForearmsDebuffMultiplier + GlobalArmorBonus;
 		end;
 		Exit;
 	end;
@@ -375,7 +379,7 @@ begin
 		if Pos('Circlet ', Slots) > 0 then Result := 5;
 		if Pos('Forearms ', Slots) > 0 then begin
 			if GlobalHasHands then Result := 0
-			else Result := 5; // same as gauntlets
+			else Result := 5 / GlobalForearmsDebuffMultiplier;
 		end;
 		Exit;
 	end;
@@ -388,7 +392,7 @@ begin
 		if Pos('Circlet ', Slots) > 0 then Result := 4;
 		if Pos('Forearms ', Slots) > 0 then begin
 			if GlobalHasHands then Result := 0
-			else Result := 4;
+			else Result := 4 / GlobalForearmsDebuffMultiplier;
 		end;
 		Exit;
 	end;
@@ -401,7 +405,7 @@ begin
 		if Pos('Circlet ', Slots) > 0 then Result := 8;
 		if Pos('Forearms ', Slots) > 0 then begin
 			if GlobalHasHands then Result := 0
-			else Result := 8;
+			else Result := 8 / GlobalForearmsDebuffMultiplier;
 		end;
 		Exit;
 	end;
@@ -414,7 +418,7 @@ begin
 		if Pos('Circlet ', Slots) > 0 then Result := 7;
 		if Pos('Forearms ', Slots) > 0 then begin
 			if GlobalHasHands then Result := 0
-			else Result := 7;
+			else Result := 7 / GlobalForearmsDebuffMultiplier;
 		end;
 		Exit;
 	end;
@@ -427,7 +431,7 @@ begin
 		if Pos('Circlet ', Slots) > 0 then Result := 7;
 		if Pos('Forearms ', Slots) > 0 then begin
 			if GlobalHasHands then Result := 0
-			else Result := 7;
+			else Result := 7 / GlobalForearmsDebuffMultiplier;
 		end;
 		Exit;
 	end;
@@ -440,7 +444,7 @@ begin
 		if Pos('Circlet ', Slots) > 0 then Result := 6;
 		if Pos('Forearms ', Slots) > 0 then begin
 			if GlobalHasHands then Result := 0
-			else Result := 6;
+			else Result := 6 / GlobalForearmsDebuffMultiplier;
 		end;
 		Exit;
 	end;
@@ -454,7 +458,7 @@ begin
 		if Pos('Circlet ', Slots) > 0 then Result := 2;
 		if Pos('Forearms ', Slots) > 0 then begin
 			if GlobalHasHands then Result := 0
-			else Result := 2;
+			else Result := 2 / GlobalForearmsDebuffMultiplier;
 		end;
 		Exit;
 	end;
@@ -467,7 +471,7 @@ begin
 		if Pos('Circlet ', Slots) > 0 then Result := 2;
 		if Pos('Forearms ', Slots) > 0 then begin
 			if GlobalHasHands then Result := 0
-			else Result := 2;
+			else Result := 2 / GlobalForearmsDebuffMultiplier;
 		end;
 		Exit;
 	end;
@@ -480,7 +484,7 @@ begin
 		if Pos('Circlet ', Slots) > 0 then Result := 1;
 		if Pos('Forearms ', Slots) > 0 then begin
 			if GlobalHasHands then Result := 0
-			else Result := 1;
+			else Result := 1 / GlobalForearmsDebuffMultiplier;
 		end;
 		Exit;
 	end;
@@ -493,7 +497,7 @@ begin
 		if Pos('Circlet ', Slots) > 0 then Result := 2;
 		if Pos('Forearms ', Slots) > 0 then begin
 			if GlobalHasHands then Result := 0
-			else Result := 2;
+			else Result := 2 / GlobalForearmsDebuffMultiplier;
 		end;
 		Exit;
 	end;
@@ -506,7 +510,7 @@ begin
 		if Pos('Circlet ', Slots) > 0 then Result := 3;
 		if Pos('Forearms ', Slots) > 0 then begin
 			if GlobalHasHands then Result := 0
-			else Result := 3;
+			else Result := 3  / GlobalForearmsDebuffMultiplier;
 		end;
 		Exit;
 	end;
