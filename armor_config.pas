@@ -25,7 +25,7 @@ begin
 	GlobalHasHandsWasExecuted := false;
 	GlobalProcessedRecords := 0;
 	GlobalForearmsDebuffMultiplier := FOREARMS_DEBUFF_MULTIPLIER;
-	
+	AddMessage('---ARMOR CONFIGURATOR STARTED---');
 	AddMessage('SMITHING REQUIREMENT = ' + IntToStr(DEFAULT_SMITHING));
 	AddMessage('ARMOR BONUS = ' + FloatToStr(GlobalArmorBonus));
 
@@ -97,8 +97,13 @@ begin
 	
 	// GET AR TEST
 	// GetVanillaAR(e: IInterface; Slots: string; hasHands: Boolean): Float;
-	AddMessage('AWeight = ' + FloatToStr(
+	{AddMessage('AWeight = ' + FloatToStr(
 		GetVanillaAWeight(selectedRecord, GetFirstPersonFlags(selectedRecord))));
+	}
+	
+	//RemoveRedundantKeywords(selectedRecord, GetFirstPersonFlags(selectedRecord));
+	//AddVitalKeywords(selectedRecord,GetFirstPersonFlags(selectedRecord));
+	
 	Result := 0;
 end;
 {========================================================}
@@ -181,6 +186,25 @@ begin
     HasKeyword(selectedRecord,'ArmorMaterialEbony') or
 	HasKeyword(selectedRecord,'ArmorMaterialDragonplate') or
     HasKeyword(selectedRecord,'ArmorMaterialDaedric');
+end;
+{========================================================}
+{ ADDING DESCRIPTION FOR ACCESSORIES                     }
+{========================================================}
+procedure setArmorDescription(itemRecord: IInterface; newDescription: string);
+var
+    descElement: IInterface;
+begin
+    if not Assigned(itemRecord) then Exit;
+
+    { Get the DESC element. If it doesn't exist, create it. }
+    descElement := ElementBySignature(itemRecord, 'DESC');
+    
+    if not Assigned(descElement) then
+        descElement := Add(itemRecord, 'DESC', True);
+
+    { Set the text value }
+    if Assigned(descElement) then
+        SetEditValue(descElement, newDescription);
 end;
 {========================================================}
 { ADD VITAL ARMOR KEYWORDS                               }
