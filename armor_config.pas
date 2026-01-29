@@ -183,6 +183,129 @@ begin
     HasKeyword(selectedRecord,'ArmorMaterialDaedric');
 end;
 {========================================================}
+{ ADD VITAL ARMOR KEYWORDS                               }
+{========================================================}
+procedure AddVitalKeywords(e: IInterface; Slots: string;);
+var
+	kw: IInterface;
+begin
+	if (IsVisualSlot(Slots) = False) then begin
+
+		{==================== BODY ====================}
+		if Pos('Body ', Slots) > 0 then begin
+			if HasKeyword(e, 'ArmorHelmet') then removeKeyword(e, 'ArmorHelmet');
+			if HasKeyword(e, 'ArmorGauntlets') then removeKeyword(e, 'ArmorGauntlets');
+			if HasKeyword(e, 'ArmorBoots') then removeKeyword(e, 'ArmorBoots');
+			if not HasKeyword(e, 'ArmorCuirass') then 
+			begin
+				kw := GetKeywordByEditorID('ArmorCuirass');
+				if Assigned(kw) then
+				addKeyword(e, kw);
+			end;
+		end;
+
+		{==================== HEAD ====================}
+		if Pos('Head ', Slots) > 0 then begin
+			if HasKeyword(e, 'ArmorCuirass') then removeKeyword(e, 'ArmorCuirass');
+			if HasKeyword(e, 'ArmorGauntlets') then removeKeyword(e, 'ArmorGauntlets');
+			if HasKeyword(e, 'ArmorBoots') then removeKeyword(e, 'ArmorBoots');
+			if not HasKeyword(e, 'ArmorHelmet') then
+			begin
+				kw := GetKeywordByEditorID('ArmorHelmet');
+				if Assigned(kw) then
+				addKeyword(e, kw);
+			end;
+		end;
+
+		{==================== HANDS ====================}
+		if Pos('Hands ', Slots) > 0 then begin
+			if HasKeyword(e, 'ArmorHelmet') then removeKeyword(e, 'ArmorHelmet');
+			if HasKeyword(e, 'ArmorCuirass') then removeKeyword(e, 'ArmorCuirass');
+			if HasKeyword(e, 'ArmorBoots') then removeKeyword(e, 'ArmorBoots');
+			if not HasKeyword(e, 'ArmorGauntlets') then
+			begin
+				kw := GetKeywordByEditorID('ArmorGauntlets');
+				if Assigned(kw) then
+				addKeyword(e, kw);
+			end;
+		end;
+
+		{==================== FEET ====================}
+		if Pos('Feet ', Slots) > 0 then begin
+			if HasKeyword(e, 'ArmorHelmet') then removeKeyword(e, 'ArmorHelmet');
+			if HasKeyword(e, 'ArmorCuirass') then removeKeyword(e, 'ArmorCuirass');
+			if HasKeyword(e, 'ArmorGauntlets') then removeKeyword(e, 'ArmorGauntlets');
+			if not HasKeyword(e, 'ArmorBoots') then
+			begin
+				kw := GetKeywordByEditorID('ArmorBoots');
+				if Assigned(kw) then
+				addKeyword(e, kw);
+			end;
+		end;
+
+		{==================== CIRCLET ====================}
+		if Pos('Circlet ', Slots) > 0 then begin
+			if HasKeyword(e, 'ArmorCuirass') then removeKeyword(e, 'ArmorCuirass');
+			if HasKeyword(e, 'ArmorGauntlets') then removeKeyword(e, 'ArmorGauntlets');
+			if HasKeyword(e, 'ArmorBoots') then removeKeyword(e, 'ArmorBoots');
+			if not HasKeyword(e, 'ArmorHelmet') then
+			begin
+				kw := GetKeywordByEditorID('ArmorHelmet');
+				if Assigned(kw) then
+				addKeyword(e, kw);
+			end;
+		end;
+
+		{==================== FOREARMS ====================}
+		if Pos('Forearms ', Slots) > 0 then begin
+			if HasKeyword(e, 'ArmorHelmet') then removeKeyword(e, 'ArmorHelmet');
+			if HasKeyword(e, 'ArmorCuirass') then removeKeyword(e, 'ArmorCuirass');
+			if HasKeyword(e, 'ArmorBoots') then removeKeyword(e, 'ArmorBoots');
+			// If real Hands armor exists in outfit → forearms are VISUAL ONLY
+			if GlobalHasHands then begin
+				if HasKeyword(e, 'ArmorGauntlets') then
+					removeKeyword(e, 'ArmorGauntlets');
+			end
+			// Otherwise forearms act as gauntlets
+			else begin
+				if not HasKeyword(e, 'ArmorGauntlets') then
+				begin
+					kw := GetKeywordByEditorID('ArmorGauntlets');
+					if Assigned(kw) then
+					addKeyword(e, kw);
+				end;
+			end;
+		end;
+
+	end;
+end;
+{========================================================}
+{ REMOVE REDUNDANT KEYWORD                               }
+{========================================================}
+procedure RemoveRedundantKeywords(e: IInterface; Slots: string;);
+begin
+	// Visual slot only for appearence 
+	// Requiem will increse armor rating drasticly if one of this keys is present
+	if (IsVisualSlot(Slots)) then begin
+		if HasKeyword(e, 'ArmorHelmet') then begin
+			removeKeyword(e, 'ArmorHelmet');
+			AddMessage('ArmorHelmet removed');
+		end;
+		if HasKeyword(e, 'ArmorCuirass') then begin
+			removeKeyword(e, 'ArmorCuirass');
+			AddMessage('ArmorCuirass removed from Visula Slot');
+		end;
+		if HasKeyword(e, 'ArmorGauntlets') then begin
+			removeKeyword(e, 'ArmorGauntlets');
+			AddMessage('ArmorGauntlets removed from Visula Slot');
+		end;
+		if HasKeyword(e, 'ArmorBoots') then begin
+			removeKeyword(e, 'ArmorBoots');
+			AddMessage('ArmorBoots removed from Visula Slot');
+		end;
+	end;
+end;
+{========================================================}
 { CHECK IF ANY SELECTED ARMO RECORD HAS HANDS SLOT       }
 {========================================================}
 procedure OutfitHasHands(file: IwbFile);
