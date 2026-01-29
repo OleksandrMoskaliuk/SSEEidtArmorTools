@@ -10,6 +10,7 @@ var
 	m_ArmorBonus: Float;
 	GlobalHasHands: Boolean;
 	GlobalHasHandsWasExecuted: Boolean;
+	GlobalProcessedRecords: Integer;
 {========================================================}
 { INITIALIZE                                             }
 {========================================================}
@@ -20,6 +21,7 @@ begin
 	m_ArmorBonus := m_SmithingReq / 10;
 	GlobalHasHands := false;
 	GlobalHasHandsWasExecuted := false;
+	GlobalProcessedRecords := 0;
   
 	AddMessage('Smithing requirement set to: ' + IntToStr(m_SmithingReq));
 	AddMessage('Armor bonus: ' + FloatToStr(m_ArmorBonus));
@@ -42,19 +44,19 @@ var
 	m_ArmorValue: Integer;
 	m_ArmorWeight: Float;
 	// Check if Outfit Has Hands Slot if Not Forearms will have additional armmor rating
-	currentFile: IwbFile;
+	m_currentFile: IwbFile;
 begin
 	m_ArmorRating := 0;
 	m_ArmorValue := 0;
 	m_ArmorWeight := 0;
 	m_recordSignature := Signature(selectedRecord);
-	
+	GlobalProcessedRecords := GlobalProcessedRecords + 1;
 	// Filter selected records, which are not valid
 	if not (m_recordSignature = 'ARMO') then exit;
 	
-	if not(GlobalHasHandsWasExecuted) then begin
-	currentFile := GetFile(selectedRecord);
-	OutfitHasHands(currentFile);
+	if (GlobalHasHandsWasExecuted = false) then begin
+	m_currentFile := GetFile(selectedRecord);
+	OutfitHasHands(m_currentFile);
 	end;
 
 	m_ArmorRating := GetElementEditValues(selectedRecord, 'DNAM');  
@@ -86,11 +88,9 @@ begin
 		AddMessage('Is Armor Slot !!!')
 	end;}
 	
-	
-	{AddMessage('Armor Rating = ' + 
-	FloatToStr(
-		GetVanillaAR(
-			selectedRecord,GetArmorBipedSlot(selectedRecord)))); 
+	{	// GetArmorBipedSlot Test  
+	AddMessage('Armor Rating = ' + 
+		FloatToStr(selectedRecord,GetArmorBipedSlot(selectedRecord))); 
 	}
 	
 	Result := 0;
@@ -123,9 +123,9 @@ end;
 
 function IsVisualSlot(armor: string): Boolean;
 var
-  slots: TStringList;
-  i: Integer;
-  slotName: string;
+	slots: TStringList;
+	i: Integer;
+	slotName: string;
 begin
   Result := False;
 
@@ -193,17 +193,20 @@ var
 	i: Integer;
 	rec: IInterface;
 begin
-	if (GlobalHasHandsWasExecuted) then exit;
+	if (GlobalHasHandsWasExecuted = true) then Exit;
 	for i := 0 to Pred(RecordCount(file)) do begin
 		rec := RecordByIndex(file, i);
 		if Signature(rec) = 'ARMO' then begin
 			if Pos('Hands', GetArmorBipedSlot(rec)) > 0 then begin
 				GlobalHasHands  := True;
+				AddMessage('FOUND -HANDS- SLOT IN CURRENT OUTFIT !!!');
+				AddMessage('ARMOR -FOREARMS- WIL BE CONSIDERED AS -DECORATION-');
+				GlobalHasHandsWasExecuted := True;
 				Exit;
 			end;
 		end;
 	end;
-	GlobalHasHandsWasExecuted := true;
+	
 end;
 {========================================================}
 { VANILLA ARMOR RATINGS WITH FOREARMS LOGIC              }
@@ -363,7 +366,8 @@ end;
 {========================================================}
 function Finalize: integer;
 begin
-  AddMessage('---Armor Config Process Ended---'); 
-  Result := 0;
+	AddMessage('---Armor Config Process Ended---'); 
+	AddMessage('SCRIPT PROCESSED ' + IntToStr(GlobalProcessedRecords) + ' RECORDS');
+	Result := 0;
 end;
 end.
