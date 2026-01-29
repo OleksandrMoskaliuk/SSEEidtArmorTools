@@ -6,8 +6,8 @@ uses SK_UtilsRemake;
 const
 	DEFAULT_SMITHING = 5;
 var
-	m_SmithingReq: Integer;
-	m_ArmorBonus: Float;
+	GlobalSmithingReq: Integer;
+	GlobalArmorBonus: Float;
 	GlobalHasHands: Boolean;
 	GlobalHasHandsWasExecuted: Boolean;
 	GlobalProcessedRecords: Integer;
@@ -17,23 +17,21 @@ var
 function Initialize: Integer;
 begin
 	Result := 0;
-	m_SmithingReq := DEFAULT_SMITHING;
-	m_ArmorBonus := m_SmithingReq / 10;
+	GlobalSmithingReq := DEFAULT_SMITHING;
+	GlobalArmorBonus := GlobalSmithingReq / 10;
 	GlobalHasHands := false;
 	GlobalHasHandsWasExecuted := false;
 	GlobalProcessedRecords := 0;
   
-	AddMessage('Smithing requirement set to: ' + IntToStr(m_SmithingReq));
-	AddMessage('Armor bonus: ' + FloatToStr(m_ArmorBonus));
+	AddMessage('SMITHING REQUIREMENT = ' + IntToStr(DEFAULT_SMITHING));
+	AddMessage('ARMOR BONUS = ' + FloatToStr(GlobalArmorBonus));
 
-	if (m_SmithingReq < 0) or (m_SmithingReq > 100) then begin
+	if (GlobalSmithingReq < 0) or (GlobalSmithingReq > 100) then begin
 		AddMessage('ERROR: Smithing value must be between 0 and 100.');
 		Result := 1;
 		exit;
 	end;  
 end;
-
-
 {========================================================}
 { PROCESS "Runs for every record selected in xEdit"      }
 {========================================================}
@@ -58,14 +56,15 @@ begin
 	m_currentFile := GetFile(selectedRecord);
 	OutfitHasHands(m_currentFile);
 	end;
-
+    
+	{
 	m_ArmorRating := GetElementEditValues(selectedRecord, 'DNAM');  
 		AddMessage('Armor Rating: ' + FloatToStr(m_ArmorRating));
 	m_ArmorValue := GetElementEditValues(selectedRecord, 'DATA\Value');
 		AddMessage('Armor Value: ' + IntToStr(m_ArmorValue));
 	m_ArmorWeight := GetElementEditValues(selectedRecord, 'DATA\Weight');
 		AddMessage('Armor Weight: ' + FloatToStr(m_ArmorWeight));
-	
+	}
 	// hasKeyword(selectedRecord, 'ArmorJewelry');
 	{if (IsLightArmorMaterial(selectedRecord)) then 
 	begin
@@ -80,34 +79,35 @@ begin
 	//SetElementNativeValues(selectedRecord, 'DATA\Value', itemValue);
 	
 	
-	//AddMessage(GetArmorBipedSlots(selectedRecord));
-	//GetArmorBipedSlot(selectedRecord);
-	{if(IsVisualSlot(GetArmorBipedSlot(selectedRecord))) then begin
+	//AddMessage(GetFirstPersonFlagss(selectedRecord));
+	//GetFirstPersonFlags(selectedRecord);
+	{if(IsVisualSlot(GetFirstPersonFlags(selectedRecord))) then begin
 		AddMessage('Is Visual Slot !!!')
 	end else begin
 		AddMessage('Is Armor Slot !!!')
 	end;}
 	
-	{	// GetArmorBipedSlot Test  
+	{	// GetFirstPersonFlags Test  
 	AddMessage('Armor Rating = ' + 
-		FloatToStr(selectedRecord,GetArmorBipedSlot(selectedRecord))); 
+		FloatToStr(selectedRecord,GetFirstPersonFlags(selectedRecord))); 
 	}
 	
+	// GET AR TEST
+	// GetVanillaAR(e: IInterface; Slots: string; hasHands: Boolean): Float;
+	AddMessage('AR = ' + FloatToStr(
+		GetVanillaAWeight(selectedRecord, GetFirstPersonFlags(selectedRecord))));
 	Result := 0;
 end;
 {========================================================}
 { SLOT LOGIC                                             }
 {========================================================}
-function GetArmorBipedSlot(armorRecord: IInterface): string;
+function GetFirstPersonFlags(armorRecord: IInterface): string;
 var
 	bipedFlagsElement: IInterface;
 	bipedFlags: Cardinal;
 begin
 	bipedFlagsElement := ElementByPath(armorRecord, 'BOD2');
 	bipedFlags := GetElementNativeValues(bipedFlagsElement, 'First Person Flags');
-	AddMessage('Slot = ' + IntToHex(bipedFlags, 8));
-	// Get BOD2\Biped Flags
-	
     // Check for slots
 	Result := '';
 	if (bipedFlags and $00000001) <> 0 then Result := Result + 'Head ';
@@ -117,8 +117,7 @@ begin
 	if (bipedFlags and $00000080) <> 0 then Result := Result + 'Feet ';
 	if (bipedFlags and $00000200) <> 0 then Result := Result + 'Shield ';
 	if (bipedFlags and $00001000) <> 0 then Result := Result + 'Circlet ';
-	AddMessage('Slot = ' + Result);
-	
+	//AddMessage('Slot = ' + IntToHex(bipedFlags, 8) + ' ' + Result);
 end;
 
 function IsVisualSlot(armor: string): Boolean;
@@ -197,7 +196,7 @@ begin
 	for i := 0 to Pred(RecordCount(file)) do begin
 		rec := RecordByIndex(file, i);
 		if Signature(rec) = 'ARMO' then begin
-			if Pos('Hands', GetArmorBipedSlot(rec)) > 0 then begin
+			if Pos('Hands', GetFirstPersonFlags(rec)) > 0 then begin
 				GlobalHasHands  := True;
 				AddMessage('FOUND -HANDS- SLOT IN CURRENT OUTFIT !!!');
 				AddMessage('ARMOR -FOREARMS- WIL BE CONSIDERED AS -DECORATION-');
@@ -211,85 +210,85 @@ end;
 {========================================================}
 { VANILLA ARMOR RATINGS WITH FOREARMS LOGIC              }
 {========================================================}
-function GetVanillaAR(e: IInterface; Slots: string; hasHands: Boolean): Float;
+function GetVanillaAR(e: IInterface; Slots: string;): Float;
 begin
 	Result := 0;
 
 	{==================== HEAVY ====================}
 	if HasKeyword(e,'ArmorMaterialIron') then begin
-		if Pos('Body ', Slots) > 0 then Result := 28;
-		if Pos('Head ', Slots) > 0 then Result := 15;
-		if Pos('Hands ', Slots) > 0 then Result := 10;
-		if Pos('Feet ', Slots) > 0 then Result := 10;
-		if Pos('Circlet ', Slots) > 0 then Result := 15;
+		if Pos('Body ', Slots) > 0 then Result := 28 + GlobalArmorBonus;
+		if Pos('Head ', Slots) > 0 then Result := 15 + GlobalArmorBonus;
+		if Pos('Hands ', Slots) > 0 then Result := 10 + GlobalArmorBonus;
+		if Pos('Feet ', Slots) > 0 then Result := 10 + GlobalArmorBonus;
+		if Pos('Circlet ', Slots) > 0 then Result := 15 + GlobalArmorBonus;
 		if Pos('Forearms ', Slots) > 0 then begin
-			if hasHands then Result := 0
-			else Result := 10 / 2.5;
+			if GlobalHasHands then Result := 0
+			else Result := 10 / 2.5 + GlobalArmorBonus;
 		end;
 		Exit;
 	end;
 
 	if HasKeyword(e,'ArmorMaterialSteel') then begin
-		if Pos('Body ', Slots) > 0 then Result := 31;
-		if Pos('Head ', Slots) > 0 then Result := 17;
-		if Pos('Hands ', Slots) > 0 then Result := 12;
-		if Pos('Feet ', Slots) > 0 then Result := 12;
-		if Pos('Circlet ', Slots) > 0 then Result := 17;
+		if Pos('Body ', Slots) > 0 then Result := 31 + GlobalArmorBonus;
+		if Pos('Head ', Slots) > 0 then Result := 17 + GlobalArmorBonus;
+		if Pos('Hands ', Slots) > 0 then Result := 12 + GlobalArmorBonus;
+		if Pos('Feet ', Slots) > 0 then Result := 12 + GlobalArmorBonus;
+		if Pos('Circlet ', Slots) > 0 then Result := 17 + GlobalArmorBonus;
 		if Pos('Forearms ', Slots) > 0 then begin
-			if hasHands then Result := 0
-			else Result := 12 / 2.5;
+			if GlobalHasHands then Result := 0
+			else Result := 12 / 2.5 + GlobalArmorBonus;
 		end;
 		Exit;
 	end;
 
 	if HasKeyword(e,'ArmorMaterialDwarven') then begin
-		if Pos('Body ', Slots) > 0 then Result := 34;
-		if Pos('Head ', Slots) > 0 then Result := 19;
-		if Pos('Hands ', Slots) > 0 then Result := 13;
-		if Pos('Feet ', Slots) > 0 then Result := 13;
-		if Pos('Circlet ', Slots) > 0 then Result := 19;
+		if Pos('Body ', Slots) > 0 then Result := 34 + GlobalArmorBonus;
+		if Pos('Head ', Slots) > 0 then Result := 19 + GlobalArmorBonus;
+		if Pos('Hands ', Slots) > 0 then Result := 13 + GlobalArmorBonus;
+		if Pos('Feet ', Slots) > 0 then Result := 13 + GlobalArmorBonus;
+		if Pos('Circlet ', Slots) > 0 then Result := 19 + GlobalArmorBonus;
 		if Pos('Forearms ', Slots) > 0 then begin
-			if hasHands then Result := 0
-			else Result := 13 / 2.5;
+			if GlobalHasHands then Result := 0
+			else Result := 13 / 2.5 + GlobalArmorBonus;
 		end;
 		Exit;
 	end;
 
 	if HasKeyword(e,'ArmorMaterialOrcish') then begin
-		if Pos('Body ', Slots) > 0 then Result := 37;
-		if Pos('Head ', Slots) > 0 then Result := 20;
-		if Pos('Hands ', Slots) > 0 then Result := 15;
-		if Pos('Feet ', Slots) > 0 then Result := 15;
-		if Pos('Circlet ', Slots) > 0 then Result := 20;
+		if Pos('Body ', Slots) > 0 then Result := 37 + GlobalArmorBonus;
+		if Pos('Head ', Slots) > 0 then Result := 20 + GlobalArmorBonus;
+		if Pos('Hands ', Slots) > 0 then Result := 15 + GlobalArmorBonus;
+		if Pos('Feet ', Slots) > 0 then Result := 15 + GlobalArmorBonus;
+		if Pos('Circlet ', Slots) > 0 then Result := 20 + GlobalArmorBonus;
 		if Pos('Forearms ', Slots) > 0 then begin
-			if hasHands then Result := 0
-			else Result := 15 / 2.5;
+			if GlobalHasHands then Result := 0
+			else Result := 15 / 2.5 + GlobalArmorBonus;
 		end;
 		Exit;
 	end;
 
 	if HasKeyword(e,'ArmorMaterialEbony') then begin
-		if Pos('Body ', Slots) > 0 then Result := 43;
-		if Pos('Head ', Slots) > 0 then Result := 23;
-		if Pos('Hands ', Slots) > 0 then Result := 17;
-		if Pos('Feet ', Slots) > 0 then Result := 17;
-		if Pos('Circlet ', Slots) > 0 then Result := 23;
+		if Pos('Body ', Slots) > 0 then Result := 43 + GlobalArmorBonus;
+		if Pos('Head ', Slots) > 0 then Result := 23 + GlobalArmorBonus;
+		if Pos('Hands ', Slots) > 0 then Result := 17 + GlobalArmorBonus;
+		if Pos('Feet ', Slots) > 0 then Result := 17 + GlobalArmorBonus;
+		if Pos('Circlet ', Slots) > 0 then Result := 23 + GlobalArmorBonus;
 		if Pos('Forearms ', Slots) > 0 then begin
-			if hasHands then Result := 0
-			else Result := 17 / 2.5;
+			if GlobalHasHands then Result := 0
+			else Result := 17 / 2.5 + GlobalArmorBonus;
 		end;
 		Exit;
 	end;
 
 	if HasKeyword(e,'ArmorMaterialDaedric') or HasKeyword(e,'ArmorMaterialDragonplate') then begin
-		if Pos('Body ', Slots) > 0 then Result := 49;
-		if Pos('Head ', Slots) > 0 then Result := 25;
-		if Pos('Hands ', Slots) > 0 then Result := 18;
-		if Pos('Feet ', Slots) > 0 then Result := 18;
-		if Pos('Circlet ', Slots) > 0 then Result := 25;
+		if Pos('Body ', Slots) > 0 then Result := 49 + GlobalArmorBonus;
+		if Pos('Head ', Slots) > 0 then Result := 25 + GlobalArmorBonus;
+		if Pos('Hands ', Slots) > 0 then Result := 18 + GlobalArmorBonus;
+		if Pos('Feet ', Slots) > 0 then Result := 18 + GlobalArmorBonus;
+		if Pos('Circlet ', Slots) > 0 then Result := 25 + GlobalArmorBonus;
 		if Pos('Forearms ', Slots) > 0 then begin
-			if hasHands then Result := 0
-			else Result := 18 / 2.5;
+			if GlobalHasHands then Result := 0
+			else Result := 18 / 2.5 + GlobalArmorBonus;
 		end;
 		Exit;
 	end;
@@ -297,66 +296,217 @@ begin
 	{==================== LIGHT ====================}
 
 	if HasKeyword(e,'ArmorMaterialLeather') then begin
-		if Pos('Body ', Slots) > 0 then Result := 23;
-		if Pos('Head ', Slots) > 0 then Result := 12;
-		if Pos('Hands ', Slots) > 0 then Result := 7;
-		if Pos('Feet ', Slots) > 0 then Result := 7;
-		if Pos('Circlet ', Slots) > 0 then Result := 12;
+		if Pos('Body ', Slots) > 0 then Result := 23 + GlobalArmorBonus;
+		if Pos('Head ', Slots) > 0 then Result := 12 + GlobalArmorBonus;
+		if Pos('Hands ', Slots) > 0 then Result := 7 + GlobalArmorBonus;
+		if Pos('Feet ', Slots) > 0 then Result := 7 + GlobalArmorBonus;
+		if Pos('Circlet ', Slots) > 0 then Result := 12 + GlobalArmorBonus;
 		if Pos('Forearms ', Slots) > 0 then begin
-			if hasHands then Result := 0
-			else Result := 7 / 2.5;
+			if GlobalHasHands then Result := 0
+			else Result := 7 / 2.5 + GlobalArmorBonus;
 		end;
 		Exit;
 	end;
 
 	if HasKeyword(e,'ArmorMaterialScaled') then begin
-		if Pos('Body ', Slots) > 0 then Result := 32;
-		if Pos('Head ', Slots) > 0 then Result := 16;
-		if Pos('Hands ', Slots) > 0 then Result := 9;
-		if Pos('Feet ', Slots) > 0 then Result := 9;
-		if Pos('Circlet ', Slots) > 0 then Result := 16;
+		if Pos('Body ', Slots) > 0 then Result := 32 + GlobalArmorBonus;
+		if Pos('Head ', Slots) > 0 then Result := 16 + GlobalArmorBonus;
+		if Pos('Hands ', Slots) > 0 then Result := 9 + GlobalArmorBonus;
+		if Pos('Feet ', Slots) > 0 then Result := 9 + GlobalArmorBonus;
+		if Pos('Circlet ', Slots) > 0 then Result := 16 + GlobalArmorBonus;
 		if Pos('Forearms ', Slots) > 0 then begin
-			if hasHands then Result := 0
-			else Result := 9 / 2.5;
+			if GlobalHasHands then Result := 0
+			else Result := 9 / 2.5 + GlobalArmorBonus;
 		end;
 		Exit;
 	end;
 
 	if HasKeyword(e,'ArmorMaterialElven') then begin
-		if Pos('Body ', Slots) > 0 then Result := 29;
-		if Pos('Head ', Slots) > 0 then Result := 15;
-		if Pos('Hands ', Slots) > 0 then Result := 8;
-		if Pos('Feet ', Slots) > 0 then Result := 8;
-		if Pos('Circlet ', Slots) > 0 then Result := 15;
+		if Pos('Body ', Slots) > 0 then Result := 29 + GlobalArmorBonus;
+		if Pos('Head ', Slots) > 0 then Result := 15 + GlobalArmorBonus;
+		if Pos('Hands ', Slots) > 0 then Result := 8 + GlobalArmorBonus;
+		if Pos('Feet ', Slots) > 0 then Result := 8 + GlobalArmorBonus;
+		if Pos('Circlet ', Slots) > 0 then Result := 15 + GlobalArmorBonus;
 		if Pos('Forearms ', Slots) > 0 then begin
-			if hasHands then Result := 0
-			else Result := 8 / 2.5;
+			if GlobalHasHands then Result := 0
+			else Result := 8 / 2.5 + GlobalArmorBonus;
 		end;
 		Exit;
 	end;
 
 	if HasKeyword(e,'ArmorMaterialGlass') then begin
-		if Pos('Body ', Slots) > 0 then Result := 38;
-		if Pos('Head ', Slots) > 0 then Result := 18;
-		if Pos('Hands ', Slots) > 0 then Result := 11;
-		if Pos('Feet ', Slots) > 0 then Result := 11;
-		if Pos('Circlet ', Slots) > 0 then Result := 18;
+		if Pos('Body ', Slots) > 0 then Result := 38 + GlobalArmorBonus;
+		if Pos('Head ', Slots) > 0 then Result := 18 + GlobalArmorBonus;
+		if Pos('Hands ', Slots) > 0 then Result := 11 + GlobalArmorBonus;
+		if Pos('Feet ', Slots) > 0 then Result := 11 + GlobalArmorBonus;
+		if Pos('Circlet ', Slots) > 0 then Result := 18 + GlobalArmorBonus;
 		if Pos('Forearms ', Slots) > 0 then begin
-			if hasHands then Result := 0
-			else Result := 11 / 2.5;
+			if GlobalHasHands then Result := 0;
+			else Result := 11 / 2.5 + GlobalArmorBonus;
 		end;
 		Exit;
 	end;
 
 	if HasKeyword(e,'ArmorMaterialDragonscale') then begin
-		if Pos('Body ', Slots) > 0 then Result := 41;
-		if Pos('Head ', Slots) > 0 then Result := 19;
-		if Pos('Hands ', Slots) > 0 then Result := 12;
-		if Pos('Feet ', Slots) > 0 then Result := 12;
-		if Pos('Circlet ', Slots) > 0 then Result := 19;
+		if Pos('Body ', Slots) > 0 then Result := 41 + GlobalArmorBonus;
+		if Pos('Head ', Slots) > 0 then Result := 19 + GlobalArmorBonus;
+		if Pos('Hands ', Slots) > 0 then Result := 12 + GlobalArmorBonus;
+		if Pos('Feet ', Slots) > 0 then Result := 12 + GlobalArmorBonus;
+		if Pos('Circlet ', Slots) > 0 then Result := 19 + GlobalArmorBonus;
 		if Pos('Forearms ', Slots) > 0 then begin
-			if hasHands then Result := 0
-			else Result := 12 / 2.5;
+			if GlobalHasHands then Result := 0
+			else Result := 12 / 2.5 + GlobalArmorBonus;
+		end;
+		Exit;
+	end;
+end;
+{========================================================}
+{ GET VANILLA ARMOR WEIGHT (ENCUMBRANCE)                  }
+{========================================================}
+function GetVanillaAWeight(e: IInterface; Slots: string): Float;
+begin
+	Result := 0.0;
+	{==================== HEAVY ====================}
+	if HasKeyword(e,'ArmorMaterialIron') then begin
+		if Pos('Body ', Slots) > 0 then Result := 30;
+		if Pos('Head ', Slots) > 0 then Result := 6;
+		if Pos('Hands ', Slots) > 0 then Result := 5;
+		if Pos('Feet ', Slots) > 0 then Result := 5;
+		if Pos('Circlet ', Slots) > 0 then Result := 5;
+		if Pos('Forearms ', Slots) > 0 then begin
+			if GlobalHasHands then Result := 0
+			else Result := 5; // same as gauntlets
+		end;
+		Exit;
+	end;
+
+	if HasKeyword(e,'ArmorMaterialSteel') then begin
+		if Pos('Body ', Slots) > 0 then Result := 35;
+		if Pos('Head ', Slots) > 0 then Result := 5;
+		if Pos('Hands ', Slots) > 0 then Result := 4;
+		if Pos('Feet ', Slots) > 0 then Result := 4;
+		if Pos('Circlet ', Slots) > 0 then Result := 4;
+		if Pos('Forearms ', Slots) > 0 then begin
+			if GlobalHasHands then Result := 0
+			else Result := 4;
+		end;
+		Exit;
+	end;
+
+	if HasKeyword(e,'ArmorMaterialDwarven') then begin
+		if Pos('Body ', Slots) > 0 then Result := 45;
+		if Pos('Head ', Slots) > 0 then Result := 12;
+		if Pos('Hands ', Slots) > 0 then Result := 8;
+		if Pos('Feet ', Slots) > 0 then Result := 8;
+		if Pos('Circlet ', Slots) > 0 then Result := 8;
+		if Pos('Forearms ', Slots) > 0 then begin
+			if GlobalHasHands then Result := 0
+			else Result := 8;
+		end;
+		Exit;
+	end;
+
+	if HasKeyword(e,'ArmorMaterialOrcish') then begin
+		if Pos('Body ', Slots) > 0 then Result := 35;
+		if Pos('Head ', Slots) > 0 then Result := 8;
+		if Pos('Hands ', Slots) > 0 then Result := 7;
+		if Pos('Feet ', Slots) > 0 then Result := 7;
+		if Pos('Circlet ', Slots) > 0 then Result := 7;
+		if Pos('Forearms ', Slots) > 0 then begin
+			if GlobalHasHands then Result := 0
+			else Result := 7;
+		end;
+		Exit;
+	end;
+
+	if HasKeyword(e,'ArmorMaterialEbony') then begin
+		if Pos('Body ', Slots) > 0 then Result := 38;
+		if Pos('Head ', Slots) > 0 then Result := 10;
+		if Pos('Hands ', Slots) > 0 then Result := 7;
+		if Pos('Feet ', Slots) > 0 then Result := 7;
+		if Pos('Circlet ', Slots) > 0 then Result := 7;
+		if Pos('Forearms ', Slots) > 0 then begin
+			if GlobalHasHands then Result := 0
+			else Result := 7;
+		end;
+		Exit;
+	end;
+
+	if HasKeyword(e,'ArmorMaterialDaedric') then begin
+		if Pos('Body ', Slots) > 0 then Result := 50;
+		if Pos('Head ', Slots) > 0 then Result := 10;
+		if Pos('Hands ', Slots) > 0 then Result := 6;
+		if Pos('Feet ', Slots) > 0 then Result := 6;
+		if Pos('Circlet ', Slots) > 0 then Result := 6;
+		if Pos('Forearms ', Slots) > 0 then begin
+			if GlobalHasHands then Result := 0
+			else Result := 6;
+		end;
+		Exit;
+	end;
+
+	{==================== LIGHT ====================}
+	if HasKeyword(e,'ArmorMaterialLeather') then begin
+		if Pos('Body ', Slots) > 0 then Result := 6;
+		if Pos('Head ', Slots) > 0 then Result := 2;
+		if Pos('Hands ', Slots) > 0 then Result := 2;
+		if Pos('Feet ', Slots) > 0 then Result := 2;
+		if Pos('Circlet ', Slots) > 0 then Result := 2;
+		if Pos('Forearms ', Slots) > 0 then begin
+			if GlobalHasHands then Result := 0
+			else Result := 2;
+		end;
+		Exit;
+	end;
+
+	if HasKeyword(e,'ArmorMaterialScaled') then begin
+		if Pos('Body ', Slots) > 0 then Result := 6;
+		if Pos('Head ', Slots) > 0 then Result := 2;
+		if Pos('Hands ', Slots) > 0 then Result := 2;
+		if Pos('Feet ', Slots) > 0 then Result := 2;
+		if Pos('Circlet ', Slots) > 0 then Result := 2;
+		if Pos('Forearms ', Slots) > 0 then begin
+			if GlobalHasHands then Result := 0
+			else Result := 2;
+		end;
+		Exit;
+	end;
+
+	if HasKeyword(e,'ArmorMaterialElven') then begin
+		if Pos('Body ', Slots) > 0 then Result := 4;
+		if Pos('Head ', Slots) > 0 then Result := 1;
+		if Pos('Hands ', Slots) > 0 then Result := 1;
+		if Pos('Feet ', Slots) > 0 then Result := 1;
+		if Pos('Circlet ', Slots) > 0 then Result := 1;
+		if Pos('Forearms ', Slots) > 0 then begin
+			if GlobalHasHands then Result := 0
+			else Result := 1;
+		end;
+		Exit;
+	end;
+
+	if HasKeyword(e,'ArmorMaterialGlass') then begin
+		if Pos('Body ', Slots) > 0 then Result := 7;
+		if Pos('Head ', Slots) > 0 then Result := 2;
+		if Pos('Hands ', Slots) > 0 then Result := 2;
+		if Pos('Feet ', Slots) > 0 then Result := 2;
+		if Pos('Circlet ', Slots) > 0 then Result := 2;
+		if Pos('Forearms ', Slots) > 0 then begin
+			if GlobalHasHands then Result := 0
+			else Result := 2;
+		end;
+		Exit;
+	end;
+
+	if HasKeyword(e,'ArmorMaterialDragonscale') then begin
+		if Pos('Body ', Slots) > 0 then Result := 10;
+		if Pos('Head ', Slots) > 0 then Result := 4;
+		if Pos('Hands ', Slots) > 0 then Result := 3;
+		if Pos('Feet ', Slots) > 0 then Result := 3;
+		if Pos('Circlet ', Slots) > 0 then Result := 3;
+		if Pos('Forearms ', Slots) > 0 then begin
+			if GlobalHasHands then Result := 0
+			else Result := 3;
 		end;
 		Exit;
 	end;
@@ -366,7 +516,6 @@ end;
 {========================================================}
 function Finalize: integer;
 begin
-	AddMessage('---Armor Config Process Ended---'); 
 	AddMessage('SCRIPT PROCESSED ' + IntToStr(GlobalProcessedRecords) + ' RECORDS');
 	Result := 0;
 end;
