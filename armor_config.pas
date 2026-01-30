@@ -1,4 +1,25 @@
-unit armor_config;
+{
+================================================================================
+UNIT: ClarityForge
+PURPOSE: Comprehensive Armor Balancing for Requiem / Skyrim AE.
+AUTHOR: [Dru9Dealer]
+
+GOALS: 
+1. Categorize armor into "Mechanical" (Stat-bearing) and "Visual" (Cosmetic) slots.
+2. Ensure Mechanical slots follow Requiem's Perk/Skill progression.
+3. Zero-out Visual slots (Weight, AR, Value) and block enchanting on non-jewelry.
+4. Scale Armor Rating based on Smithing skill requirements (Bonus = Skill / 10).
+5. Balance "Forearms" vs "Hands" slots to prevent double-armor exploits.
+
+VARIABLE DEFINITIONS:
+- GlobalSmithingReq: The skill gate (0-100) for the current outfit.
+- GlobalArmorBonus: Scaling protection added based on GlobalSmithingReq.
+- FOREARMS_DEBUFF_MULTIPLIER: Reduces AR for forearm slots (standard: 2.5).
+- GlobalHasHands: Boolean flag set by scanning the file for Slot 33.
+================================================================================
+}
+
+unit ClarityForge;
 uses SK_UtilsRemake;
 {========================================================}
 { GLOBAL VARS                                            }
@@ -44,61 +65,59 @@ var
 	m_ArmorRating: Float;
 	m_ArmorPrice: Integer;
 	m_ArmorWeight: Float;
-	// Check if Outfit Has Hands Slot if Not Forearms will have additional armmor rating
 	m_currentFile: IwbFile;
+	m_Slots: string;
 begin
 	m_ArmorRating := 0;
 	m_ArmorPrice := 0;
 	m_ArmorWeight := 0.0;
 	m_recordSignature := Signature(selectedRecord);
-	GlobalProcessedRecords := GlobalProcessedRecords + 1;
-	// Filter selected records, which are not valid
-	if not (m_recordSignature = 'ARMO') then exit;
 	
-	// Go through all record and find '33 - hands' first person armor slot;
-	// Based on 'GlobalHasHands' will decide if Forearms playable if they exist 
-	if (GlobalHasHandsWasExecuted = false) then begin
-	m_currentFile := GetFile(selectedRecord);
-	OutfitHasHands(m_currentFile);
+	GlobalProcessedRecords := GlobalProcessedRecords + 1;
+
+	{ 1. Filter: Skip records that are not Armor (ARMO) }
+	if not (m_recordSignature = 'ARMO') then Exit;
+	
+	m_Slots := GetFirstPersonFlags(selectedRecord);
+
+	{ 2. Initialization: Scan the file for 'Hands' slot once per session }
+	{ This determines if 'Forearms' should be treated as functional armor or decoration }
+	if not GlobalHasHandsWasExecuted then begin
+		m_currentFile := GetFile(selectedRecord);
+		OutfitHasHands(m_currentFile);
 	end;
 
-	// Removing keyword that can't belong to certain "first person armor slot".
-	// For example keyword "ArmorCuirass" can't belong to '33 - Hands' or '30 - Head'.
-	// Must be done for each record, User shold select all outfit Armor records.
-	RemoveRedundantKeywords(selectedRecord, GetFirstPersonFlags(selectedRecord));
+	{ 3. Cleanup: Remove keywords that do not belong to the item's specific slots }
+	{ Example: 'ArmorCuirass' keyword is removed from 'Head' or 'Hands' slots }
+	RemoveRedundantKeywords(selectedRecord, m_Slots);
 	
-	// Adding vital keyword
-	// For example 'First Person Flag' -> '32 - body' shold contain 'ArmorCuirass' keyword
-	AddVitalKeywords(selectedRecord,GetFirstPersonFlags(selectedRecord));
+	{ 4. Classification: Add vital armor keywords (Cuirass, Helmet, etc.) }
+	{ Based on the First Person Flags (Biped Slots) }
+	AddVitalKeywords(selectedRecord, m_Slots);
 	
-	// Set armor type (Heavy/Light/Clothing) based on item material;
+	{ 5. Material Logic: Set Armor Type (Heavy/Light/Clothing) based on materials }
 	SetArmorType(selectedRecord);
 	
-	// Get main armor valuse based on "FirstPerSonSlot" and "ArmorMaterial"
-	// Setting correct vanilla armorRatint/weight/price values
-	m_ArmorRating := GetVanillaAR(selectedRecord, GetFirstPersonFlags(selectedRecord));  
-		SetElementEditValues(selectedRecord, 'DNAM - Armor Rating', m_ArmorRating);
+	{ 6. Stat Balancing: Apply vanilla-aligned base values }
+	m_ArmorRating := GetVanillaAR(selectedRecord, m_Slots);  
+	SetElementEditValues(selectedRecord, 'DNAM - Armor Rating', m_ArmorRating);
 	
-	m_ArmorWeight := GetVanillaAWeight(selectedRecord, GetFirstPersonFlags(selectedRecord)); 
-		SetElementEditValues(selectedRecord, 'DATA\Weight', m_ArmorWeight);
+	m_ArmorWeight := GetVanillaAWeight(selectedRecord, m_Slots); 
+	SetElementEditValues(selectedRecord, 'DATA\Weight', m_ArmorWeight);
 	
-	m_ArmorPrice := GetVanillaAWeight(selectedRecord, GetFirstPersonFlags(selectedRecord)); 
-		SetElementEditValues(selectedRecord, 'DATA\Value', m_ArmorPrice);
+	m_ArmorPrice := GetVanillaAPrice(selectedRecord, m_Slots); 
+	SetElementEditValues(selectedRecord, 'DATA\Value', m_ArmorPrice);
 	
-	// If this is only "Visual slot", it shold have no Value Weight or ArmorRating
-	// Visula Slot can't be enchanted ("MagDisallowEnchanting" keyword added)
-	
+	{ 7. Finalization: Handle 'Visual Slots' (0 weight/value/AR + Enchanting Block) }
 	FinalizeVisualSlot(selectedRecord);
 	
-	// Since all values set, and now armor have all keywords like: ArmorCuiras,ArmorGauntlets, etc...);
-	// Craftable records can be created;
-	// Crafting recipe for visual slot is also free;
+	{ 8. Crafting: Generate recipes based on the finalized keywords and stats }
+	{ Visual slots receive a 'token cost' recipe (e.g., 1 Gold) }
 	MakeCraftableV2(selectedRecord);
 	
-	// If thid piece of armor not "Visual Slot" make it craftable;
-	if not IsVisualSlot(GetFirstPersonFlags(selectedRecord)) then begin
-		// Add tempering recipe 
-		// Also support tempering for enchanted armors
+	{ 9. Tempering: Add improvement recipes only for functional armor pieces }
+	if not IsVisualSlot(m_Slots) then begin
+		{ Supports tempering for both enchanted and non-enchanted items }
 		makeTemperable(selectedRecord);
 	end;
 	
@@ -123,7 +142,9 @@ begin
 	if (bipedFlags and $00000080) <> 0 then Result := Result + 'Feet ';
 	if (bipedFlags and $00000200) <> 0 then Result := Result + 'Shield ';
 	if (bipedFlags and $00001000) <> 0 then Result := Result + 'Circlet ';
-	//AddMessage('Slot = ' + IntToHex(bipedFlags, 8) + ' ' + Result);
+	if (bipedFlags and $00000020) <> 0 then Result := Result + 'Amulet ';
+	if (bipedFlags and $00010000) <> 0 then Result := Result + 'Ring ';
+	AddMessage('Slot = ' + IntToHex(bipedFlags, 8) + ' ' + Result);
 end;
 
 function IsVisualSlot(armor: string): Boolean;
@@ -169,32 +190,36 @@ var
 	kw: IInterface;
 	existingDesc: string;
 	visualNote: string;
+	isAccessory: Boolean;
 begin
 	if not IsVisualSlot(GetFirstPersonFlags(e)) then Exit;
-	
 	visualNote := 'Visual Slot: This item is for appearance only. It provides no protection and cannot be enchanted.';
-
-	{ 1. Add MagicDisallowEnchanting safely }
-	{ We use the EditorID check since it is a standard vanilla keyword }
-	if not HasKeyword(e, 'MagicDisallowEnchanting') then begin
-		kw := GetKeywordByEditorID('MagicDisallowEnchanting');
-		if Assigned(kw) then 
-			addKeyword(e, kw);
-	end;
-
-	{ 2. Handle Description (Clean & Update) }
-	{ If DESC exists, we check if our note is already there to avoid duplicates }
-	existingDesc := GetElementEditValues(e, 'DESC');
+	{ Check if it's an enchantable accessory }
+	isAccessory := (Pos('Amulet ', GetFirstPersonFlags(e)) > 0) or (Pos('Ring ', GetFirstPersonFlags(e)) > 0);
 	
-	if Pos(visualNote, existingDesc) = 0 then begin
-		{ If there is old text, we decide to overwrite it or append }
-		{ For Visual Slots, overwriting is cleaner for your balance philosophy }
-		if not Assigned(ElementBySignature(e, 'DESC')) then
-			Add(e, 'DESC', True);
-			
-		SetElementEditValues(e, 'DESC', visualNote);
-	end;
+	if not isAccessory then begin
+	
+		{ 1. Add MagicDisallowEnchanting safely }
+		{ We use the EditorID check since it is a standard vanilla keyword }
+		if not HasKeyword(e, 'MagicDisallowEnchanting') then begin
+			kw := GetKeywordByEditorID('MagicDisallowEnchanting');
+			if Assigned(kw) then 
+				addKeyword(e, kw);
+		end;
 
+		{ 2. Handle Description (Clean & Update) }
+		{ If DESC exists, we check if our note is already there to avoid duplicates }
+		existingDesc := GetElementEditValues(e, 'DESC');
+		
+		if Pos(visualNote, existingDesc) = 0 then begin
+			{ If there is old text, we decide to overwrite it or append }
+			{ For Visual Slots, overwriting is cleaner for your balance philosophy }
+			if not Assigned(ElementBySignature(e, 'DESC')) then
+				Add(e, 'DESC', True);
+				
+			SetElementEditValues(e, 'DESC', visualNote);
+		end;
+	end;
 	{ 3. Apply Balance Stats }
 	SetElementEditValues(e, 'DNAM - Armor Rating', '0');
 	SetElementEditValues(e, 'DATA\Weight', '0.0');
@@ -391,7 +416,6 @@ begin
 	if kwName <> '' then
 		addKeyword(e, GetKeywordByEditorID(kwName));
 end;
-
 {========================================================}
 { REMOVE REDUNDANT KEYWORD                               }
 {========================================================}
