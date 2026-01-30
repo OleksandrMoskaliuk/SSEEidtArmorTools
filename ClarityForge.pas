@@ -181,38 +181,45 @@ var
 	slots: TStringList;
 	i: Integer;
 	slotName: string;
+	hasGameplaySlot: Boolean;
 begin
-	Result := False;
+	Result := True;					// assume visual by default
+	hasGameplaySlot := False;
+
 	// Empty slot string = visual-only item
-	if Trim(armor) = '' then begin
-		Result := True;
+	if Trim(armor) = '' then
 		Exit;
-	end;
+
 	slots := TStringList.Create;
 	try
 		slots.StrictDelimiter := True;
 		slots.Delimiter := ' ';
 		slots.DelimitedText := Trim(armor);
-	for i := 0 to slots.Count - 1 do begin
-		slotName := slots[i];
-		// Allowed gameplay slots ONLY
-		if not (
-		(slotName = 'Head') or
-		(slotName = 'Body') or
-		(slotName = 'Hands') or
-		((slotName = 'Forearms') and not GlobalHasHands) or
-		(slotName = 'Feet') or
-		(slotName = 'Circlet') or
-		(slotName = 'Shield'))
-		then begin
-			Result := True; // any unknown slot → visual
-			Exit;
+
+		for i := 0 to slots.Count - 1 do begin
+			slotName := slots[i];
+
+			// Gameplay-relevant slots
+			if (slotName = 'Head')
+			or (slotName = 'Body')
+			or (slotName = 'Hands')
+			or (slotName = 'Feet')
+			or (slotName = 'Shield')
+			or (slotName = 'Circlet')
+			or ((slotName = 'Forearms') and not GlobalHasHands)
+			then begin
+				hasGameplaySlot := True;
+				Break;				// one is enough
+			end;
 		end;
-    end;
 	finally
 		slots.Free;
 	end;
+
+	// If at least one gameplay slot exists → NOT visual
+	Result := not hasGameplaySlot;
 end;
+
 
 procedure FinalizeVisualSlot(e: IInterface);
 var
