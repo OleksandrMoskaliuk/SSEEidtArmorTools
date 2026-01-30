@@ -1,23 +1,20 @@
 {
 ================================================================================
 UNIT: ClarityForge
-PURPOSE: Comprehensive Armor Balancing for Requiem / Skyrim AE.
-AUTHOR: [Dru9Dealer]
+PURPOSE: Advanced Armor Sanitization and Balancing for Requiem / Skyrim AE.
 
-GOALS: 
-1. Categorize armor into "Mechanical" (Stat-bearing) and "Visual" (Cosmetic) slots.
-2. Ensure Mechanical slots follow Requiem's Perk/Skill progression.
-3. Zero-out Visual slots (Weight, AR, Value) and block enchanting on non-jewelry.
-4. Scale Armor Rating based on Smithing skill requirements (Bonus = Skill / 10).
-5. Balance "Forearms" vs "Hands" slots to prevent double-armor exploits.
+PRE-REQUISITES FOR USE:
+1. Records must have 'First Person Flags' (BOD2) defined.
+2. Records must have at least one 'ArmorMaterial' Keyword assigned.
 
-VARIABLE DEFINITIONS:
-- GlobalSmithingReq: The skill gate (0-100) for the current outfit.
-- GlobalArmorBonus: Scaling protection added based on GlobalSmithingReq.
-- FOREARMS_DEBUFF_MULTIPLIER: Reduces AR for forearm slots (standard: 2.5).
-- GlobalHasHands: Boolean flag set by scanning the file for Slot 33.
+CORE PHILOSOPHY:
+- Modular Outfits: Distinguishes between Functional (AR-bearing) and Visual (Cosmetic) pieces.
+- Requirement Scaling: Armor Rating increases based on the Smithing Skill requirement.
+- Economic Balance: Visual slots are free to craft (1 Gold) and have 0 resale value.
+- Requiem Ready: Automatically manages ArmorType (Heavy/Light/Clothing) and Fists perks.
 ================================================================================
 }
+
 
 unit ClarityForge;
 uses SK_UtilsRemake;
