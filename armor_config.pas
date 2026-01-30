@@ -42,69 +42,66 @@ function Process(selectedRecord: IInterface): integer;
 var
 	m_recordSignature: string;
 	m_ArmorRating: Float;
-	m_ArmorValue: Integer;
+	m_ArmorPrice: Integer;
 	m_ArmorWeight: Float;
 	// Check if Outfit Has Hands Slot if Not Forearms will have additional armmor rating
 	m_currentFile: IwbFile;
 begin
 	m_ArmorRating := 0;
-	m_ArmorValue := 0;
-	m_ArmorWeight := 0;
+	m_ArmorPrice := 0;
+	m_ArmorWeight := 0.0;
 	m_recordSignature := Signature(selectedRecord);
 	GlobalProcessedRecords := GlobalProcessedRecords + 1;
 	// Filter selected records, which are not valid
 	if not (m_recordSignature = 'ARMO') then exit;
 	
+	// Go through all record and find '33 - hands' first person armor slot;
+	// Based on 'GlobalHasHands' will decide if Forearms playable if they exist 
 	if (GlobalHasHandsWasExecuted = false) then begin
 	m_currentFile := GetFile(selectedRecord);
 	OutfitHasHands(m_currentFile);
 	end;
-    
-	{
-	m_ArmorRating := GetElementEditValues(selectedRecord, 'DNAM');  
-		AddMessage('Armor Rating: ' + FloatToStr(m_ArmorRating));
-	m_ArmorValue := GetElementEditValues(selectedRecord, 'DATA\Value');
-		AddMessage('Armor Value: ' + IntToStr(m_ArmorValue));
-	m_ArmorWeight := GetElementEditValues(selectedRecord, 'DATA\Weight');
-		AddMessage('Armor Weight: ' + FloatToStr(m_ArmorWeight));
-	}
-	// hasKeyword(selectedRecord, 'ArmorJewelry');
-	{if (IsLightArmorMaterial(selectedRecord)) then 
-	begin
-		AddMessage('Is Light MATERIAL!!!');
-		AddMessage('Is Light MATERIAL!!!');
-	end else begin
-		AddMessage('Is Heavy MATERIAL!!!');
-		AddMessage('Is Heavy MATERIAL!!!');
-	end;}
+
+	// Removing keyword that can't belong to certain "first person armor slot".
+	// For example keyword "ArmorCuirass" can't belong to '33 - Hands' or '30 - Head'.
+	// Must be done for each record, User shold select all outfit Armor records.
+	RemoveRedundantKeywords(selectedRecord, GetFirstPersonFlags(selectedRecord));
 	
-	// Set the new value for the Item
-	//SetElementNativeValues(selectedRecord, 'DATA\Value', itemValue);
+	// Adding vital keyword
+	// For example 'First Person Flag' -> '32 - body' shold contain 'ArmorCuirass' keyword
+	AddVitalKeywords(selectedRecord,GetFirstPersonFlags(selectedRecord));
 	
+	// Set armor type (Heavy/Light/Clothing) based on item material;
+	SetArmorType(selectedRecord);
 	
-	//AddMessage(GetFirstPersonFlagss(selectedRecord));
-	//GetFirstPersonFlags(selectedRecord);
-	{if(IsVisualSlot(GetFirstPersonFlags(selectedRecord))) then begin
-		AddMessage('Is Visual Slot !!!')
-	end else begin
-		AddMessage('Is Armor Slot !!!')
-	end;}
+	// Get main armor valuse based on "FirstPerSonSlot" and "ArmorMaterial"
+	// Setting correct vanilla armorRatint/weight/price values
+	m_ArmorRating := GetVanillaAR(selectedRecord, GetFirstPersonFlags(selectedRecord));  
+		SetElementEditValues(selectedRecord, 'DNAM - Armor Rating', m_ArmorRating);
 	
-	{	// GetFirstPersonFlags Test  
-	AddMessage('Armor Rating = ' + 
-		FloatToStr(selectedRecord,GetFirstPersonFlags(selectedRecord))); 
-	}
+	m_ArmorWeight := GetVanillaAWeight(selectedRecord, GetFirstPersonFlags(selectedRecord)); 
+		SetElementEditValues(selectedRecord, 'DATA\Weight', m_ArmorWeight);
 	
-	// GET AR TEST
-	// GetVanillaAR(e: IInterface; Slots: string; hasHands: Boolean): Float;
-	{AddMessage('AWeight = ' + FloatToStr(
-		GetVanillaAWeight(selectedRecord, GetFirstPersonFlags(selectedRecord))));
-	}
+	m_ArmorPrice := GetVanillaAWeight(selectedRecord, GetFirstPersonFlags(selectedRecord)); 
+		SetElementEditValues(selectedRecord, 'DATA\Value', m_ArmorPrice);
 	
-	//RemoveRedundantKeywords(selectedRecord, GetFirstPersonFlags(selectedRecord));
-	//AddVitalKeywords(selectedRecord,GetFirstPersonFlags(selectedRecord));
+	// If this is only "Visual slot", it shold have no Value Weight or ArmorRating
+	// Visula Slot can't be enchanted ("MagDisallowEnchanting" keyword added)
+	
+	FinalizeVisualSlot(selectedRecord);
+	
+	// Since all values set, and now armor have all keywords like: ArmorCuiras,ArmorGauntlets, etc...);
+	// Craftable records can be created;
+	// Crafting recipe for visual slot is also free;
 	MakeCraftableV2(selectedRecord);
-	makeTemperable(selectedRecord);
+	
+	// If thid piece of armor not "Visual Slot" make it craftable;
+	if not IsVisualSlot(GetFirstPersonFlags(selectedRecord)) then begin
+		// Add tempering recipe 
+		// Also support tempering for enchanted armors
+		makeTemperable(selectedRecord);
+	end;
+	
 	Result := 0;
 end;
 {========================================================}
@@ -173,6 +170,8 @@ var
 	existingDesc: string;
 	visualNote: string;
 begin
+	if not IsVisualSlot(GetFirstPersonFlags(e)) then Exit;
+	
 	visualNote := 'Visual Slot: This item is for appearance only. It provides no protection and cannot be enchanted.';
 
 	{ 1. Add MagicDisallowEnchanting safely }
@@ -224,23 +223,47 @@ begin
     HasKeyword(selectedRecord,'ArmorMaterialDaedric');
 end;
 {========================================================}
-{ ADDING DESCRIPTION FOR ACCESSORIES                     }
+{ SET ARMOR TYPE                                         }
 {========================================================}
-procedure setArmorDescription(itemRecord: IInterface; newDescription: string);
+procedure SetArmorType(e: IInterface);
 var
-    descElement: IInterface;
+	armorTypeField: IInterface;
+	kwLight, kwHeavy, kwCloth: IInterface;
 begin
-    if not Assigned(itemRecord) then Exit;
+	armorTypeField := ElementByPath(e, 'BOD2\Armor Type');
+	if not Assigned(armorTypeField) then Exit;
 
-    { Get the DESC element. If it doesn't exist, create it. }
-    descElement := ElementBySignature(itemRecord, 'DESC');
-    
-    if not Assigned(descElement) then
-        descElement := Add(itemRecord, 'DESC', True);
-
-    { Set the text value }
-    if Assigned(descElement) then
-        SetEditValue(descElement, newDescription);
+	{ 1. Identify Armor Type and Keywords }
+	if IsHeavyArmorMaterial(e) then begin
+		SetEditValue(armorTypeField, 'Heavy Armor');
+		
+		{ Ensure correct keyword and remove others }
+		removeKeyword(e, 'ArmorLight');
+		removeKeyword(e, 'ArmorClothing');
+		addKeyword(e, GetKeywordByEditorID('ArmorHeavy'));
+		AddMessage('Set to Heavy Armor + Keyword: ' + Name(e));
+	end
+	
+	else if IsLightArmorMaterial(e) then begin
+		SetEditValue(armorTypeField, 'Light Armor');
+		
+		{ Ensure correct keyword and remove others }
+		removeKeyword(e, 'ArmorHeavy');
+		removeKeyword(e, 'ArmorClothing');
+		addKeyword(e, GetKeywordByEditorID('ArmorLight'));
+		AddMessage('Set to Light Armor + Keyword: ' + Name(e));
+	end
+	
+	else begin
+		{ Default for Visual Slots / Clothing }
+		SetEditValue(armorTypeField, 'Clothing');
+		
+		{ Ensure correct keyword and remove others }
+		removeKeyword(e, 'ArmorHeavy');
+		removeKeyword(e, 'ArmorLight');
+		addKeyword(e, GetKeywordByEditorID('ArmorClothing'));
+		AddMessage('Set to Clothing + Keyword: ' + Name(e));
+	end;
 end;
 {========================================================}
 { ADD VITAL ARMOR KEYWORDS                               }
@@ -336,9 +359,39 @@ begin
 				end;
 			end;
 		end;
-
+		
+		AddFistKeywords(e);
+		
 	end;
 end;
+{========================================================}
+{ ADD FIST KEYWORDS                                      }
+{========================================================}
+procedure AddFistKeywords(e: IInterface);
+var
+	kwName: string;
+begin
+	{ Only apply to items that act as real Gauntlets }
+	if not HasKeyword(e, 'ArmorGauntlets') then Exit;
+
+	kwName := '';
+	if HasKeyword(e, 'ArmorMaterialSteel') or HasKeyword(e, 'ArmorMaterialSteelPlate') then
+		kwName := 'PerkFistsSteel'
+	else if HasKeyword(e, 'ArmorMaterialDwarven') then
+		kwName := 'PerkFistsDwarven'
+	else if HasKeyword(e, 'ArmorMaterialOrcish') then
+		kwName := 'PerkFistsOrcish'
+	else if HasKeyword(e, 'ArmorMaterialEbony') then
+		kwName := 'PerkFistsEbony'
+	else if HasKeyword(e, 'ArmorMaterialDaedric') then
+		kwName := 'PerkFistsDaedric'
+	else if HasKeyword(e, 'ArmorMaterialDragonplate') then
+		kwName := 'PerkFistsDragonplate';
+
+	if kwName <> '' then
+		addKeyword(e, GetKeywordByEditorID(kwName));
+end;
+
 {========================================================}
 { REMOVE REDUNDANT KEYWORD                               }
 {========================================================}
@@ -946,6 +999,7 @@ begin
 	
 	{ Map common names to hardcoded vanilla FormIDs }
 	if aName = 'IngotIron' then fID := '0005ACE4'
+	else if aName = 'Gold001' then fID := '0000000F'
 	else if aName = 'IngotSteel' then fID := '0005ACE5'
 	else if aName = 'IngotCorundum' then fID := '0005AD93' { <--- Added Corundum }
 	else if aName = 'IngotDwarven' then fID := '000DB611'
@@ -1059,8 +1113,7 @@ begin
 	{ 3. Initialize Required Items list }
 	Add(recipeCraft, 'items', True);
 	recipeItems := ElementByPath(recipeCraft, 'items');
-
-
+	
 	{ 4. Process Material Keywords for Perk requirements }
 	tmpKeywordsCollection := ElementBySignature(itemRecord, 'KWDA');
 
@@ -1160,6 +1213,18 @@ begin
 			addPerkCondition(recipeCraft, getRecordByFormID('000CB40F')); // Elven Smithing
 			Break;
 		end;
+	end;
+	
+	// Check if "Visual Armor Slot"
+	if IsVisualSlot(GetFirstPersonFlags(itemRecord)) then begin
+		addItemV2(recipeItems, GetMaterial('Gold001'), 1);
+		// Cleanup and Validation
+		removeInvalidEntries(recipeCraft);
+		if GetElementEditValues(recipeCraft, 'COCT') = '' then begin
+			warn('No item requirements specified for: ' + Name(recipeCraft));
+		end;
+		Result := recipeCraft;
+		Exit;
 	end;
 
 	{========================================================}
