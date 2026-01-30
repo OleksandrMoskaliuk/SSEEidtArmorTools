@@ -104,6 +104,7 @@ begin
 	//RemoveRedundantKeywords(selectedRecord, GetFirstPersonFlags(selectedRecord));
 	//AddVitalKeywords(selectedRecord,GetFirstPersonFlags(selectedRecord));
 	MakeCraftableV2(selectedRecord);
+	makeTemperable(selectedRecord);
 	Result := 0;
 end;
 {========================================================}
@@ -964,6 +965,7 @@ begin
 	{ 5. Set the Parameter }
 	SetElementEditValues(cond, 'CTDA\Parameter #1', 'Smithing');
 end;
+
 {========================================================}
 { CREATE CRAFTING RECIPE (COBJ)                          }
 {========================================================}
@@ -1103,124 +1105,208 @@ begin
 		if HasKeyword(itemRecord, 'ArmorCuirass') then begin
 			addItem(recipeItems, GetMaterial('Leather01'), 4);
 			addItem(recipeItems, GetMaterial('LeatherStrips'), 3);
-		end else if HasKeyword(itemRecord, 'ArmorHelmet') then begin
+		end;
+		if HasKeyword(itemRecord, 'ArmorHelmet') then begin
 			addItem(recipeItems, GetMaterial('Leather01'), 2);
 			addItem(recipeItems, GetMaterial('LeatherStrips'), 1);
-		end else if HasKeyword(itemRecord, 'ArmorBoots') then begin
+		end; 
+		if HasKeyword(itemRecord, 'ArmorBoots') then begin
 			addItem(recipeItems, GetMaterial('Leather01'), 2);
 			addItem(recipeItems, GetMaterial('LeatherStrips'), 2);
-		end else if HasKeyword(itemRecord, 'ArmorGauntlets') then begin
+		end;
+		if HasKeyword(itemRecord, 'ArmorGauntlets') then begin
 			addItem(recipeItems, GetMaterial('Leather01'), 1);
 			addItem(recipeItems, GetMaterial('LeatherStrips'), 2);
 		end;
-	end
+	end;
+	
+	{ --- SCALED ARMOR --- }
+	if HasKeyword(itemRecord, 'ArmorMaterialScaled') then begin
+		if HasKeyword(itemRecord, 'ArmorCuirass') then begin
+			addItem(recipeItems, GetMaterial('Leather01'), 4);
+			addItem(recipeItems, GetMaterial('LeatherStrips'), 3);
+			addItem(recipeItems, GetMaterial('IngotCorundum'), 2);
+			addItem(recipeItems, GetMaterial('IngotSteel'), 3);
+		end;
+		if HasKeyword(itemRecord, 'ArmorHelmet') then begin
+			addItem(recipeItems, GetMaterial('Leather01'), 2);
+			addItem(recipeItems, GetMaterial('LeatherStrips'), 1);
+			addItem(recipeItems, GetMaterial('IngotCorundum'), 1);
+			addItem(recipeItems, GetMaterial('IngotSteel'), 2);
+		end;
+		if HasKeyword(itemRecord, 'ArmorBoots') then begin
+			addItem(recipeItems, GetMaterial('Leather01'), 2);
+			addItem(recipeItems, GetMaterial('LeatherStrips'), 2);
+			addItem(recipeItems, GetMaterial('IngotCorundum'), 1);
+			addItem(recipeItems, GetMaterial('IngotSteel'), 2);
+		end; 
+		if HasKeyword(itemRecord, 'ArmorGauntlets') then begin
+			addItem(recipeItems, GetMaterial('Leather01'), 1);
+			addItem(recipeItems, GetMaterial('LeatherStrips'), 2);
+			addItem(recipeItems, GetMaterial('IngotCorundum'), 1);
+			addItem(recipeItems, GetMaterial('IngotSteel'), 1);
+		end;
+	end;
 
-	{ --- ELVEN ARMOR (Simplified: Moonstone Only) --- }
-	else if HasKeyword(itemRecord, 'ArmorMaterialElven') then begin
+	{ --- ELVEN ARMOR --- }
+	if HasKeyword(itemRecord, 'ArmorMaterialElven') then begin
 		addItem(recipeItems, GetMaterial('IngotIron'), 1);
-		addItem(recipeItems, GetMaterial('LeatherStrips'), 2);
-		if HasKeyword(itemRecord, 'ArmorCuirass') then
-			addItem(recipeItems, GetMaterial('IngotRefinedMoonstone'), 4)
-		else if HasKeyword(itemRecord, 'ArmorHelmet') then
-			addItem(recipeItems, GetMaterial('IngotRefinedMoonstone'), 1)
-		else if HasKeyword(itemRecord, 'ArmorBoots') then
-			addItem(recipeItems, GetMaterial('IngotRefinedMoonstone'), 2)
-		else if HasKeyword(itemRecord, 'ArmorGauntlets') then
+		addItem(recipeItems, GetMaterial('Leather01'), 1);
+		if HasKeyword(itemRecord, 'ArmorCuirass') then begin
+			addItem(recipeItems, GetMaterial('LeatherStrips'), 3);
+			addItem(recipeItems, GetMaterial('IngotRefinedMoonstone'), 4);
+		end;
+		if HasKeyword(itemRecord, 'ArmorHelmet') then begin
+			addItem(recipeItems, GetMaterial('IngotRefinedMoonstone'), 2);
+			addItem(recipeItems, GetMaterial('LeatherStrips'), 1);
+		end;
+		if HasKeyword(itemRecord, 'ArmorBoots') then begin
+			addItem(recipeItems, GetMaterial('IngotRefinedMoonstone'), 2);
+			addItem(recipeItems, GetMaterial('LeatherStrips'), 2);
+		end;
+		if HasKeyword(itemRecord, 'ArmorGauntlets') then begin
 			addItem(recipeItems, GetMaterial('IngotRefinedMoonstone'), 1);
-	end
+			addItem(recipeItems, GetMaterial('LeatherStrips'), 2);
+		end;	
+	end;
 
 	{ --- GLASS ARMOR --- }
-	else if HasKeyword(itemRecord, 'ArmorMaterialGlass') then begin
-		addItem(recipeItems, GetMaterial('IngotRefinedMoonstone'), 1);
-		addItem(recipeItems, GetMaterial('LeatherStrips'), 2);
+	if HasKeyword(itemRecord, 'ArmorMaterialGlass') then begin
+		addItem(recipeItems, GetMaterial('Leather01'), 1);
 		if HasKeyword(itemRecord, 'ArmorCuirass') then begin
 			addItem(recipeItems, GetMaterial('IngotRefinedMalachite'), 4);
+			addItem(recipeItems, GetMaterial('IngotRefinedMoonstone'), 2);
+			addItem(recipeItems, GetMaterial('LeatherStrips'), 2);
+		end;
+		if HasKeyword(itemRecord, 'ArmorHelmet') then begin
+			addItem(recipeItems, GetMaterial('IngotRefinedMalachite'), 2)
 			addItem(recipeItems, GetMaterial('IngotRefinedMoonstone'), 1);
-		end else if HasKeyword(itemRecord, 'ArmorHelmet') then
+			addItem(recipeItems, GetMaterial('LeatherStrips'), 1);
+		end; 
+		if HasKeyword(itemRecord, 'ArmorBoots') then begin
 			addItem(recipeItems, GetMaterial('IngotRefinedMalachite'), 2)
-		else if HasKeyword(itemRecord, 'ArmorBoots') then
-			addItem(recipeItems, GetMaterial('IngotRefinedMalachite'), 2)
-		else if HasKeyword(itemRecord, 'ArmorGauntlets') then
+			addItem(recipeItems, GetMaterial('IngotRefinedMoonstone'), 1);
+			addItem(recipeItems, GetMaterial('LeatherStrips'), 2);
+		end;
+		if HasKeyword(itemRecord, 'ArmorGauntlets') then begin
 			addItem(recipeItems, GetMaterial('IngotRefinedMalachite'), 1);
-	end
+			addItem(recipeItems, GetMaterial('IngotRefinedMoonstone'), 1);
+			addItem(recipeItems, GetMaterial('LeatherStrips'), 2);
+		end;
+	end;
 
 	{========================================================}
 	{ HEAVY ARMOR SETS                                       }
 	{========================================================}
 
 	{ --- STEEL ARMOR --- }
-	else if HasKeyword(itemRecord, 'ArmorMaterialSteel') then begin
+	if HasKeyword(itemRecord, 'ArmorMaterialSteel') then begin
 		addItem(recipeItems, GetMaterial('IngotIron'), 1);
-		addItem(recipeItems, GetMaterial('LeatherStrips'), 2);
+		addItem(recipeItems, GetMaterial('Leather01'), 1);
 		if HasKeyword(itemRecord, 'ArmorCuirass') then begin
-			addItem(recipeItems, GetMaterial('IngotSteel'), 4);
-			addItem(recipeItems, GetMaterial('IngotCorundum'), 1);
-		end else if HasKeyword(itemRecord, 'ArmorHelmet') then
-			addItem(recipeItems, GetMaterial('IngotSteel'), 2)
-		else if HasKeyword(itemRecord, 'ArmorBoots') then begin
 			addItem(recipeItems, GetMaterial('IngotSteel'), 3);
-			addItem(recipeItems, GetMaterial('IngotIron'), 1);
-		end else if HasKeyword(itemRecord, 'ArmorGauntlets') then
+		end; 
+		if HasKeyword(itemRecord, 'ArmorHelmet') then begin
 			addItem(recipeItems, GetMaterial('IngotSteel'), 2);
-	end
+		end;
+		if HasKeyword(itemRecord, 'ArmorBoots') then begin
+			addItem(recipeItems, GetMaterial('IngotSteel'), 2);
+		end;
+		if HasKeyword(itemRecord, 'ArmorGauntlets') then begin
+			addItem(recipeItems, GetMaterial('IngotSteel'), 2);
+		end;
+	end;
 
 	{ --- DWARVEN ARMOR --- }
-	else if HasKeyword(itemRecord, 'ArmorMaterialDwarven') then begin
+	if HasKeyword(itemRecord, 'ArmorMaterialDwarven') then begin
 		addItem(recipeItems, GetMaterial('IngotSteel'), 1);
 		addItem(recipeItems, GetMaterial('IngotIron'), 1);
-		addItem(recipeItems, GetMaterial('LeatherStrips'), 2);
-		if HasKeyword(itemRecord, 'ArmorCuirass') then
-			addItem(recipeItems, GetMaterial('IngotDwarven'), 4)
-		else if HasKeyword(itemRecord, 'ArmorHelmet') then
-			addItem(recipeItems, GetMaterial('IngotDwarven'), 2)
-		else if HasKeyword(itemRecord, 'ArmorBoots') then
-			addItem(recipeItems, GetMaterial('IngotDwarven'), 3)
-		else if HasKeyword(itemRecord, 'ArmorGauntlets') then
+		addItem(recipeItems, GetMaterial('Leather01'), 1);
+		if HasKeyword(itemRecord, 'ArmorCuirass') then begin
+			addItem(recipeItems, GetMaterial('IngotDwarven'), 4);
+			addItem(recipeItems, GetMaterial('LeatherStrips'), 3);
+		end;	
+		if HasKeyword(itemRecord, 'ArmorHelmet') then begin
 			addItem(recipeItems, GetMaterial('IngotDwarven'), 2);
-	end
+			addItem(recipeItems, GetMaterial('LeatherStrips'), 2);
+		end;
+		if HasKeyword(itemRecord, 'ArmorBoots') then begin
+			addItem(recipeItems, GetMaterial('IngotDwarven'), 3);
+			addItem(recipeItems, GetMaterial('LeatherStrips'), 2);
+		end;
+		if HasKeyword(itemRecord, 'ArmorGauntlets') then begin
+			addItem(recipeItems, GetMaterial('IngotDwarven'), 2);
+			addItem(recipeItems, GetMaterial('LeatherStrips'), 2);
+		end;	
+	end;
 
 	{ --- EBONY ARMOR --- }
 	else if HasKeyword(itemRecord, 'ArmorMaterialEbony') then begin
-		addItem(recipeItems, GetMaterial('LeatherStrips'), 2);
-		if HasKeyword(itemRecord, 'ArmorCuirass') then
-			addItem(recipeItems, GetMaterial('IngotEbony'), 5)
-		else if HasKeyword(itemRecord, 'ArmorHelmet') then
-			addItem(recipeItems, GetMaterial('IngotEbony'), 2)
-		else if HasKeyword(itemRecord, 'ArmorBoots') then
-			addItem(recipeItems, GetMaterial('IngotEbony'), 3)
-		else if HasKeyword(itemRecord, 'ArmorGauntlets') then
+		addItem(recipeItems, GetMaterial('Leather01'), 1);
+		if HasKeyword(itemRecord, 'ArmorCuirass') then begin
+			addItem(recipeItems, GetMaterial('IngotEbony'), 4);
+			addItem(recipeItems, GetMaterial('LeatherStrips'), 3);
+		end;
+		if HasKeyword(itemRecord, 'ArmorHelmet') then begin
 			addItem(recipeItems, GetMaterial('IngotEbony'), 2);
-	end
+			addItem(recipeItems, GetMaterial('LeatherStrips'), 2);
+		end;
+		if HasKeyword(itemRecord, 'ArmorBoots') then begin
+			addItem(recipeItems, GetMaterial('IngotEbony'), 2);
+			addItem(recipeItems, GetMaterial('LeatherStrips'), 2);
+		end;
+		if HasKeyword(itemRecord, 'ArmorGauntlets') then begin
+			addItem(recipeItems, GetMaterial('IngotEbony'), 1);
+			addItem(recipeItems, GetMaterial('LeatherStrips'), 2);
+		end;
+	end;
 
 	{ --- DAEDRIC ARMOR --- }
-	else if HasKeyword(itemRecord, 'ArmorMaterialDaedric') then begin
+	if HasKeyword(itemRecord, 'ArmorMaterialDaedric') then begin
 		addItem(recipeItems, GetMaterial('LeatherStrips'), 2);
 		addItem(recipeItems, GetMaterial('DaedraHeart'), 1);
-		if HasKeyword(itemRecord, 'ArmorCuirass') then
-			addItem(recipeItems, GetMaterial('IngotEbony'), 5)
-		else if HasKeyword(itemRecord, 'ArmorHelmet') then
-			addItem(recipeItems, GetMaterial('IngotEbony'), 3)
-		else if HasKeyword(itemRecord, 'ArmorBoots') then
-			addItem(recipeItems, GetMaterial('IngotEbony'), 3)
-		else if HasKeyword(itemRecord, 'ArmorGauntlets') then
+		addItem(recipeItems, GetMaterial('IngotSteel'), 1);
+		if HasKeyword(itemRecord, 'ArmorCuirass') then begin
+			addItem(recipeItems, GetMaterial('IngotEbony'), 4);
+			addItem(recipeItems, GetMaterial('Leather01'), 2);
+		end;
+		if HasKeyword(itemRecord, 'ArmorHelmet') then begin
 			addItem(recipeItems, GetMaterial('IngotEbony'), 2);
-	end
+			addItem(recipeItems, GetMaterial('Leather01'), 1);
+		end;
+		if HasKeyword(itemRecord, 'ArmorBoots') then begin
+			addItem(recipeItems, GetMaterial('IngotEbony'), 2);
+			addItem(recipeItems, GetMaterial('Leather01'), 1);
+		end;
+		if HasKeyword(itemRecord, 'ArmorGauntlets') then begin
+			addItem(recipeItems, GetMaterial('IngotEbony'), 2);
+			addItem(recipeItems, GetMaterial('Leather01'), 1);
+		end;
+	end;
 
 	{ --- DRAGONPLATE ARMOR --- }
-	else if HasKeyword(itemRecord, 'ArmorMaterialDragonplate') then begin
+	if HasKeyword(itemRecord, 'ArmorMaterialDragonplate') then begin
 		addItem(recipeItems, GetMaterial('LeatherStrips'), 2);
+		addItem(recipeItems, GetMaterial('IngotIron'), 1);
 		if HasKeyword(itemRecord, 'ArmorCuirass') then begin
 			addItem(recipeItems, GetMaterial('DragonBone'), 3);
 			addItem(recipeItems, GetMaterial('DragonScales'), 2);
-		end else if HasKeyword(itemRecord, 'ArmorHelmet') then begin
+			addItem(recipeItems, GetMaterial('Leather01'), 2);
+		end;
+		if HasKeyword(itemRecord, 'ArmorHelmet') then begin
 			addItem(recipeItems, GetMaterial('DragonBone'), 1);
 			addItem(recipeItems, GetMaterial('DragonScales'), 2);
-		end else if HasKeyword(itemRecord, 'ArmorBoots') then begin
+			addItem(recipeItems, GetMaterial('Leather01'), 1);
+		end;
+		if HasKeyword(itemRecord, 'ArmorBoots') then begin
 			addItem(recipeItems, GetMaterial('DragonBone'), 1);
 			addItem(recipeItems, GetMaterial('DragonScales'), 3);
-		end else if HasKeyword(itemRecord, 'ArmorGauntlets') then begin
+			addItem(recipeItems, GetMaterial('Leather01'), 1);
+		end;
+		if HasKeyword(itemRecord, 'ArmorGauntlets') then begin
 			addItem(recipeItems, GetMaterial('DragonBone'), 1);
 			addItem(recipeItems, GetMaterial('DragonScales'), 2);
+			addItem(recipeItems, GetMaterial('Leather01'), 1);
 		end;
 	end;
 	
