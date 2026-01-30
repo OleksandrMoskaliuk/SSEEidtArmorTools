@@ -166,6 +166,41 @@ begin
 		slots.Free;
 	end;
 end;
+
+procedure FinalizeVisualSlot(e: IInterface);
+var
+	kw: IInterface;
+	existingDesc: string;
+	visualNote: string;
+begin
+	visualNote := 'Visual Slot: This item is for appearance only. It provides no protection and cannot be enchanted.';
+
+	{ 1. Add MagicDisallowEnchanting safely }
+	{ We use the EditorID check since it is a standard vanilla keyword }
+	if not HasKeyword(e, 'MagicDisallowEnchanting') then begin
+		kw := GetKeywordByEditorID('MagicDisallowEnchanting');
+		if Assigned(kw) then 
+			addKeyword(e, kw);
+	end;
+
+	{ 2. Handle Description (Clean & Update) }
+	{ If DESC exists, we check if our note is already there to avoid duplicates }
+	existingDesc := GetElementEditValues(e, 'DESC');
+	
+	if Pos(visualNote, existingDesc) = 0 then begin
+		{ If there is old text, we decide to overwrite it or append }
+		{ For Visual Slots, overwriting is cleaner for your balance philosophy }
+		if not Assigned(ElementBySignature(e, 'DESC')) then
+			Add(e, 'DESC', True);
+			
+		SetElementEditValues(e, 'DESC', visualNote);
+	end;
+
+	{ 3. Apply Balance Stats }
+	SetElementEditValues(e, 'DNAM - Armor Rating', '0');
+	SetElementEditValues(e, 'DATA\Weight', '0.0');
+	SetElementEditValues(e, 'DATA\Value', '0');
+end;
 {========================================================}
 { MATERIAL CHECKS                                        }
 {========================================================}
