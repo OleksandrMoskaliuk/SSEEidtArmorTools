@@ -132,16 +132,48 @@ begin
 	bipedFlags := GetElementNativeValues(bipedFlagsElement, 'First Person Flags');
     // Check for slots
 	Result := '';
-	if (bipedFlags and $00000001) <> 0 then Result := Result + 'Head ';
-	if (bipedFlags and $00000004) <> 0 then Result := Result + 'Body ';
-	if (bipedFlags and $00000008) <> 0 then Result := Result + 'Hands ';
-	if (bipedFlags and $00000010) <> 0 then Result := Result + 'Forearms ';
-	if (bipedFlags and $00000080) <> 0 then Result := Result + 'Feet ';
-	if (bipedFlags and $00000200) <> 0 then Result := Result + 'Shield ';
-	if (bipedFlags and $00001000) <> 0 then Result := Result + 'Circlet ';
-	if (bipedFlags and $00000020) <> 0 then Result := Result + 'Amulet ';
-	if (bipedFlags and $00010000) <> 0 then Result := Result + 'Ring ';
-	AddMessage('Slot = ' + IntToHex(bipedFlags, 8) + ' ' + Result);
+	if (bipedFlags and $00000001) <> 0 then begin
+		Result := Result + 'Head ';
+		Exit;
+	end;
+	{ CORE SLOTS }
+	if (bipedFlags and $00000001) <> 0 then Result := Result + 'Head ';      { 30 }
+	if (bipedFlags and $00000002) <> 0 then Result := Result + 'Hair ';      { 31 }
+	if (bipedFlags and $00000004) <> 0 then Result := Result + 'Body ';      { 32 }
+	if (bipedFlags and $00000008) <> 0 then Result := Result + 'Hands ';     { 33 }
+	if (bipedFlags and $00000010) <> 0 then Result := Result + 'Forearms ';  { 34 }
+	if (bipedFlags and $00000020) <> 0 then Result := Result + 'Amulet ';    { 35 }
+	if (bipedFlags and $00000040) <> 0 then Result := Result + 'Ring ';      { 36 }
+	if (bipedFlags and $00000080) <> 0 then Result := Result + 'Feet ';      { 37 }
+	if (bipedFlags and $00000100) <> 0 then Result := Result + 'Calves ';    { 38 }
+	if (bipedFlags and $00000200) <> 0 then Result := Result + 'Shield ';    { 39 }
+
+	{ MODDER SLOTS (Standard Community Usage) }
+	if (bipedFlags and $00000400) <> 0 then Result := Result + 'Tail ';      { 40 }
+	if (bipedFlags and $00000800) <> 0 then Result := Result + 'LongHair ';  { 41 }
+	if (bipedFlags and $00001000) <> 0 then Result := Result + 'Circlet ';   { 42 }
+	if (bipedFlags and $00002000) <> 0 then Result := Result + 'Ears ';      { 43 }
+	if (bipedFlags and $00004000) <> 0 then Result := Result + 'Cape ';      { 44 - THIS FIXED YOUR BUG }
+	if (bipedFlags and $00008000) <> 0 then Result := Result + 'Misc45 ';    { 45 }
+	if (bipedFlags and $00010000) <> 0 then Result := Result + 'Misc46 ';    { 46 }
+	if (bipedFlags and $00020000) <> 0 then Result := Result + 'Backpack ';  { 47 }
+	if (bipedFlags and $00040000) <> 0 then Result := Result + 'Misc48 ';    { 48 }
+	if (bipedFlags and $00080000) <> 0 then Result := Result + 'Misc49 ';    { 49 }
+	if (bipedFlags and $00100000) <> 0 then Result := Result + 'Misc50 ';    { 50 }
+	if (bipedFlags and $00200000) <> 0 then Result := Result + 'Misc51 ';    { 51 }
+	if (bipedFlags and $00400000) <> 0 then Result := Result + 'Misc52 ';    { 52 }
+	if (bipedFlags and $00800000) <> 0 then Result := Result + 'Misc53 ';    { 53 }
+	if (bipedFlags and $01000000) <> 0 then Result := Result + 'Misc54 ';    { 54 }
+	if (bipedFlags and $02000000) <> 0 then Result := Result + 'Misc55 ';    { 55 }
+	if (bipedFlags and $04000000) <> 0 then Result := Result + 'Misc56 ';    { 56 }
+	if (bipedFlags and $08000000) <> 0 then Result := Result + 'Misc57 ';    { 57 }
+	if (bipedFlags and $10000000) <> 0 then Result := Result + 'Misc58 ';    { 58 }
+	if (bipedFlags and $20000000) <> 0 then Result := Result + 'Misc59 ';    { 59 }
+	if (bipedFlags and $40000000) <> 0 then Result := Result + 'Misc60 ';    { 60 }
+	if (bipedFlags and $80000000) <> 0 then Result := Result + 'Misc61 ';    { 61 }
+		
+	//AddMessage('Slot = ' + IntToHex(bipedFlags, 8) + ' ' + Result);
+	
 end;
 
 function IsVisualSlot(armor: string): Boolean;
