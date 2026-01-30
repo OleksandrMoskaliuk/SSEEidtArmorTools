@@ -1,6 +1,7 @@
 📜 ClarityForge: Preparation & Usage Guide
 To ensure the script functions correctly and follows your Game Balance Philosophy, the records must be prepared manually before execution. The script will not guess the material or the slots; it relies on your input to stay "Solid."
-1. Mandatory Record Preparation
+
+Mandatory Record Preparation
 Before running the script, the user MUST perform two steps in SSEdit:
 Set First Person Flags (BOD2): You must define which parts of the body the item covers (Body, Head, Hands, Feet, etc.). This is the primary data the script uses to distinguish between Mechanical and Visual slots.
 Assign Armor Material Keyword: You must add a single material keyword to the outfit (e.g., ArmorMaterialEbony). This serves as the Master Instruction for the script to calculate Armor Rating, Weight, Price, and the crafting recipe.
