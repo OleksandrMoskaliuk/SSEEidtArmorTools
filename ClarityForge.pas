@@ -1633,7 +1633,7 @@ begin
 
 		for i := 0 to ElementCount(tmpKeywordsCollection) - 1 do begin
 			currentKeywordEDID := GetElementEditValues(LinksTo(ElementByIndex(tmpKeywordsCollection, i)), 'EDID');
-
+			
 			if ((currentKeywordEDID = 'WeapMaterialSteel') or (currentKeywordEDID = 'WeapMaterialImperial') or 
 				(currentKeywordEDID = 'WeapMaterialDraugr') or (currentKeywordEDID = 'WeapMaterialDraugrHoned')) then begin
 				addPerkCondition(recipeCraft, getRecordByFormID('000CB40D')); // Steel Smithing
@@ -1714,20 +1714,20 @@ begin
 		{ --- ELVEN MATERIAL WEAPONS --- }
 		else if HasKeyword(itemRecord, 'WeapMaterialElven') then begin
 			if HasKeyword(itemRecord, 'WeapTypeDagger') then begin
-				addItemV2(recipeItems, GetMaterial('RefinedMoonstone'), 1);
+				addItemV2(recipeItems, GetMaterial('IngotRefinedMoonstone'), 1);
 				addItemV2(recipeItems, GetMaterial('IngotIron'), 1);
 			end else if (HasKeyword(itemRecord, 'WeapTypeSword')) or (HasKeyword(itemRecord, 'WeapTypeWarAxe')) or (HasKeyword(itemRecord, 'WeapTypeMace')) then begin
-				addItemV2(recipeItems, GetMaterial('RefinedMoonstone'), 1);
+				addItemV2(recipeItems, GetMaterial('IngotRefinedMoonstone'), 1);
 				addItemV2(recipeItems, GetMaterial('IngotQuicksilver'), 1);
 				addItemV2(recipeItems, GetMaterial('IngotIron'), 1);
 				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 1);
 			end else if (HasKeyword(itemRecord, 'WeapTypeGreatsword')) or (HasKeyword(itemRecord, 'WeapTypeBattleaxe')) or (HasKeyword(itemRecord, 'WeapTypeWarhammer')) then begin
-				addItemV2(recipeItems, GetMaterial('RefinedMoonstone'), 2);
+				addItemV2(recipeItems, GetMaterial('IngotRefinedMoonstone'), 2);
 				addItemV2(recipeItems, GetMaterial('IngotQuicksilver'), 1);
 				addItemV2(recipeItems, GetMaterial('IngotIron'), 1);
 				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 3);
 			end else if HasKeyword(itemRecord, 'WeapTypeBow') then begin
-				addItemV2(recipeItems, GetMaterial('RefinedMoonstone'), 2);
+				addItemV2(recipeItems, GetMaterial('IngotRefinedMoonstone'), 2);
 				addItemV2(recipeItems, GetMaterial('IngotQuicksilver'), 1);
 			end;
 		end
@@ -1759,18 +1759,18 @@ begin
 		else if HasKeyword(itemRecord, 'WeapMaterialGlass') then begin
 			if HasKeyword(itemRecord, 'WeapTypeDagger') then begin
 				addItemV2(recipeItems, GetMaterial('RefinedMalachite'), 1);
-				addItemV2(recipeItems, GetMaterial('RefinedMoonstone'), 1);
+				addItemV2(recipeItems, GetMaterial('IngotRefinedMoonstone'), 1);
 			end else if (HasKeyword(itemRecord, 'WeapTypeSword')) or (HasKeyword(itemRecord, 'WeapTypeWarAxe')) or (HasKeyword(itemRecord, 'WeapTypeMace')) then begin
 				addItemV2(recipeItems, GetMaterial('RefinedMalachite'), 1);
-				addItemV2(recipeItems, GetMaterial('RefinedMoonstone'), 1);
+				addItemV2(recipeItems, GetMaterial('IngotRefinedMoonstone'), 1);
 				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 1);
 			end else if (HasKeyword(itemRecord, 'WeapTypeGreatsword')) or (HasKeyword(itemRecord, 'WeapTypeBattleaxe')) or (HasKeyword(itemRecord, 'WeapTypeWarhammer')) then begin
 				addItemV2(recipeItems, GetMaterial('RefinedMalachite'), 2);
-				addItemV2(recipeItems, GetMaterial('RefinedMoonstone'), 1);
+				addItemV2(recipeItems, GetMaterial('IngotRefinedMoonstone'), 1);
 				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 3);
 			end else if HasKeyword(itemRecord, 'WeapTypeBow') then begin
 				addItemV2(recipeItems, GetMaterial('RefinedMalachite'), 2);
-				addItemV2(recipeItems, GetMaterial('RefinedMoonstone'), 1);
+				addItemV2(recipeItems, GetMaterial('IngotRefinedMoonstone'), 1);
 			end;
 		end
 
