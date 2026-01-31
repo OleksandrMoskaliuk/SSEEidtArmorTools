@@ -38,6 +38,9 @@ var
 	GlobalForearmsDebuffMultiplier: Float;
 	GlobalWeaponDamageBonus: integer;
 	GlobalWeaponPriceBonus: integer;
+	GlobalArmorPriceBonus: integer;
+	// Reduce weapon weight based on DEFAULT_SMITHING requirements
+	GlobalWeaponWeightBonus: Float;
 {========================================================}
 { INITIALIZE                                             }
 {========================================================}
@@ -47,10 +50,12 @@ begin
 	GlobalSmithingReq := DEFAULT_SMITHING;
 	GlobalArmorBonus := GlobalSmithingReq / 10.0;
 	GlobalWeaponDamageBonus := GlobalSmithingReq / 20.0;
+	GlobalWeaponWeightBonus := GlobalSmithingReq / 20.0;
 	GlobalHasHands := false;
 	GlobalHasHandsWasExecuted := false;
 	GlobalProcessedRecords := 0;
 	GlobalWeaponPriceBonus : = GlobalSmithingReq / 10.0;
+	GlobalArmorPriceBonus : = GlobalSmithingReq / 10.0;
 	GlobalForearmsDebuffMultiplier := FOREARMS_DEBUFF_MULTIPLIER;
 	AddMessage('---ARMOR CONFIGURATOR STARTED---');
 	AddMessage('SMITHING REQUIREMENT = ' + IntToStr(DEFAULT_SMITHING));
@@ -529,300 +534,345 @@ end;
 {========================================================}
 function GetVanillaWDamage(e: IInterface): Integer;
 var
-  template: IInterface;
+	template: IInterface;
+	isDagger, isSword, isWarAxe, isMace, isGreatsword, isBattleaxe, isWarhammer, isBow: Boolean;
 begin
-  Result := 0;
+	Result := 0;
 
-  { Follow Template (CNAM) if the record is a template-user (Crucial for AE) }
-  template := LinksTo(ElementBySignature(e, 'CNAM'));
-  if Assigned(template) then e := template;
+	{ 1. Follow Template (CNAM) for AE records }
+	template := LinksTo(ElementBySignature(e, 'CNAM'));
+	if Assigned(template) then begin
+		e := template;
+	end;
 
-  { 1. STEEL }
-  if HasKeyword(e, 'WeapMaterialSteel') then begin
-    if      HasKeyword(e, 'WeapTypeDagger')     then Result := 5
-    else if HasKeyword(e, 'WeapTypeSword')      then Result := 8
-    else if HasKeyword(e, 'WeapTypeWarAxe')     then Result := 9
-    else if HasKeyword(e, 'WeapTypeMace')       then Result := 10
-    else if HasKeyword(e, 'WeapTypeGreatsword') then Result := 17
-    else if HasKeyword(e, 'WeapTypeBattleaxe')  then Result := 18
-    else if HasKeyword(e, 'WeapTypeWarhammer')  then Result := 20
-    else if HasKeyword(e, 'WeapTypeBow')        then Result := 7;
-  end
+	{ 2. Pre-cache Weapon Types for cleaner logic }
+	isDagger     := HasKeyword(e, 'WeapTypeDagger');
+	isSword      := HasKeyword(e, 'WeapTypeSword');
+	isWarAxe     := HasKeyword(e, 'WeapTypeWarAxe');
+	isMace       := HasKeyword(e, 'WeapTypeMace');
+	isGreatsword := HasKeyword(e, 'WeapTypeGreatsword');
+	isBattleaxe  := HasKeyword(e, 'WeapTypeBattleaxe');
+	isWarhammer  := HasKeyword(e, 'WeapTypeWarhammer');
+	isBow        := HasKeyword(e, 'WeapTypeBow');
 
-  { 2. DWARVEN }
-  else if HasKeyword(e, 'WeapMaterialDwarven') then begin
-    if      HasKeyword(e, 'WeapTypeDagger')     then Result := 7
-    else if HasKeyword(e, 'WeapTypeSword')      then Result := 10
-    else if HasKeyword(e, 'WeapTypeWarAxe')     then Result := 11
-    else if HasKeyword(e, 'WeapTypeMace')       then Result := 12
-    else if HasKeyword(e, 'WeapTypeGreatsword') then Result := 19
-    else if HasKeyword(e, 'WeapTypeBattleaxe')  then Result := 20
-    else if HasKeyword(e, 'WeapTypeWarhammer')  then Result := 22
-    else if HasKeyword(e, 'WeapTypeBow')        then Result := 12;
-  end
+	{ 3. Steel Logic }
+	if HasKeyword(e, 'WeapMaterialSteel') then begin
+		if isDagger     then Result := 5;
+		if isSword      then Result := 8;
+		if isWarAxe     then Result := 9;
+		if isMace       then Result := 10;
+		if isGreatsword then Result := 17;
+		if isBattleaxe  then Result := 18;
+		if isWarhammer  then Result := 20;
+		if isBow        then Result := 7;
+	end;
 
-  { 3. ELVEN }
-  else if HasKeyword(e, 'WeapMaterialElven') then begin
-    if      HasKeyword(e, 'WeapTypeDagger')     then Result := 8
-    else if HasKeyword(e, 'WeapTypeSword')      then Result := 11
-    else if HasKeyword(e, 'WeapTypeWarAxe')     then Result := 12
-    else if HasKeyword(e, 'WeapTypeMace')       then Result := 13
-    else if HasKeyword(e, 'WeapTypeGreatsword') then Result := 20
-    else if HasKeyword(e, 'WeapTypeBattleaxe')  then Result := 21
-    else if HasKeyword(e, 'WeapTypeWarhammer')  then Result := 23
-    else if HasKeyword(e, 'WeapTypeBow')        then Result := 13;
-  end
+	{ 4. Dwarven Logic }
+	if HasKeyword(e, 'WeapMaterialDwarven') then begin
+		if isDagger     then Result := 7;
+		if isSword      then Result := 10;
+		if isWarAxe     then Result := 11;
+		if isMace       then Result := 12;
+		if isGreatsword then Result := 19;
+		if isBattleaxe  then Result := 20;
+		if isWarhammer  then Result := 22;
+		if isBow        then Result := 12;
+	end;
 
-  { 4. ORCISH }
-  else if HasKeyword(e, 'WeapMaterialOrcish') then begin
-    if      HasKeyword(e, 'WeapTypeDagger')     then Result := 6
-    else if HasKeyword(e, 'WeapTypeSword')      then Result := 9
-    else if HasKeyword(e, 'WeapTypeWarAxe')     then Result := 10
-    else if HasKeyword(e, 'WeapTypeMace')       then Result := 11
-    else if HasKeyword(e, 'WeapTypeGreatsword') then Result := 18
-    else if HasKeyword(e, 'WeapTypeBattleaxe')  then Result := 19
-    else if HasKeyword(e, 'WeapTypeWarhammer')  then Result := 21
-    else if HasKeyword(e, 'WeapTypeBow')        then Result := 10;
-  end
+	{ 5. Elven Logic }
+	if HasKeyword(e, 'WeapMaterialElven') then begin
+		if isDagger     then Result := 8;
+		if isSword      then Result := 11;
+		if isWarAxe     then Result := 12;
+		if isMace       then Result := 13;
+		if isGreatsword then Result := 20;
+		if isBattleaxe  then Result := 21;
+		if isWarhammer  then Result := 23;
+		if isBow        then Result := 13;
+	end;
 
-  { 5. GLASS }
-  else if HasKeyword(e, 'WeapMaterialGlass') then begin
-    if      HasKeyword(e, 'WeapTypeDagger')     then Result := 9
-    else if HasKeyword(e, 'WeapTypeSword')      then Result := 12
-    else if HasKeyword(e, 'WeapTypeWarAxe')     then Result := 13
-    else if HasKeyword(e, 'WeapTypeMace')       then Result := 14
-    else if HasKeyword(e, 'WeapTypeGreatsword') then Result := 21
-    else if HasKeyword(e, 'WeapTypeBattleaxe')  then Result := 22
-    else if HasKeyword(e, 'WeapTypeWarhammer')  then Result := 24
-    else if HasKeyword(e, 'WeapTypeBow')        then Result := 15;
-  end
+	{ 6. Orcish Logic }
+	if HasKeyword(e, 'WeapMaterialOrcish') then begin
+		if isDagger     then Result := 6;
+		if isSword      then Result := 9;
+		if isWarAxe     then Result := 10;
+		if isMace       then Result := 11;
+		if isGreatsword then Result := 18;
+		if isBattleaxe  then Result := 19;
+		if isWarhammer  then Result := 21;
+		if isBow        then Result := 10;
+	end;
 
-  { 6. EBONY }
-  else if HasKeyword(e, 'WeapMaterialEbony') then begin
-    if      HasKeyword(e, 'WeapTypeDagger')     then Result := 10
-    else if HasKeyword(e, 'WeapTypeSword')      then Result := 13
-    else if HasKeyword(e, 'WeapTypeWarAxe')     then Result := 14
-    else if HasKeyword(e, 'WeapTypeMace')       then Result := 15
-    else if HasKeyword(e, 'WeapTypeGreatsword') then Result := 22
-    else if HasKeyword(e, 'WeapTypeBattleaxe')  then Result := 23
-    else if HasKeyword(e, 'WeapTypeWarhammer')  then Result := 25
-    else if HasKeyword(e, 'WeapTypeBow')        then Result := 17;
-  end
+	{ 7. Glass Logic }
+	if HasKeyword(e, 'WeapMaterialGlass') then begin
+		if isDagger     then Result := 9;
+		if isSword      then Result := 12;
+		if isWarAxe     then Result := 13;
+		if isMace       then Result := 14;
+		if isGreatsword then Result := 21;
+		if isBattleaxe  then Result := 22;
+		if isWarhammer  then Result := 24;
+		if isBow        then Result := 15;
+	end;
 
-  { 7. DAEDRIC }
-  else if HasKeyword(e, 'WeapMaterialDaedric') then begin
-    if      HasKeyword(e, 'WeapTypeDagger')     then Result := 11
-    else if HasKeyword(e, 'WeapTypeSword')      then Result := 14
-    else if HasKeyword(e, 'WeapTypeWarAxe')     then Result := 15
-    else if HasKeyword(e, 'WeapTypeMace')       then Result := 16
-    else if HasKeyword(e, 'WeapTypeGreatsword') then Result := 24
-    else if HasKeyword(e, 'WeapTypeBattleaxe')  then Result := 25
-    else if HasKeyword(e, 'WeapTypeWarhammer')  then Result := 27
-    else if HasKeyword(e, 'WeapTypeBow')        then Result := 19;
-  end;
+	{ 8. Ebony Logic }
+	if HasKeyword(e, 'WeapMaterialEbony') then begin
+		if isDagger     then Result := 10;
+		if isSword      then Result := 13;
+		if isWarAxe     then Result := 14;
+		if isMace       then Result := 15;
+		if isGreatsword then Result := 22;
+		if isBattleaxe  then Result := 23;
+		if isWarhammer  then Result := 25;
+		if isBow        then Result := 17;
+	end;
 
-  { Apply the bonus if a material match was found }
-  if Result > 0 then
-    Result := Result + GlobalWeaponDamageBonus;
+	{ 9. Daedric Logic }
+	if HasKeyword(e, 'WeapMaterialDaedric') then begin
+		if isDagger     then Result := 11;
+		if isSword      then Result := 14;
+		if isWarAxe     then Result := 15;
+		if isMace       then Result := 16;
+		if isGreatsword then Result := 24;
+		if isBattleaxe  then Result := 25;
+		if isWarhammer  then Result := 27;
+		if isBow        then Result := 19;
+	end;
+
+	{ 10. Apply Final Bonus }
+	if Result > 0 then begin
+		Result := Result + GlobalWeaponDamageBonus;
+	end;
 end;
 {========================================================}
 { GET VANILLA WEAPON WEIGHT                              }
 {========================================================}
 function GetVanillaWWeight(e: IInterface): Double;
 var
-  template: IInterface;
+	template: IInterface;
+	isDagger, isSword, isWarAxe, isMace, isGreatsword, isBattleaxe, isWarhammer, isBow: Boolean;
 begin
-  Result := 0.0;
+	Result := 0.0;
 
-  { Follow Template (CNAM) for AE compatibility }
-  template := LinksTo(ElementBySignature(e, 'CNAM'));
-  if Assigned(template) then e := template;
+	{ 1. Follow Template (CNAM) for AE compatibility }
+	template := LinksTo(ElementBySignature(e, 'CNAM'));
+	if Assigned(template) then begin
+		e := template;
+	end;
 
-  { 1. STEEL }
-  if HasKeyword(e, 'WeapMaterialSteel') then begin
-    if      HasKeyword(e, 'WeapTypeDagger')     then Result := 2.5
-    else if HasKeyword(e, 'WeapTypeSword')      then Result := 10.0
-    else if HasKeyword(e, 'WeapTypeWarAxe')     then Result := 11.0
-    else if HasKeyword(e, 'WeapTypeMace')       then Result := 13.0
-    else if HasKeyword(e, 'WeapTypeGreatsword') then Result := 17.0
-    else if HasKeyword(e, 'WeapTypeBattleaxe')  then Result := 21.0
-    else if HasKeyword(e, 'WeapTypeWarhammer')  then Result := 25.0
-    else if HasKeyword(e, 'WeapTypeBow')        then Result := 8.0;
-  end
+	{ 2. Pre-cache Weapon Types }
+	isDagger     := HasKeyword(e, 'WeapTypeDagger');
+	isSword      := HasKeyword(e, 'WeapTypeSword');
+	isWarAxe     := HasKeyword(e, 'WeapTypeWarAxe');
+	isMace       := HasKeyword(e, 'WeapTypeMace');
+	isGreatsword := HasKeyword(e, 'WeapTypeGreatsword');
+	isBattleaxe  := HasKeyword(e, 'WeapTypeBattleaxe');
+	isWarhammer  := HasKeyword(e, 'WeapTypeWarhammer');
+	isBow        := HasKeyword(e, 'WeapTypeBow');
 
-  { 2. DWARVEN }
-  else if HasKeyword(e, 'WeapMaterialDwarven') then begin
-    if      HasKeyword(e, 'WeapTypeDagger')     then Result := 3.5
-    else if HasKeyword(e, 'WeapTypeSword')      then Result := 12.0
-    else if HasKeyword(e, 'WeapTypeWarAxe')     then Result := 14.0
-    else if HasKeyword(e, 'WeapTypeMace')       then Result := 16.0
-    else if HasKeyword(e, 'WeapTypeGreatsword') then Result := 19.0
-    else if HasKeyword(e, 'WeapTypeBattleaxe')  then Result := 23.0
-    else if HasKeyword(e, 'WeapTypeWarhammer')  then Result := 27.0
-    else if HasKeyword(e, 'WeapTypeBow')        then Result := 10.0;
-  end
+	{ 3. STEEL }
+	if HasKeyword(e, 'WeapMaterialSteel') then begin
+		if isDagger     then Result := 2.5;
+		if isSword      then Result := 10.0;
+		if isWarAxe     then Result := 11.0;
+		if isMace       then Result := 13.0;
+		if isGreatsword then Result := 17.0;
+		if isBattleaxe  then Result := 21.0;
+		if isWarhammer  then Result := 25.0;
+		if isBow        then Result := 8.0;
+	end;
 
-  { 3. ELVEN (Very Light) }
-  else if HasKeyword(e, 'WeapMaterialElven') then begin
-    if      HasKeyword(e, 'WeapTypeDagger')     then Result := 4.0
-    else if HasKeyword(e, 'WeapTypeSword')      then Result := 9.0
-    else if HasKeyword(e, 'WeapTypeWarAxe')     then Result := 10.0
-    else if HasKeyword(e, 'WeapTypeMace')       then Result := 12.0
-    else if HasKeyword(e, 'WeapTypeGreatsword') then Result := 16.0
-    else if HasKeyword(e, 'WeapTypeBattleaxe')  then Result := 20.0
-    else if HasKeyword(e, 'WeapTypeWarhammer')  then Result := 23.0
-    else if HasKeyword(e, 'WeapTypeBow')        then Result := 12.0;
-  end
+	{ 4. DWARVEN }
+	if HasKeyword(e, 'WeapMaterialDwarven') then begin
+		if isDagger     then Result := 3.5;
+		if isSword      then Result := 12.0;
+		if isWarAxe     then Result := 14.0;
+		if isMace       then Result := 16.0;
+		if isGreatsword then Result := 19.0;
+		if isBattleaxe  then Result := 23.0;
+		if isWarhammer  then Result := 27.0;
+		if isBow        then Result := 10.0;
+	end;
 
-  { 4. ORCISH }
-  else if HasKeyword(e, 'WeapMaterialOrcish') then begin
-    if      HasKeyword(e, 'WeapTypeDagger')     then Result := 3.0
-    else if HasKeyword(e, 'WeapTypeSword')      then Result := 11.0
-    else if HasKeyword(e, 'WeapTypeWarAxe')     then Result := 12.0
-    else if HasKeyword(e, 'WeapTypeMace')       then Result := 14.0
-    else if HasKeyword(e, 'WeapTypeGreatsword') then Result := 18.0
-    else if HasKeyword(e, 'WeapTypeBattleaxe')  then Result := 22.0
-    else if HasKeyword(e, 'WeapTypeWarhammer')  then Result := 26.0
-    else if HasKeyword(e, 'WeapTypeBow')        then Result := 9.0;
-  end
+	{ 5. ELVEN }
+	if HasKeyword(e, 'WeapMaterialElven') then begin
+		if isDagger     then Result := 4.0;
+		if isSword      then Result := 9.0;
+		if isWarAxe     then Result := 10.0;
+		if isMace       then Result := 12.0;
+		if isGreatsword then Result := 16.0;
+		if isBattleaxe  then Result := 20.0;
+		if isWarhammer  then Result := 23.0;
+		if isBow        then Result := 12.0;
+	end;
 
-  { 5. GLASS }
-  else if HasKeyword(e, 'WeapMaterialGlass') then begin
-    if      HasKeyword(e, 'HasKeyword(e, ''WeapTypeDagger'')') then Result := 4.5
-    else if HasKeyword(e, 'WeapTypeSword')      then Result := 12.0
-    else if HasKeyword(e, 'WeapTypeWarAxe')     then Result := 13.0
-    else if HasKeyword(e, 'WeapTypeMace')       then Result := 15.0
-    else if HasKeyword(e, 'WeapTypeGreatsword') then Result := 19.0
-    else if HasKeyword(e, 'WeapTypeBattleaxe')  then Result := 22.0
-    else if HasKeyword(e, 'WeapTypeWarhammer')  then Result := 25.0
-    else if HasKeyword(e, 'WeapTypeBow')        then Result := 14.0;
-  end
+	{ 6. ORCISH }
+	if HasKeyword(e, 'WeapMaterialOrcish') then begin
+		if isDagger     then Result := 3.0;
+		if isSword      then Result := 11.0;
+		if isWarAxe     then Result := 12.0;
+		if isMace       then Result := 14.0;
+		if isGreatsword then Result := 18.0;
+		if isBattleaxe  then Result := 22.0;
+		if isWarhammer  then Result := 26.0;
+		if isBow        then Result := 9.0;
+	end;
 
-  { 6. EBONY }
-  else if HasKeyword(e, 'WeapMaterialEbony') then begin
-    if      HasKeyword(e, 'WeapTypeDagger')     then Result := 5.0
-    else if HasKeyword(e, 'WeapTypeSword')      then Result := 15.0
-    else if HasKeyword(e, 'WeapTypeWarAxe')     then Result := 16.0
-    else if HasKeyword(e, 'WeapTypeMace')       then Result := 19.0
-    else if HasKeyword(e, 'WeapTypeGreatsword') then Result := 22.0
-    else if HasKeyword(e, 'WeapTypeBattleaxe')  then Result := 25.0
-    else if HasKeyword(e, 'WeapTypeWarhammer')  then Result := 28.0
-    else if HasKeyword(e, 'WeapTypeBow')        then Result := 16.0;
-  end
+	{ 7. GLASS }
+	if HasKeyword(e, 'WeapMaterialGlass') then begin
+		if isDagger     then Result := 4.5;
+		if isSword      then Result := 12.0;
+		if isWarAxe     then Result := 13.0;
+		if isMace       then Result := 15.0;
+		if isGreatsword then Result := 19.0;
+		if isBattleaxe  then Result := 22.0;
+		if isWarhammer  then Result := 25.0;
+		if isBow        then Result := 14.0;
+	end;
 
-  { 7. DAEDRIC (Heaviest) }
-  else if HasKeyword(e, 'WeapMaterialDaedric') then begin
-    if      HasKeyword(e, 'WeapTypeDagger')     then Result := 6.0
-    else if HasKeyword(e, 'WeapTypeSword')      then Result := 16.0
-    else if HasKeyword(e, 'WeapTypeWarAxe')     then Result := 18.0
-    else if HasKeyword(e, 'WeapTypeMace')       then Result := 20.0
-    else if HasKeyword(e, 'WeapTypeGreatsword') then Result := 23.0
-    else if HasKeyword(e, 'WeapTypeBattleaxe')  then Result := 27.0
-    else if HasKeyword(e, 'WeapTypeWarhammer')  then Result := 31.0
-    else if HasKeyword(e, 'WeapTypeBow')        then Result := 18.0;
-  end;
-  
+	{ 8. EBONY }
+	if HasKeyword(e, 'WeapMaterialEbony') then begin
+		if isDagger     then Result := 5.0;
+		if isSword      then Result := 15.0;
+		if isWarAxe     then Result := 16.0;
+		if isMace       then Result := 19.0;
+		if isGreatsword then Result := 22.0;
+		if isBattleaxe  then Result := 25.0;
+		if isWarhammer  then Result := 28.0;
+		if isBow        then Result := 16.0;
+	end;
+
+	{ 9. DAEDRIC }
+	if HasKeyword(e, 'WeapMaterialDaedric') then begin
+		if isDagger     then Result := 6.0;
+		if isSword      then Result := 16.0;
+		if isWarAxe     then Result := 18.0;
+		if isMace       then Result := 20.0;
+		if isGreatsword then Result := 23.0;
+		if isBattleaxe  then Result := 27.0;
+		if isWarhammer  then Result := 31.0;
+		if isBow        then Result := 18.0;
+	end;
+	
+	{ 10. Apply Final Bonus }
+	if (Result > GlobalWeaponWeightBonus + 1.0) and (GlobalWeaponWeightBonus > 0.0) then begin
+		Result := Result - GlobalWeaponWeightBonus;
+	end;
 end;
 {========================================================}
 { GET VANILLA WEAPON PRICE                               }
 {========================================================}
 function GetVanillaWPrice(e: IInterface): Integer;
 var
-  template: IInterface;
+	template: IInterface;
+	isDagger, isSword, isWarAxe, isMace, isGreatsword, isBattleaxe, isWarhammer, isBow: Boolean;
 begin
-  Result := 0;
+	Result := 0;
 
-  { Follow Template (CNAM) for AE compatibility }
-  template := LinksTo(ElementBySignature(e, 'CNAM'));
-  if Assigned(template) then e := template;
+	{ 1. Follow Template (CNAM) for AE compatibility }
+	template := LinksTo(ElementBySignature(e, 'CNAM'));
+	if Assigned(template) then begin
+		e := template;
+	end;
 
-  { 1. STEEL }
-  if HasKeyword(e, 'WeapMaterialSteel') then begin
-    if      HasKeyword(e, 'WeapTypeDagger')     then Result := 15
-    else if HasKeyword(e, 'WeapTypeSword')      then Result := 45
-    else if HasKeyword(e, 'WeapTypeWarAxe')     then Result := 55
-    else if HasKeyword(e, 'WeapTypeMace')       then Result := 65
-    else if HasKeyword(e, 'WeapTypeGreatsword') then Result := 90
-    else if HasKeyword(e, 'WeapTypeBattleaxe')  then Result := 100
-    else if HasKeyword(e, 'WeapTypeWarhammer')  then Result := 110
-    else if HasKeyword(e, 'WeapTypeBow')        then Result := 45;
-  end
+	{ 2. Pre-cache Weapon Types }
+	isDagger     := HasKeyword(e, 'WeapTypeDagger');
+	isSword      := HasKeyword(e, 'WeapTypeSword');
+	isWarAxe     := HasKeyword(e, 'WeapTypeWarAxe');
+	isMace       := HasKeyword(e, 'WeapTypeMace');
+	isGreatsword := HasKeyword(e, 'WeapTypeGreatsword');
+	isBattleaxe  := HasKeyword(e, 'WeapTypeBattleaxe');
+	isWarhammer  := HasKeyword(e, 'WeapTypeWarhammer');
+	isBow        := HasKeyword(e, 'WeapTypeBow');
 
-  { 2. DWARVEN }
-  else if HasKeyword(e, 'WeapMaterialDwarven') then begin
-    if      HasKeyword(e, 'WeapTypeDagger')     then Result := 85
-    else if HasKeyword(e, 'WeapTypeSword')      then Result := 270
-    else if HasKeyword(e, 'WeapTypeWarAxe')     then Result := 300
-    else if HasKeyword(e, 'WeapTypeMace')       then Result := 350
-    else if HasKeyword(e, 'WeapTypeGreatsword') then Result := 485
-    else if HasKeyword(e, 'WeapTypeBattleaxe')  then Result := 525
-    else if HasKeyword(e, 'WeapTypeWarhammer')  then Result := 600
-    else if HasKeyword(e, 'WeapTypeBow')        then Result := 270;
-  end
+	{ 3. STEEL }
+	if HasKeyword(e, 'WeapMaterialSteel') then begin
+		if isDagger     then Result := 15;
+		if isSword      then Result := 45;
+		if isWarAxe     then Result := 55;
+		if isMace       then Result := 65;
+		if isGreatsword then Result := 90;
+		if isBattleaxe  then Result := 100;
+		if isWarhammer  then Result := 110;
+		if isBow        then Result := 45;
+	end;
 
-  { 3. ELVEN }
-  else if HasKeyword(e, 'WeapMaterialElven') then begin
-    if      HasKeyword(e, 'WeapTypeDagger')     then Result := 95
-    else if HasKeyword(e, 'WeapTypeSword')      then Result := 235
-    else if HasKeyword(e, 'WeapTypeWarAxe')     then Result := 280
-    else if HasKeyword(e, 'WeapTypeMace')       then Result := 330
-    else if HasKeyword(e, 'WeapTypeGreatsword') then Result := 470
-    else if HasKeyword(e, 'WeapTypeBattleaxe')  then Result := 520
-    else if HasKeyword(e, 'WeapTypeWarhammer')  then Result := 565
-    else if HasKeyword(e, 'WeapTypeBow')        then Result := 470;
-  end
+	{ 4. DWARVEN }
+	if HasKeyword(e, 'WeapMaterialDwarven') then begin
+		if isDagger     then Result := 85;
+		if isSword      then Result := 270;
+		if isWarAxe     then Result := 300;
+		if isMace       then Result := 350;
+		if isGreatsword then Result := 485;
+		if isBattleaxe  then Result := 525;
+		if isWarhammer  then Result := 600;
+		if isBow        then Result := 270;
+	end;
 
-  { 4. ORCISH }
-  else if HasKeyword(e, 'WeapMaterialOrcish') then begin
-    if      HasKeyword(e, 'WeapTypeDagger')     then Result := 75
-    else if HasKeyword(e, 'WeapTypeSword')      then Result := 150
-    else if HasKeyword(e, 'WeapTypeWarAxe')     then Result := 165
-    else if HasKeyword(e, 'WeapTypeMace')       then Result := 190
-    else if HasKeyword(e, 'WeapTypeGreatsword') then Result := 325
-    else if HasKeyword(e, 'WeapTypeBattleaxe')  then Result := 360
-    else if HasKeyword(e, 'WeapTypeWarhammer')  then Result := 445
-    else if HasKeyword(e, 'WeapTypeBow')        then Result := 150;
-  end
+	{ 5. ELVEN }
+	if HasKeyword(e, 'WeapMaterialElven') then begin
+		if isDagger     then Result := 95;
+		if isSword      then Result := 235;
+		if isWarAxe     then Result := 280;
+		if isMace       then Result := 330;
+		if isGreatsword then Result := 470;
+		if isBattleaxe  then Result := 520;
+		if isWarhammer  then Result := 565;
+		if isBow        then Result := 470;
+	end;
 
-  { 5. GLASS }
-  else if HasKeyword(e, 'WeapMaterialGlass') then begin
-    if      HasKeyword(e, 'WeapTypeDagger')     then Result := 410
-    else if HasKeyword(e, 'WeapTypeSword')      then Result := 900
-    else if HasKeyword(e, 'WeapTypeWarAxe')     then Result := 980
-    else if HasKeyword(e, 'WeapTypeMace')       then Result := 1050
-    else if HasKeyword(e, 'WeapTypeGreatsword') then Result := 1435
-    else if HasKeyword(e, 'WeapTypeBattleaxe')  then Result := 1570
-    else if HasKeyword(e, 'WeapTypeWarhammer')  then Result := 1840
-    else if HasKeyword(e, 'WeapTypeBow')        then Result := 820;
-  end
+	{ 6. ORCISH }
+	if HasKeyword(e, 'WeapMaterialOrcish') then begin
+		if isDagger     then Result := 75;
+		if isSword      then Result := 150;
+		if isWarAxe     then Result := 165;
+		if isMace       then Result := 190;
+		if isGreatsword then Result := 325;
+		if isBattleaxe  then Result := 360;
+		if isWarhammer  then Result := 445;
+		if isBow        then Result := 150;
+	end;
 
-  { 6. EBONY }
-  else if HasKeyword(e, 'WeapMaterialEbony') then begin
-    if      HasKeyword(e, 'WeapTypeDagger')     then Result := 290
-    else if HasKeyword(e, 'WeapTypeSword')      then Result := 725
-    else if HasKeyword(e, 'WeapTypeWarAxe')     then Result := 800
-    else if HasKeyword(e, 'WeapTypeMace')       then Result := 865
-    else if HasKeyword(e, 'WeapTypeGreatsword') then Result := 1150
-    else if HasKeyword(e, 'WeapTypeBattleaxe')  then Result := 1585
-    else if HasKeyword(e, 'WeapTypeWarhammer')  then Result := 1725
-    else if HasKeyword(e, 'WeapTypeBow')        then Result := 1440;
-  end
+	{ 7. GLASS }
+	if HasKeyword(e, 'WeapMaterialGlass') then begin
+		if isDagger     then Result := 410;
+		if isSword      then Result := 900;
+		if isWarAxe     then Result := 980;
+		if isMace       then Result := 1050;
+		if isGreatsword then Result := 1435;
+		if isBattleaxe  then Result := 1570;
+		if isWarhammer  then Result := 1840;
+		if isBow        then Result := 820;
+	end;
 
-  { 7. DAEDRIC }
-  else if HasKeyword(e, 'WeapMaterialDaedric') then begin
-    if      HasKeyword(e, 'WeapTypeDagger')     then Result := 800
-    else if HasKeyword(e, 'WeapTypeSword')      then Result := 1250
-    else if HasKeyword(e, 'WeapTypeWarAxe')     then Result := 1500
-    else if HasKeyword(e, 'WeapTypeMace')       then Result := 1750
-    else if HasKeyword(e, 'WeapTypeGreatsword') then Result := 2500
-    else if HasKeyword(e, 'WeapTypeBattleaxe')  then Result := 2750
-    else if HasKeyword(e, 'WeapTypeWarhammer')  then Result := 4000
-    else if HasKeyword(e, 'WeapTypeBow')        then Result := 2500;
-  end;
+	{ 8. EBONY }
+	if HasKeyword(e, 'WeapMaterialEbony') then begin
+		if isDagger     then Result := 290;
+		if isSword      then Result := 725;
+		if isWarAxe     then Result := 800;
+		if isMace       then Result := 865;
+		if isGreatsword then Result := 1150;
+		if isBattleaxe  then Result := 1585;
+		if isWarhammer  then Result := 1725;
+		if isBow        then Result := 1440;
+	end;
 
-  { Apply Global Bonus if applicable }
-  if (Result > 0) and (GlobalWeaponPriceBonus <> 0) then
-    Result := Result + GlobalWeaponPriceBonus;
+	{ 9. DAEDRIC }
+	if HasKeyword(e, 'WeapMaterialDaedric') then begin
+		if isDagger     then Result := 800;
+		if isSword      then Result := 1250;
+		if isWarAxe     then Result := 1500;
+		if isMace       then Result := 1750;
+		if isGreatsword then Result := 2500;
+		if isBattleaxe  then Result := 2750;
+		if isWarhammer  then Result := 4000;
+		if isBow        then Result := 2500;
+	end;
+
+	{ 10. Apply Final Bonus }
+	if (Result > 0) and (GlobalWeaponPriceBonus <> 0) then begin
+		Result := Result + GlobalWeaponPriceBonus;
+	end;
 end;
 {========================================================}
 { VANILLA ARMOR RATINGS WITH FOREARMS LOGIC              }
@@ -1321,6 +1371,9 @@ begin
 		end;
 		Exit;
 	end;
+	
+	Result := Result + GlobalArmorPriceBonus;
+	
 end;
 {========================================================}
 { UTILITY                                                }
