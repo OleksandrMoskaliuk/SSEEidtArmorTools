@@ -21,7 +21,7 @@ const
 	{ GLOBAL VARS CONFIGURATION                              }
 	{========================================================}
 	// Represent SMITHING Skill level
-	DEFAULT_SMITHING = 50;
+	DEFAULT_SMITHING = 15;
 	FOR_FEMALE_ONLY = True;
 	FOREARMS_DEBUFF_MULTIPLIER = 2.5;
 	{========================================================}
@@ -1625,7 +1625,12 @@ begin
 	
 	{ 3. Process Material Keywords for Perk requirements }
 	tmpKeywordsCollection := ElementBySignature(itemRecord, 'KWDA');
-
+	
+	{ 4. Add your global skill requirement condition (e.g. Smithing 25) }
+	if GlobalSmithingReq > 0 then begin
+		addSkillCondition(recipeCraft, GlobalSmithingReq);
+	end;
+	
 	{--- WEAPON LOGIC ---}
 	if (itemSignature = 'WEAP') then begin
 		SetElementEditValues(recipeCraft, 'EDID', 'RecipeWeapon' + GetElementEditValues(itemRecord, 'EDID'));
@@ -2160,11 +2165,6 @@ begin
 		end;
 		
 	end;	
-	
-	{ Add your global skill requirement condition (e.g. Smithing 25) }
-	if GlobalSmithingReq > 0 then begin
-		addSkillCondition(recipeCraft, GlobalSmithingReq);
-	end;
 		
 	// Cleanup and Validation
 	removeInvalidEntries(recipeCraft);
