@@ -18,9 +18,10 @@ CORE PHILOSOPHY:
 }
 const
 	{========================================================}
-	{ GLOBAL VARS CONFIGURATION                                           }
+	{ GLOBAL VARS CONFIGURATION                              }
 	{========================================================}
-	DEFAULT_SMITHING = 5;
+	// Represent SMITHING Skill level
+	DEFAULT_SMITHING = 50;
 	FOR_FEMALE_ONLY = True;
 	FOREARMS_DEBUFF_MULTIPLIER = 2.5;
 	{========================================================}
@@ -271,7 +272,9 @@ begin
 	if not IsVisualSlot(GetFirstPersonFlags(e)) then Exit;
 	visualNote := 'Visual Slot: This item is for appearance only. It provides no protection and cannot be enchanted.';
 	{ Check if it's an enchantable accessory }
-	isAccessory := (Pos('Amulet ', GetFirstPersonFlags(e)) > 0) or (Pos('Ring ', GetFirstPersonFlags(e)) > 0);
+	isAccessory := (Pos('Amulet ', GetFirstPersonFlags(e)) > 0) or 
+		(Pos('Ring ', GetFirstPersonFlags(e)) > 0) or
+		(Pos('Ears ', GetFirstPersonFlags(e)) > 0);
 	
 	if not isAccessory then begin
 	
