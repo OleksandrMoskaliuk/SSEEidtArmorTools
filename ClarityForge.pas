@@ -1,3 +1,5 @@
+unit ClarityForge;
+uses SK_UtilsRemake;
 {
 ================================================================================
 UNIT: ClarityForge
@@ -14,16 +16,19 @@ CORE PHILOSOPHY:
 - Requiem Ready: Automatically manages ArmorType (Heavy/Light/Clothing) and Fists perks.
 ================================================================================
 }
-
-
-unit ClarityForge;
-uses SK_UtilsRemake;
-{========================================================}
-{ GLOBAL VARS                                            }
-{========================================================}
 const
+	{========================================================}
+	{ GLOBAL VARS CONFIGURATION                                           }
+	{========================================================}
 	DEFAULT_SMITHING = 5;
+	FOR_FEMALE_ONLY = True;
 	FOREARMS_DEBUFF_MULTIPLIER = 2.5;
+	{========================================================}
+	{ ENCHANTMENT SWAPPER MOD PROTECTION                     }
+	{========================================================}
+	// Adds Carry Weight as default enchant to protect from enchant swapping 
+	ENCHANTMENT_SWAPPER_MOD_PROTECTION = True;
+	
 var
 	GlobalSmithingReq: Integer;
 	GlobalArmorBonus: Float;
@@ -220,7 +225,6 @@ begin
 	Result := not hasGameplaySlot;
 end;
 
-
 procedure FinalizeVisualSlot(e: IInterface);
 var
 	kw: IInterface;
@@ -254,6 +258,9 @@ begin
 				Add(e, 'DESC', True);
 				
 			SetElementEditValues(e, 'DESC', visualNote);
+		end;
+		if(ENCHANTMENT_SWAPPER_MOD_PROTECTION) then begin
+			AddVanillaCarryWeightEnchantment(e);
 		end;
 	end;
 	{ 3. Apply Balance Stats }
@@ -1115,6 +1122,35 @@ begin
 	SetElementEditValues(cond, 'CTDA\Parameter #1', 'Smithing');
 end;
 
+procedure addFemaleCondition(recipe: IInterface);
+var
+	conditions, cond: IInterface;
+begin
+	if FOR_FEMALE_ONLY then begin
+		{ 1. Get or create the Conditions list }
+		conditions := ElementByPath(recipe, 'Conditions');
+		if not Assigned(conditions) then begin
+			conditions := Add(recipe, 'Conditions', True);
+			cond := ElementByIndex(conditions, 0);
+		end else begin
+			cond := ElementAssign(conditions, HighInteger, nil, False);
+		end;
+
+		{ 2. Set Logic: Equal + Run on Subject }
+		{ 11000000 = Equal, Subject }
+		SetElementEditValues(cond, 'CTDA\Type', '11000000');
+
+		{ 3. Comparison Value: Female }
+		SetElementEditValues(cond, 'CTDA\Comparison Value', '1');
+
+		{ 4. Function }
+		SetElementEditValues(cond, 'CTDA\Function', 'GetIsSex');
+
+		{ 5. Parameter #1: 1 = Female }
+		SetElementEditValues(cond, 'CTDA\Parameter #1', '1');
+	end;
+end;
+
 // adds item record reference to the list
 function addItemV2(list: IInterface; item: IInterface; amount: integer): IInterface;
 var
@@ -1151,6 +1187,36 @@ begin
 	
 	Result := newItem;
 end;
+
+{========================================================}
+{ ADD VANILLA ENCHANTMENT TO ARMOR                       }
+{ EnchArmorFortifyCarry01 (0007A109)                     }
+{========================================================}
+procedure AddVanillaCarryWeightEnchantment(e: IInterface);
+var
+	enchantment: IInterface;
+begin
+	{ Only apply to Armor records }
+	if Signature(e) <> 'ARMO' then
+		Exit;
+
+	{ Do not overwrite existing enchantment }
+	if Assigned(ElementByPath(e, 'EITM')) then
+		Exit;
+
+	{ Resolve vanilla enchantment by FormID }
+	enchantment := GetRecordByFormID('0007A109'); // EnchArmorFortifyCarry01
+	if not Assigned(enchantment) then begin
+		AddMessage('ERROR: Enchantment 0007A109 not found');
+		Exit;
+	end;
+
+	{ Assign enchantment }
+	SetElementEditValues(e, 'EITM', Name(enchantment));
+
+	{ Enchantment charge / amount (vanilla = 1) }
+	SetElementEditValues(e, 'EAMT', '1');
+end;
 {========================================================}
 { CREATE CRAFTING RECIPE (COBJ)                          }
 {========================================================}
@@ -1162,60 +1228,56 @@ var
 begin
 	itemSignature := Signature(itemRecord);
 
-	{ 1. Filter: Only allow Weapons or Armor }
-	if not ((itemSignature = 'WEAP') or (itemSignature = 'ARMO')) then
-		Exit;
-
-	{ 2. Create the base COBJ record }
+	{ 1. Create the base COBJ record }
 	recipeCraft := createRecipe(itemRecord);
 	if not Assigned(recipeCraft) then Exit;
 
-	{ 3. Initialize Required Items list }
+	{ 2. Initialize Required Items list }
 	Add(recipeCraft, 'items', True);
 	recipeItems := ElementByPath(recipeCraft, 'items');
 	
-	{ 4. Process Material Keywords for Perk requirements }
+	{ 3. Process Material Keywords for Perk requirements }
 	tmpKeywordsCollection := ElementBySignature(itemRecord, 'KWDA');
 
 	{ --- WEAPON LOGIC --- }
-	if (itemSignature = 'WEAP') then begin
-		SetElementEditValues(recipeCraft, 'EDID', 'RecipeWeapon' + GetElementEditValues(itemRecord, 'EDID'));
-		SetElementEditValues(recipeCraft, 'BNAM', GetEditValue(getRecordByFormID(WEAPON_CRAFTING_WORKBENCH_FORM_ID)));
+	{ if (itemSignature = 'WEAP') then begin }
+		{ SetElementEditValues(recipeCraft, 'EDID', 'RecipeWeapon' + GetElementEditValues(itemRecord, 'EDID')); }
+		{ SetElementEditValues(recipeCraft, 'BNAM', GetEditValue(getRecordByFormID(WEAPON_CRAFTING_WORKBENCH_FORM_ID))); }
 
-		for i := 0 to ElementCount(tmpKeywordsCollection) - 1 do begin
-			currentKeywordEDID := GetElementEditValues(LinksTo(ElementByIndex(tmpKeywordsCollection, i)), 'EDID');
+		{ for i := 0 to ElementCount(tmpKeywordsCollection) - 1 do begin }
+			{ currentKeywordEDID := GetElementEditValues(LinksTo(ElementByIndex(tmpKeywordsCollection, i)), 'EDID'); }
 
-			if ((currentKeywordEDID = 'WeapMaterialSteel') or (currentKeywordEDID = 'WeapMaterialImperial') or 
-				(currentKeywordEDID = 'WeapMaterialDraugr') or (currentKeywordEDID = 'WeapMaterialDraugrHoned')) then begin
-				addPerkCondition(recipeCraft, getRecordByFormID('000CB40D')); // Steel Smithing
-				Break;
-			end else if (currentKeywordEDID = 'WeapMaterialElven') then begin
-				addPerkCondition(recipeCraft, getRecordByFormID('000CB40F')); // Elven Smithing
-				Break;
-			end else if (currentKeywordEDID = 'DLC2WeaponMaterialNordic') then begin
-				addPerkCondition(recipeCraft, getRecordByFormID('000CB414')); // Advanced Armors
-				Break;
-			end else if (currentKeywordEDID = 'WeapMaterialDwarven') then begin
-				addPerkCondition(recipeCraft, getRecordByFormID('000CB40E')); // Dwarven Smithing
-				Break;
-			end else if (currentKeywordEDID = 'WeapMaterialEbony') then begin
-				addPerkCondition(recipeCraft, getRecordByFormID('000CB412')); // Ebony Smithing
-				Break;
-			end else if (currentKeywordEDID = 'WeapMaterialDaedric') then begin
-				addPerkCondition(recipeCraft, getRecordByFormID('000CB413')); // Daedric Smithing
-				Break;
-			end else if ((currentKeywordEDID = 'WeapMaterialOrcish') or (currentKeywordEDID = 'DLC2WeaponMaterialStalhrim')) then begin
-				addPerkCondition(recipeCraft, getRecordByFormID('000CB410')); // Orcish Smithing
-				Break;
-			end else if (currentKeywordEDID = 'WeapMaterialGlass') then begin
-				addPerkCondition(recipeCraft, getRecordByFormID('000CB411')); // Glass Smithing
-				Break;
-			end else if (currentKeywordEDID = 'DLC1WeapMaterialDragonbone') then begin
-				addPerkCondition(recipeCraft, getRecordByFormID('00052190')); // Dragon Armor
-				Break;
-			end;
-		end;
-	end;
+			{ if ((currentKeywordEDID = 'WeapMaterialSteel') or (currentKeywordEDID = 'WeapMaterialImperial') or  }
+				{ (currentKeywordEDID = 'WeapMaterialDraugr') or (currentKeywordEDID = 'WeapMaterialDraugrHoned')) then begin }
+				{ addPerkCondition(recipeCraft, getRecordByFormID('000CB40D')); // Steel Smithing }
+				{ Break; }
+			{ end else if (currentKeywordEDID = 'WeapMaterialElven') then begin }
+				{ addPerkCondition(recipeCraft, getRecordByFormID('000CB40F')); // Elven Smithing }
+				{ Break; }
+			{ end else if (currentKeywordEDID = 'DLC2WeaponMaterialNordic') then begin }
+				{ addPerkCondition(recipeCraft, getRecordByFormID('000CB414')); // Advanced Armors }
+				{ Break; }
+			{ end else if (currentKeywordEDID = 'WeapMaterialDwarven') then begin }
+				{ addPerkCondition(recipeCraft, getRecordByFormID('000CB40E')); // Dwarven Smithing }
+				{ Break; }
+			{ end else if (currentKeywordEDID = 'WeapMaterialEbony') then begin }
+				{ addPerkCondition(recipeCraft, getRecordByFormID('000CB412')); // Ebony Smithing }
+				{ Break; }
+			{ end else if (currentKeywordEDID = 'WeapMaterialDaedric') then begin }
+				{ addPerkCondition(recipeCraft, getRecordByFormID('000CB413')); // Daedric Smithing }
+				{ Break; }
+			{ end else if ((currentKeywordEDID = 'WeapMaterialOrcish') or (currentKeywordEDID = 'DLC2WeaponMaterialStalhrim')) then begin }
+				{ addPerkCondition(recipeCraft, getRecordByFormID('000CB410')); // Orcish Smithing }
+				{ Break; }
+			{ end else if (currentKeywordEDID = 'WeapMaterialGlass') then begin }
+				{ addPerkCondition(recipeCraft, getRecordByFormID('000CB411')); // Glass Smithing }
+				{ Break; }
+			{ end else if (currentKeywordEDID = 'DLC1WeapMaterialDragonbone') then begin }
+				{ addPerkCondition(recipeCraft, getRecordByFormID('00052190')); // Dragon Armor }
+				{ Break; }
+			{ end; }
+		{ end; }
+	{ end; }
 	
 	{ --- ARMOR LOGIC --- }
 	if (itemSignature = 'ARMO') then begin
@@ -1228,6 +1290,9 @@ begin
 	if GlobalSmithingReq > 0 then begin
 		addSkillCondition(recipeCraft, GlobalSmithingReq);
 	end;
+	
+	// If Armor is ony for Female actor
+	addFemaleCondition(recipeCraft);
 	
 	{ Loop keywords to assign Perks }
 	for i := 0 to ElementCount(tmpKeywordsCollection) - 1 do begin
