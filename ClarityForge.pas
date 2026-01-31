@@ -72,16 +72,25 @@ end;
 {========================================================}
 function Process(selectedRecord: IInterface): integer;
 var
+	// Utility
 	m_recordSignature: string;
+	m_Slots: string;
+	m_currentFile: IwbFile;
+	// Armors
 	m_ArmorRating: Float;
 	m_ArmorPrice: Integer;
 	m_ArmorWeight: Float;
-	m_currentFile: IwbFile;
-	m_Slots: string;
+	// Weapons
+	m_WeaponDamage: integer;
+	m_WeaponPrice: Integer;
+	m_WeaponWeight: Float;
 begin
 	m_ArmorRating := 0;
 	m_ArmorPrice := 0;
 	m_ArmorWeight := 0.0;
+	m_WeaponDamage := 0;
+	m_WeaponPrice := 0;
+	m_WeaponWeight := 0.0;
 	m_recordSignature := Signature(selectedRecord);
 	
 	GlobalProcessedRecords := GlobalProcessedRecords + 1;
@@ -133,15 +142,17 @@ begin
 		end;
 	end;
 	
-	{ 2. Filter: Weapon (WEAP) }
+	{ 10. Filter: Weapon (WEAP) }
 	if m_recordSignature = 'WEAP' then begin
-		AddMessage('Weapon Damage = ' + 
-			IntToStr(GetVanillaWDamage(selectedRecord)));
-		AddMessage('Weapon Weight = ' + 
-			IntToStr(GetVanillaWWeight(selectedRecord)));
-		AddMessage('Weapon Price = ' + 
-			IntToStr(GetVanillaWPrice(selectedRecord)));
+		m_WeaponDamage := GetVanillaWDamage(selectedRecord);
+			SetElementEditValues(selectedRecord, 'DATA\Damage', m_WeaponDamage);
+		m_WeaponPrice := (GetVanillaWPrice(selectedRecord));
+			SetElementEditValues(selectedRecord, 'DATA\Value', m_WeaponPrice);
+		m_WeaponWeight := GetVanillaWWeight(selectedRecord);
+			SetElementEditValues(selectedRecord, 'DATA\Weight', m_WeaponWeight);
+			
 		MakeCraftableV2(selectedRecord);
+		makeTemperable(selectedRecord);
 	end;
 		
 	Result := 0;
@@ -1041,7 +1052,7 @@ begin
 	end;
 end;
 {========================================================}
-{ GET VANILLA ARMOR WEIGHT (ENCUMBRANCE)                  }
+{ GET VANILLA ARMOR WEIGHT (ENCUMBRANCE)                 }
 {========================================================}
 function GetVanillaAWeight(e: IInterface; Slots: string): Float;
 var
@@ -1795,12 +1806,6 @@ begin
 			SetElementEditValues(recipeCraft, 'EDID', 'RecipeArmor' + GetElementEditValues(itemRecord, 'EDID'));
 			SetElementEditValues(recipeCraft, 'BNAM', GetEditValue(getRecordByFormID(ARMOR_CRAFTING_WORKBENCH_FORM_ID)));
 		
-		
-		{ Add your global skill requirement condition (e.g. Smithing 25) }
-		if GlobalSmithingReq > 0 then begin
-			addSkillCondition(recipeCraft, GlobalSmithingReq);
-		end;
-		
 		// If Armor is ony for Female actor
 		addFemaleCondition(recipeCraft);
 		
@@ -2148,6 +2153,12 @@ begin
 		end;
 		
 	end;	
+	
+	{ Add your global skill requirement condition (e.g. Smithing 25) }
+	if GlobalSmithingReq > 0 then begin
+		addSkillCondition(recipeCraft, GlobalSmithingReq);
+	end;
+		
 	// Cleanup and Validation
 	removeInvalidEntries(recipeCraft);
 
