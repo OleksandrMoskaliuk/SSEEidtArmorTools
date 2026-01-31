@@ -54,7 +54,7 @@ begin
 	GlobalHasHands := false;
 	GlobalHasHandsWasExecuted := false;
 	GlobalProcessedRecords := 0;
-	GlobalWeaponPriceBonus : = GlobalSmithingReq / 10.0;
+	GlobalWeaponPriceBonus : = GlobalSmithingReq;
 	GlobalArmorPriceBonus : = GlobalSmithingReq / 10.0;
 	GlobalForearmsDebuffMultiplier := FOREARMS_DEBUFF_MULTIPLIER;
 	AddMessage('---ARMOR CONFIGURATOR STARTED---');
@@ -95,30 +95,30 @@ begin
 	
 	GlobalProcessedRecords := GlobalProcessedRecords + 1;
 
-	{ 1. Filter: Armor (ARMO) }
+	{ 1 Filter: Armor (ARMO) }
 	if m_recordSignature = 'ARMO' then begin
 	
 		m_Slots := GetFirstPersonFlags(selectedRecord);
 
-		{ 2. Initialization: Scan the file for 'Hands' slot once per session }
+		{ 1.1 Initialization: Scan the file for 'Hands' slot once per session }
 		{ This determines if 'Forearms' should be treated as functional armor or decoration }
 		if not GlobalHasHandsWasExecuted then begin
 			m_currentFile := GetFile(selectedRecord);
 			OutfitHasHands(m_currentFile);
 		end;
 
-		{ 3. Cleanup: Remove keywords that do not belong to the item's specific slots }
+		{ 1.2 Cleanup: Remove keywords that do not belong to the item's specific slots }
 		{ Example: 'ArmorCuirass' keyword is removed from 'Head' or 'Hands' slots }
 		RemoveRedundantKeywords(selectedRecord, m_Slots);
 		
-		{ 4. Classification: Add vital armor keywords (Cuirass, Helmet, etc.) }
+		{ 1.3 Classification: Add vital armor keywords (Cuirass, Helmet, etc.) }
 		{ Based on the First Person Flags (Biped Slots) }
 		AddVitalKeywords(selectedRecord, m_Slots);
 		
-		{ 5. Material Logic: Set Armor Type (Heavy/Light/Clothing) based on materials }
+		{ 1.4 Material Logic: Set Armor Type (Heavy/Light/Clothing) based on materials }
 		SetArmorType(selectedRecord);
 		
-		{ 6. Stat Balancing: Apply vanilla-aligned base values }
+		{ 1.5 Stat Balancing: Apply vanilla-aligned base values }
 		m_ArmorRating := GetVanillaAR(selectedRecord, m_Slots);  
 		SetElementEditValues(selectedRecord, 'DNAM - Armor Rating', m_ArmorRating);
 		
@@ -128,31 +128,35 @@ begin
 		m_ArmorPrice := GetVanillaAPrice(selectedRecord, m_Slots); 
 		SetElementEditValues(selectedRecord, 'DATA\Value', m_ArmorPrice);
 		
-		{ 7. Finalization: Handle 'Visual Slots' (0 weight/value/AR + Enchanting Block) }
+		{ 1.6 Finalization: Handle 'Visual Slots' (0 weight/value/AR + Enchanting Block) }
 		FinalizeVisualSlot(selectedRecord);
 		
-		{ 8. Crafting: Generate recipes based on the finalized keywords and stats }
+		{ 1.7 Crafting: Generate recipes based on the finalized keywords and stats }
 		{ Visual slots receive a 'token cost' recipe (e.g., 1 Gold) }
 		MakeCraftableV2(selectedRecord);
 		
-		{ 9. Tempering: Add improvement recipes only for functional armor pieces }
+		{ 1.8 Tempering: Add improvement recipes only for functional armor pieces }
 		if not IsVisualSlot(m_Slots) then begin
 			{ Supports tempering for both enchanted and non-enchanted items }
 			makeTemperable(selectedRecord);
 		end;
 	end;
 	
-	{ 10. Filter: Weapon (WEAP) }
+	{ 2. Filter: Weapon (WEAP) }
 	if m_recordSignature = 'WEAP' then begin
+	
 		m_WeaponDamage := GetVanillaWDamage(selectedRecord);
-			SetElementEditValues(selectedRecord, 'DATA\Damage', m_WeaponDamage);
-		m_WeaponPrice := (GetVanillaWPrice(selectedRecord));
-			SetElementEditValues(selectedRecord, 'DATA\Value', m_WeaponPrice);
+		SetElementEditValues(selectedRecord, 'DATA\Damage', IntToStr(m_WeaponDamage));
+
+		m_WeaponPrice := GetVanillaWPrice(selectedRecord);
+		SetElementEditValues(selectedRecord, 'DATA\Value', IntToStr(m_WeaponPrice));
+
 		m_WeaponWeight := GetVanillaWWeight(selectedRecord);
-			SetElementEditValues(selectedRecord, 'DATA\Weight', m_WeaponWeight);
+		SetElementEditValues(selectedRecord, 'DATA\Weight', FloatToStr(m_WeaponWeight));
 			
 		MakeCraftableV2(selectedRecord);
 		makeTemperable(selectedRecord);
+		
 	end;
 		
 	Result := 0;
