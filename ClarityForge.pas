@@ -1,6 +1,20 @@
-unit ClarityForge;
-uses SK_UtilsRemake;
 {
+	unit ClarityForge;
+
+	License: Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)
+	https://creativecommons.org
+
+	Copyright (c) 2024 Oleksandr Moskaliuk (Dru9Dealer)
+	Repository: https://github.com
+
+	You are free to:
+	- Share: copy and redistribute the material in any medium or format.
+	- Adapt: remix, transform, and build upon the material.
+
+	Under the following terms:
+	- Attribution: You must give appropriate credit and provide a link to the license.
+	- NonCommercial: You may not use the material for commercial purposes.
+
 ================================================================================
 UNIT: ClarityForge
 PURPOSE: Advanced Armor Sanitization and Balancing for Requiem / Skyrim AE.
@@ -16,20 +30,25 @@ CORE PHILOSOPHY:
 - Requiem Ready: Automatically manages ArmorType (Heavy/Light/Clothing) and Fists perks.
 ================================================================================
 }
+unit ClarityForge;
+uses SK_UtilsRemake;
+
 const
 	{========================================================}
 	{ GLOBAL VARS CONFIGURATION                              }
 	{========================================================}
-	// Represent SMITHING Skill level
-	DEFAULT_SMITHING = 100;
+	DEFAULT_SMITHING = 35;
 	FOR_FEMALE_ONLY = True;
 	FOREARMS_DEBUFF_MULTIPLIER = 2.5;
+
 	{========================================================}
 	{ ENCHANTMENT SWAPPER MOD PROTECTION                     }
 	{========================================================}
-	// Adds Carry Weight as default enchant to protect from enchant swapping 
 	ENCHANTMENT_SWAPPER_MOD_PROTECTION = True;
-	
+
+	sScriptVersion = '1.0.0';
+	sRepoUrl = 'https://github.com';	
+
 var
 	GlobalSmithingReq: Integer;
 	GlobalArmorBonus: Float;
@@ -40,32 +59,47 @@ var
 	GlobalWeaponDamageBonus: integer;
 	GlobalWeaponPriceBonus: integer;
 	GlobalArmorPriceBonus: integer;
-	// Reduce weapon weight based on DEFAULT_SMITHING requirements
 	GlobalWeaponWeightBonus: Float;
+
 {========================================================}
 { INITIALIZE                                             }
 {========================================================}
 function Initialize: Integer;
 begin
+	AddMessage('--- SSEEidtArmorTools v' + sScriptVersion + ' by Dru9Dealer ---');
+	AddMessage('License: CC BY-NC 4.0');
+	AddMessage('Project Home: ' + sRepoUrl);
+	
+	{ Initialize Result }
 	Result := 0;
+
+	{ Set Global Values }
 	GlobalSmithingReq := DEFAULT_SMITHING;
 	GlobalArmorBonus := GlobalSmithingReq / 10.0;
-	GlobalWeaponDamageBonus := GlobalSmithingReq / 20.0;
+	
+	{ Note: Result of division is Float, so we Round for Integer bonuses }
+	GlobalWeaponDamageBonus := Round(GlobalSmithingReq / 20.0);
+	GlobalWeaponPriceBonus := GlobalSmithingReq;
+	GlobalArmorPriceBonus := Round(GlobalSmithingReq / 10.0);
+	
 	GlobalWeaponWeightBonus := GlobalSmithingReq / 20.0;
-	GlobalHasHands := false;
-	GlobalHasHandsWasExecuted := false;
-	GlobalProcessedRecords := 0;
-	GlobalWeaponPriceBonus : = GlobalSmithingReq;
-	GlobalArmorPriceBonus : = GlobalSmithingReq / 10.0;
 	GlobalForearmsDebuffMultiplier := FOREARMS_DEBUFF_MULTIPLIER;
-	AddMessage('---ARMOR CONFIGURATOR STARTED---');
-	AddMessage('SMITHING REQUIREMENT = ' + IntToStr(DEFAULT_SMITHING));
+	
+	{ Reset Tracking Booleans }
+	GlobalHasHands := False;
+	GlobalHasHandsWasExecuted := False;
+	GlobalProcessedRecords := 0;
+	
+	{ Logging Configuration }
+	AddMessage('--- ARMOR CONFIGURATOR STARTED ---');
+	AddMessage('SMITHING REQUIREMENT = ' + IntToStr(GlobalSmithingReq));
 	AddMessage('ARMOR BONUS = ' + FloatToStr(GlobalArmorBonus));
 
+	{ Validation Logic }
 	if (GlobalSmithingReq < 0) or (GlobalSmithingReq > 100) then begin
 		AddMessage('ERROR: Smithing value must be between 0 and 100.');
 		Result := 1;
-		exit;
+		Exit;
 	end;  
 end;
 {========================================================}
