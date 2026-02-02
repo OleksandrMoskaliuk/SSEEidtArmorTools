@@ -1,6 +1,41 @@
 📜 ClarityForge: Preparation & Usage Guide
 To ensure the script functions correctly and follows your Game Balance Philosophy, the records must be prepared manually before execution. The script will not guess the material or the slots; it relies on your input to stay "Solid."
 
+For the script to correctly calculate prices and protection, the record must have one of the following vanilla Keywords assigned:
+Heavy Armor Sets:
+ArmorMaterialIron 
+ArmorMaterialSteel 
+ArmorMaterialSteelPlate
+ArmorMaterialDwarven
+ArmorMaterialOrcish
+ArmorMaterialEbony
+ArmorMaterialDaedric
+ArmorMaterialDragonplate
+Light Armor Sets:
+ArmorMaterialLeather
+ArmorMaterialScaled
+ArmorMaterialElven 
+ArmorMaterialGlass
+ArmorMaterialDragonscale
+GLOBAL CONFIGURATION VARIABLES
+1. Crafting & Progression
+REQUIRED_SMITHING_SKILL = 25
+Adds a mandatory Smithing level condition to the forge recipe.
+Armor Bonus: Increases base protection by Skill / 10.0.
+Price Bonus: Increases market value by Round(Skill / 10.0).
+FOR_FEMALE_ONLY = True
+Injects a gender check into the recipe. If enabled, "fancy" female-only outfits will not appear in the forge for male characters to keep the menu clean.
+2. Balance & Difficulty
+ADVANCED_ENCHANTMENT_PROTECTION = True
+Injects a Dummy Enchantment into items classified as Visual Slots. This prevents players from using "free" accessory slots to stack extra enchantments, preserving game difficulty.
+BACKPACK_SLOT_ENCHANTABLE = False
+Determines if Slot 47 (Backpacks/Utility items) is a gameplay or visual slot. Setting this to False prevents power-creep, as Slot 47 items often share space with other armors and already provide native buffs.
+FOREARMS_DEBUFF_MULTIPLIER = 2.5
+Applies to Slot 34. If an outfit has no Hands (Gauntlets) slot, the Forearms provide protection but are debuffed by this factor to discourage "slot-stacking" with vanilla heavy gauntlets.
+3. Visual Slot Logic
+Definition: Any item that does not occupy a primary combat slot (Head, Body, Hands, Feet, Shield) is treated as Visual.
+Standardized Stats: Visual items are set to 1.0 Weight, 0 Armor Rating, and include a description note stating they are for appearance only.
+
 Mandatory Record Preparation
 Before running the script, the user MUST perform two steps in SSEdit:
 Set First Person Flags (BOD2): You must define which parts of the body the item covers (Body, Head, Hands, Feet, etc.). This is the primary data the script uses to distinguish between Mechanical and Visual slots.
@@ -39,6 +74,16 @@ RECOMMENDATION: Before running the script, ensure each item has only one materia
 
 ⚠️ ATTENTION: VISUAL SLOTS
 Visual slots are intentionally stripped of ArmorMaterial keywords. This prevents them from triggering Requiem's tier-based perk buffs, ensuring that cosmetic items remain strictly cosmetic.
+
+WEAPON BALANCING & SANITIZATION
+To ensure consistent performance and economic value, the script requires each weapon record to have two specific Keyword categories assigned: Weapon Material (e.g., WeaponMaterialSteel) and Weapon Type (e.g., WeapTypeWarhammer).
+Core Weapon Logic:
+Base Stat Synchronization: The script automatically resets Base Damage, Weight, and Price to match the official UESP Skyrim Wiki values. This ensures mod-added weapons fit perfectly into the vanilla or Requiem power curve.
+Craftsmanship Damage Bonus: Similar to armor protection, weapon lethality scales with player expertise. A damage bonus is applied based on the REQUIRED_SMITHING_SKILL, rewarding high-level smiths with superior gear.
+Vendor Tagging: The script performs a safety check for the VendorItemWeapon [KYWD:0008F958] keyword. If missing, it is automatically assigned to ensure the weapon can be traded with the appropriate merchants and blacksmiths.
+Supported Categories:
+Materials: Iron, Steel, Dwarven, Orcish, Elven, Glass, Ebony, Daedric, Dragonbone, and more.
+Types: Daggers, Swords, War Axes, Maces, Greatswords, Battleaxes, Warhammers, Bows
 
 Smithing Skill Integration
 REQUIRED_SMITHING_SKILL = 25 (Default Example)

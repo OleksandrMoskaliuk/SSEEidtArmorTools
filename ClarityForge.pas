@@ -37,7 +37,7 @@ const
 	{========================================================}
 	{ GLOBAL VARS CONFIGURATION                              }
 	{========================================================}
-	REQUIRED_SMITHING_SKILL = 5;
+	REQUIRED_SMITHING_SKILL = 100;
 	FOR_FEMALE_ONLY = True;
 	FOREARMS_DEBUFF_MULTIPLIER = 2.5;
 	BACKPACK_SLOT_ENCHANTABLE = False;
@@ -426,6 +426,7 @@ begin
 	bisClothing := IsVisualSlot(Slots) 
 		or (Pos('Ring ', Slots) > 0) 
 		or (Pos('Amulet ', Slots) > 0) 
+		or (Pos('Ears ', Slots) > 0)
 		or (Pos('Backpack ', Slots) > 0);
 
 	if bisClothing then begin
@@ -471,7 +472,7 @@ begin
 		removeKeyword(e, 'ArmorClothing');
 
 		{ Accessory Logic }
-		isJewelry := (Pos('Ring ', Slots) > 0) or (Pos('Amulet ', Slots) > 0);
+		isJewelry := (Pos('Ring ', Slots) > 0) or (Pos('Amulet ', Slots) > 0) or (Pos('Ears ', Slots) > 0);
 		isClothing := IsVisualSlot(Slots) or isJewelry or (Pos('Backpack ', Slots) > 0);
 
 		if isClothing then begin
@@ -479,6 +480,7 @@ begin
 			if isJewelry then begin
 				addKeyword(e, GetKeywordByEditorID('VendorItemJewelry'));
 				addKeyword(e, GetKeywordByEditorID('ArmorJewelry'));
+				addKeyword(e, GetKeywordByEditorID('JewelryExpensive'));
 			end else begin
 				addKeyword(e, GetKeywordByEditorID('VendorItemClothing'));
 			end;
@@ -1102,7 +1104,7 @@ var
 	m_WeightReduceHeavy: Float;
 begin
 	Result := 1.0;
-	m_WeightReduceHeavy := 12; 
+	m_WeightReduceHeavy := 9; 
 	if not HasKeyword(e, 'ArmorClothing') then begin
 		
 		{==================== HEAVY ====================}
@@ -1262,6 +1264,11 @@ begin
 			end;
 			Exit;
 		end;
+		
+		if (Result < 1) then begin 
+			Result := 1;
+		end;
+		
 	end;
 end;
 {========================================================}
