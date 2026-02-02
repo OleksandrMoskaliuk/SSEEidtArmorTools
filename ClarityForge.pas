@@ -37,11 +37,11 @@ const
 	{========================================================}
 	{ GLOBAL VARS CONFIGURATION                              }
 	{========================================================}
-	REQUIRED_SMITHING_SKILL = 10;
+	REQUIRED_SMITHING_SKILL = 5;
 	FOR_FEMALE_ONLY = True;
 	FOREARMS_DEBUFF_MULTIPLIER = 2.5;
 	BACKPACK_SLOT_ENCHANTABLE = False;
-	ENCHANTMENT_SWAPPER_MOD_PROTECTION = True;
+	ADVANCED_ENCHANTMENT_PROTECTION = True;
 
 	sScriptVersion = '1.0.0';
 	sRepoUrl = 'https://github.com/OleksandrMoskaliuk/SSEEidtArmorTools';	
@@ -90,7 +90,6 @@ begin
 	{ Logging Configuration }
 	AddMessage('--- ARMOR CONFIGURATOR STARTED ---');
 	AddMessage('SMITHING REQUIREMENT = ' + IntToStr(GlobalSmithingReq));
-	AddMessage('ARMOR BONUS = ' + FloatToStr(GlobalArmorBonus));
 
 	{ Validation Logic }
 	if (GlobalSmithingReq < 0) or (GlobalSmithingReq > 100) then begin
@@ -116,20 +115,30 @@ var
 	m_WeaponDamage: integer;
 	m_WeaponPrice: Integer;
 	m_WeaponWeight: Double; // Weights should be Double/Float
+	//Enchant for ENCHANTMENT_PROTECTION
+	m_DummyEnch: IInterface;
+	
 begin
 	m_recordSignature := Signature(selectedRecord);
 	GlobalProcessedRecords := GlobalProcessedRecords + 1;
-
+	
 	{ 1. Filter: Armor (ARMO) }
 	if m_recordSignature = 'ARMO' then begin
 		m_Slots := GetFirstPersonFlags(selectedRecord);
-
+		
 		{ 1.1 Initialization: Scan for Hands once per file }
-		if not GlobalHasHandsWasExecuted then begin
+		if not GlobalHasHandsWasExecuted then begin // Do Once
+			AddMessage('ARMOR RATING BONUS FROM SMITHING SKILL = ' + FloatToStr(GlobalArmorBonus));
 			m_currentFile := GetFile(selectedRecord);
-			OutfitHasHands(m_currentFile);
+			OutfitHasHands(m_currentFile);	
 		end;
-
+		
+		if not Assigned(m_DummyEnch) then begin
+			m_currentFile := GetFile(selectedRecord);
+			m_DummyEnch := CreateDummyEnchantment(m_currentFile);
+			
+		end;
+		
 		{ 1.2 Classification & Cleanup }
 		AddVitalKeywords(selectedRecord, m_Slots);
 		
@@ -147,25 +156,32 @@ begin
 		SetElementEditValues(selectedRecord, 'DATA\Value', IntToStr(m_ArmorPrice));
 		
 		{ 1.5 Finalization }
-		FinalizeVisualSlot(selectedRecord);
+		FinalizeVisualSlot(selectedRecord, m_DummyEnch);
 		
 		{ 1.6 Crafting }
 		MakeCraftableV2(selectedRecord);
 		
 		{ 1.7 Tempering: Block Clothing and Visual Slots }
 		if (not IsVisualSlot(m_Slots)) and (not HasKeyword(selectedRecord, 'ArmorClothing')) then begin
-			//makeTemperable(selectedRecord);
+			makeTemperable(selectedRecord);
 		end;
 	end;
 	
 	{ 2. Filter: Weapon (WEAP) }
 	if m_recordSignature = 'WEAP' then begin
+	
+		if not GlobalHasHandsWasExecuted then begin
+		AddMessage(Name(selectedRecord) + ' DAMAGE BONUS FROM SMITHING SKILL + ' + FloatToStr(GlobalArmorBonus));
+			GlobalHasHandsWasExecuted := true;
+		end;
+
 		{ Standardize Weapon Keywords (VendorItemWeapon, etc.) }
 		AddVitalKeywords(selectedRecord, '');
 		
 		m_WeaponDamage := GetVanillaWDamage(selectedRecord);
 		SetElementEditValues(selectedRecord, 'DATA\Damage', IntToStr(m_WeaponDamage));
-
+		//AddMessage(Name(selectedRecord) + ' TOTAL DAMAGE = ' + FloatToStr(GetVanillaWDamage(selectedRecord)));
+		
 		m_WeaponPrice := GetVanillaWPrice(selectedRecord);
 		SetElementEditValues(selectedRecord, 'DATA\Value', IntToStr(m_WeaponPrice));
 
@@ -178,6 +194,48 @@ begin
 	
 	Result := 0;
 end;
+{========================================================}
+{ CREATE DUMMY ENCHANTMENT                               }
+{========================================================}
+function CreateDummyEnchantment(f: IInterface): IInterface;
+var
+	mgefGroup, enchGroup, mgef, ench, effects, entry: IInterface;
+begin
+	{ 1. Check if the ENCH already exists in the load order }
+	Result := MainRecordByEditorID(GroupBySignature(f, 'ENCH'), 'aaaDummyProtectionENCH');
+	
+	{ If found, we stop here and return the existing record }
+	if Assigned(Result) then Exit;
+
+	{ 2. If NOT found, proceed with creation as before }
+	mgefGroup := GroupBySignature(f, 'MGEF');
+	if not Assigned(mgefGroup) then mgefGroup := Add(f, 'MGEF', True);
+	
+	enchGroup := GroupBySignature(f, 'ENCH');
+	if not Assigned(enchGroup) then enchGroup := Add(f, 'ENCH', True);
+
+	{ Create MGEF }
+	mgef := Add(mgefGroup, 'MGEF', True);
+	SetElementEditValues(mgef, 'EDID', 'aaaDummyProtectionMGEF');
+	SetElementEditValues(mgef, 'FULL', 'Internal Protection');
+	SetElementEditValues(mgef, 'Magic Item Data\Flags', 'Hide in UI, No Duration, No Magnitude');
+	
+	{ Create ENCH }
+	ench := Add(enchGroup, 'ENCH', True);
+	SetElementEditValues(ench, 'EDID', 'aaaDummyProtectionENCH');
+	SetElementEditValues(ench, 'FULL', 'Protected Item');
+	
+	{ Link them }
+	effects := Add(ench, 'Effects', True); 
+	entry := ElementByIndex(effects, 0);
+	SetNativeValue(ElementByPath(entry, 'EFID'), FixedFormID(mgef)); 
+	
+	SetElementEditValues(entry, 'EFIT\Magnitude', '0');
+	
+	Result := ench;
+end;
+
+
 {========================================================}
 { SLOT LOGIC                                             }
 {========================================================}
@@ -278,41 +336,55 @@ begin
 	// If at least one gameplay slot exists → NOT visual
 	Result := not hasGameplaySlot;
 end;
-
-procedure FinalizeVisualSlot(e: IInterface);
+{========================================================}
+{ PROTECTION FROM ENCHANTMENTS                           }
+{========================================================}
+procedure FinalizeVisualSlot(e: IInterface; enc: IInterface);
 var
 	kw: IInterface;
 	existingDesc: string;
 	visualNote: string;
-	isAccessory: Boolean;
-	bForearmsSlot: Boolean;
 begin
 	if not IsVisualSlot(GetFirstPersonFlags(e)) then Exit;
-	// 
+	
 	visualNote := 'Visual Slot: This item is for appearance only. It provides no protection and cannot be enchanted.';
 	
 	{ 1. Add MagicDisallowEnchanting safely }
-	{ We use the EditorID check since it is a standard vanilla keyword }
 	if not HasKeyword(e, 'MagicDisallowEnchanting') then begin
 		kw := GetKeywordByEditorID('MagicDisallowEnchanting');
 		if Assigned(kw) then 
 			addKeyword(e, kw);
 	end;
 
-	{ 2. Handle Description (Clean & Update) }
-	{ If DESC exists, we check if our note is already there to avoid duplicates }
+	{ 2. Handle Description }
 	existingDesc := GetElementEditValues(e, 'DESC');
-	
 	if Pos(visualNote, existingDesc) = 0 then begin
-		{ If there is old text, we decide to overwrite it or append }
-		{ For Visual Slots, overwriting is cleaner for your balance philosophy }
-		if not Assigned(ElementBySignature(e, 'DESC')) then
+		if not Assigned(ElementByPath(e, 'DESC')) then
 			Add(e, 'DESC', True);
-			
 		SetElementEditValues(e, 'DESC', visualNote);
 	end;
-	if(ENCHANTMENT_SWAPPER_MOD_PROTECTION) then begin
-		AddVanillaCarryWeightEnchantment(e);
+
+	{ 3. Enchantment Swapper Protection }
+	if ADVANCED_ENCHANTMENT_PROTECTION then begin
+		if Assigned(enc) then begin
+			{ Check if Object Effect is missing or set to [00000000] }
+			if (not Assigned(ElementByPath(e, 'EITM'))) or (FixedFormID(ElementByPath(e, 'EITM')) = 0) then begin
+				
+				{ Ensure the EITM field exists }
+				if not Assigned(ElementByPath(e, 'EITM')) then
+					Add(e, 'EITM', True);
+				
+				{ Set the dummy enchantment }
+				SetNativeValue(ElementByPath(e, 'EITM'), FixedFormID(enc));
+				
+				{ Ensure EAMT exists and set to 0 }
+				if not Assigned(ElementByPath(e, 'EAMT')) then
+					Add(e, 'EAMT', True);
+				SetElementEditValues(e, 'EAMT', '0');
+			end;
+		end else begin
+			AddMessage('Warning: m_DummyEnch cache is empty for ' + Name(e));
+		end;
 	end;
 end;
 {========================================================}
@@ -1549,7 +1621,6 @@ begin
 	
 	Result := newItem;
 end;
-
 {========================================================}
 { ADD VANILLA ENCHANTMENT TO ARMOR                       }
 { EnchArmorFortifyCarry01 (0007A109)                     }
