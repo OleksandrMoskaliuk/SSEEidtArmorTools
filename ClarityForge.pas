@@ -156,7 +156,7 @@ begin
 		SetElementEditValues(selectedRecord, 'DATA\Value', IntToStr(m_ArmorPrice));
 		
 		{ 1.5 Finalization }
-		FinalizeVisualSlot(selectedRecord, m_DummyEnch);
+		fAddEnchProtection(selectedRecord, m_DummyEnch);
 		
 		{ 1.6 Crafting }
 		MakeCraftableV2(selectedRecord);
@@ -339,7 +339,7 @@ end;
 {========================================================}
 { PROTECTION FROM ENCHANTMENTS                           }
 {========================================================}
-procedure FinalizeVisualSlot(e: IInterface; enc: IInterface);
+procedure fAddEnchProtection(e: IInterface; enc: IInterface);
 var
 	kw: IInterface;
 	existingDesc: string;
