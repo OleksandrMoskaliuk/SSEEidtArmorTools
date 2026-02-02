@@ -36,3 +36,6 @@ Logic Conflict: The script identifies an item's tier by scanning for keywords li
 Perk Incompatibility: Skyrim’s engine (and perks like Matching Set or Well Fitted) only calculates bonuses based on a single material type. Multiple keywords can break these bonuses and cause the item to scale incorrectly with the player's Smithing skill.
 Recipe Generation: The MakeCraftableV2 function relies on a single material to determine which perk is required for crafting. Multiple materials will result in a recipe that might require the wrong perk or provide the wrong experience gain.
 RECOMMENDATION: Before running the script, ensure each item has only one material keyword. Use the sseEdit Record Header view to remove any redundant or conflicting ArmorMaterial keywords.
+
+⚠️ ATTENTION: VISUAL SLOTS
+Visual slots are intentionally stripped of ArmorMaterial keywords. This prevents them from triggering Requiem's tier-based perk buffs, ensuring that cosmetic items remain strictly cosmetic.
