@@ -118,71 +118,53 @@ var
 	// Weapons
 	m_WeaponDamage: integer;
 	m_WeaponPrice: Integer;
-	m_WeaponWeight: Float;
+	m_WeaponWeight: Double; // Weights should be Double/Float
 begin
-	m_ArmorRating := 0;
-	m_ArmorPrice := 0;
-	m_ArmorWeight := 0.0;
-	m_WeaponDamage := 0;
-	m_WeaponPrice := 0;
-	m_WeaponWeight := 0.0;
 	m_recordSignature := Signature(selectedRecord);
-	
 	GlobalProcessedRecords := GlobalProcessedRecords + 1;
 
-	{ 1 Filter: Armor (ARMO) }
+	{ 1. Filter: Armor (ARMO) }
 	if m_recordSignature = 'ARMO' then begin
-	
 		m_Slots := GetFirstPersonFlags(selectedRecord);
 
-		{ 1.1 Initialization: Scan the file for 'Hands' slot once per session }
-		{ This determines if 'Forearms' should be treated as functional armor or decoration }
+		{ 1.1 Initialization: Scan for Hands once per file }
 		if not GlobalHasHandsWasExecuted then begin
 			m_currentFile := GetFile(selectedRecord);
 			OutfitHasHands(m_currentFile);
 		end;
 
-		{ 1.2 Cleanup: Remove keywords that do not belong to the item's specific slots }
-		{ Example: 'ArmorCuirass' keyword is removed from 'Head' or 'Hands' slots }
-		// AddVitalKeywords now handle all stuff
-		// RemoveRedundantKeywords(selectedRecord, m_Slots);
-		
-		{ 1.3 Classification: Add vital armor keywords (Cuirass, Helmet, etc.) }
-		{ Based on the First Person Flags (Biped Slots) }
+		{ 1.2 Classification & Cleanup }
 		AddVitalKeywords(selectedRecord, m_Slots);
 		
-		{ 1.4 Material Logic: Set Armor Type (Heavy/Light/Clothing) based on materials }
+		{ 1.3 Material Logic: Heavy/Light/Clothing }
 		SetArmorType(selectedRecord);
 		
-		{ 1.5 Stat Balancing: Apply vanilla-aligned base values }
+		{ 1.4 Stat Balancing }
 		m_ArmorRating := GetVanillaAR(selectedRecord, m_Slots);  
-		SetElementEditValues(selectedRecord, 'DNAM - Armor Rating', m_ArmorRating);
+		SetElementEditValues(selectedRecord, 'DNAM - Armor Rating', FloatToStr(m_ArmorRating));
 		
 		m_ArmorWeight := GetVanillaAWeight(selectedRecord, m_Slots); 
-		SetElementEditValues(selectedRecord, 'DATA\Weight', m_ArmorWeight);
+		SetElementEditValues(selectedRecord, 'DATA\Weight', FloatToStr(m_ArmorWeight));
 		
-		m_ArmorPrice := GetVanillaAPrice(selectedRecord, m_Slots); 
-		SetElementEditValues(selectedRecord, 'DATA\Value', m_ArmorPrice);
+		m_ArmorPrice := Round(GetVanillaAPrice(selectedRecord, m_Slots)); 
+		SetElementEditValues(selectedRecord, 'DATA\Value', IntToStr(m_ArmorPrice));
 		
-		{ 1.6 Finalization: Handle 'Visual Slots' (0 weight/value/AR + Enchanting Block) }
+		{ 1.5 Finalization: Force 0 stats for accessories }
 		FinalizeVisualSlot(selectedRecord);
 		
-		{ 1.7 Crafting: Generate recipes based on the finalized keywords and stats }
-		{ Visual slots receive a 'token cost' recipe (e.g., 1 Gold) }
+		{ 1.6 Crafting }
 		MakeCraftableV2(selectedRecord);
 		
-		{ 1.8 Tempering: Add improvement recipes only for functional armor pieces }
-		{Prevents tempering Clothing}
-		if  (not IsVisualSlot(m_Slots) and not HasKeyword(selectedRecord, 'ArmorClothing')) then begin
-			{ Supports tempering for both enchanted and non-enchanted items }
+		{ 1.7 Tempering: Block Clothing and Visual Slots }
+		if (not IsVisualSlot(m_Slots)) and (not HasKeyword(selectedRecord, 'ArmorClothing')) then begin
 			makeTemperable(selectedRecord);
 		end;
 	end;
 	
 	{ 2. Filter: Weapon (WEAP) }
 	if m_recordSignature = 'WEAP' then begin
-		
-		AddVitalKeywords(selectedRecord, m_Slots);
+		{ Standardize Weapon Keywords (VendorItemWeapon, etc.) }
+		AddVitalKeywords(selectedRecord, '');
 		
 		m_WeaponDamage := GetVanillaWDamage(selectedRecord);
 		SetElementEditValues(selectedRecord, 'DATA\Damage', IntToStr(m_WeaponDamage));
@@ -198,7 +180,6 @@ begin
 	end;
 	
 	Result := 0;
-	
 end;
 {========================================================}
 { SLOT LOGIC                                             }
@@ -1836,7 +1817,23 @@ begin
 		{ Check if armor considered as "Visual Armor Slot" }
 		if IsVisualSlot(GetFirstPersonFlags(itemRecord)) then begin
 			addItemV2(recipeItems, GetMaterial('Gold001'), 1);
-			// Cleanup and Validation
+			
+			{ Prevents "Phantom Perks" where accessories trigger high-tier armor buffs }
+			removeKeyword(itemRecord, 'ArmorMaterialIron');
+			removeKeyword(itemRecord, 'ArmorMaterialSteel');
+			removeKeyword(itemRecord, 'ArmorMaterialDwarven');
+			removeKeyword(itemRecord, 'ArmorMaterialOrcish');
+			removeKeyword(itemRecord, 'ArmorMaterialSteelPlate');
+			removeKeyword(itemRecord, 'ArmorMaterialEbony');
+			removeKeyword(itemRecord, 'ArmorMaterialDaedric');
+			removeKeyword(itemRecord, 'ArmorMaterialDragonplate');
+			removeKeyword(itemRecord, 'ArmorMaterialLeather');
+			removeKeyword(itemRecord, 'ArmorMaterialScaled');
+			removeKeyword(itemRecord, 'ArmorMaterialElven');
+			removeKeyword(itemRecord, 'ArmorMaterialGlass');
+			removeKeyword(itemRecord, 'ArmorMaterialDragonscale');
+			
+			{ Cleanup and Validation }
 			removeInvalidEntries(recipeCraft);
 			if GetElementEditValues(recipeCraft, 'COCT') = '' then begin
 				warn('No item requirements specified for: ' + Name(recipeCraft));
@@ -1850,11 +1847,28 @@ begin
 			addItemV2(recipeItems, GetMaterial('Leather01'), 1);
 			addItemV2(recipeItems, GetMaterial('LeatherStrips'), 1);
 			addItemV2(recipeItems, GetMaterial('IngotIron'), 1);
-			// Cleanup and Validation
+			
+			{ Prevents "Phantom Perks" where accessories trigger high-tier armor buffs }
+			removeKeyword(itemRecord, 'ArmorMaterialIron');
+			removeKeyword(itemRecord, 'ArmorMaterialSteel');
+			removeKeyword(itemRecord, 'ArmorMaterialDwarven');
+			removeKeyword(itemRecord, 'ArmorMaterialOrcish');
+			removeKeyword(itemRecord, 'ArmorMaterialSteelPlate');
+			removeKeyword(itemRecord, 'ArmorMaterialEbony');
+			removeKeyword(itemRecord, 'ArmorMaterialDaedric');
+			removeKeyword(itemRecord, 'ArmorMaterialDragonplate');
+			removeKeyword(itemRecord, 'ArmorMaterialLeather');
+			removeKeyword(itemRecord, 'ArmorMaterialScaled');
+			removeKeyword(itemRecord, 'ArmorMaterialElven');
+			removeKeyword(itemRecord, 'ArmorMaterialGlass');
+			removeKeyword(itemRecord, 'ArmorMaterialDragonscale');
+			
+			{ Cleanup and Validation }
 			removeInvalidEntries(recipeCraft);
 			if GetElementEditValues(recipeCraft, 'COCT') = '' then begin
 				warn('No item requirements specified for: ' + Name(recipeCraft));
 			end;
+			
 			Result := recipeCraft;
 			Exit;
 		end;
