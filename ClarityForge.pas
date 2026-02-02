@@ -1816,7 +1816,9 @@ begin
 		
 		{ Check if armor considered as "Visual Armor Slot" }
 		if IsVisualSlot(GetFirstPersonFlags(itemRecord)) then begin
-			addItemV2(recipeItems, GetMaterial('Gold001'), 1);
+			addItemV2(recipeItems, GetMaterial('Leather01'), 1);
+			addItemV2(recipeItems, GetMaterial('LeatherStrips'), 1);
+			addItemV2(recipeItems, GetMaterial('IngotIron'), 1);
 			
 			{ Prevents "Phantom Perks" where accessories trigger high-tier armor buffs }
 			removeKeyword(itemRecord, 'ArmorMaterialIron');
