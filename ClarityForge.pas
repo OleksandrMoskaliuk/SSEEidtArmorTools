@@ -40,10 +40,7 @@ const
 	REQUIRED_SMITHING_SKILL = 10;
 	FOR_FEMALE_ONLY = True;
 	FOREARMS_DEBUFF_MULTIPLIER = 2.5;
-
-	{========================================================}
-	{ ENCHANTMENT SWAPPER MOD PROTECTION                     }
-	{========================================================}
+	BACKPACK_SLOT_ENCHANTABLE = False;
 	ENCHANTMENT_SWAPPER_MOD_PROTECTION = True;
 
 	sScriptVersion = '1.0.0';
@@ -264,7 +261,7 @@ begin
 			or (slotName = 'Shield')
 			or (slotName = 'Hair')
 			or (slotName = 'Circlet')
-			or (slotName = 'Backpack')
+			or ((slotName = 'Backpack') and BACKPACK_SLOT_ENCHANTABLE)
 			or (slotName = 'Amulet')
 			or (slotName = 'Ring')
 			or (slotName = 'Ears')
