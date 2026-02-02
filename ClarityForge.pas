@@ -37,7 +37,7 @@ const
 	{========================================================}
 	{ GLOBAL VARS CONFIGURATION                              }
 	{========================================================}
-	REQUIRED_SMITHING_SKILL = 5;
+	REQUIRED_SMITHING_SKILL = 10;
 	FOR_FEMALE_ONLY = True;
 	FOREARMS_DEBUFF_MULTIPLIER = 2.5;
 
@@ -47,7 +47,7 @@ const
 	ENCHANTMENT_SWAPPER_MOD_PROTECTION = True;
 
 	sScriptVersion = '1.0.0';
-	sRepoUrl = 'https://github.com';	
+	sRepoUrl = 'https://github.com/OleksandrMoskaliuk/SSEEidtArmorTools';	
 
 var
 	GlobalSmithingReq: Integer;
@@ -149,7 +149,7 @@ begin
 		m_ArmorPrice := Round(GetVanillaAPrice(selectedRecord, m_Slots)); 
 		SetElementEditValues(selectedRecord, 'DATA\Value', IntToStr(m_ArmorPrice));
 		
-		{ 1.5 Finalization: Force 0 stats for accessories }
+		{ 1.5 Finalization }
 		FinalizeVisualSlot(selectedRecord);
 		
 		{ 1.6 Crafting }
@@ -157,7 +157,7 @@ begin
 		
 		{ 1.7 Tempering: Block Clothing and Visual Slots }
 		if (not IsVisualSlot(m_Slots)) and (not HasKeyword(selectedRecord, 'ArmorClothing')) then begin
-			makeTemperable(selectedRecord);
+			//makeTemperable(selectedRecord);
 		end;
 	end;
 	
@@ -335,6 +335,7 @@ begin
     Result :=
     HasKeyword(selectedRecord,'ArmorMaterialSteel') or
     HasKeyword(selectedRecord,'ArmorMaterialDwarven') or
+	HasKeyword(selectedRecord,'ArmorMaterialOrcish') or
     HasKeyword(selectedRecord,'ArmorMaterialSteelPlate') or
     HasKeyword(selectedRecord,'ArmorMaterialEbony') or
 	HasKeyword(selectedRecord,'ArmorMaterialDragonplate') or
@@ -347,62 +348,26 @@ procedure SetArmorType(e: IInterface);
 var
 	armorTypeField: IInterface;
 	Slots: string;
-	bisClothing, isJewelry: Boolean;
+	bisClothing: Boolean;
 begin
 	armorTypeField := ElementByPath(e, 'BOD2\Armor Type');
 	Slots := GetFirstPersonFlags(e);
 
-	{ 1. Accessory/Visual Identification }
-	isJewelry := (Pos('Ring ', Slots) > 0) or (Pos('Amulet ', Slots) > 0);
-	bisClothing := IsVisualSlot(Slots) or isJewelry or (Pos('Backpack ', Slots) > 0);
+	{ Accessory / Visual / Jewelry Identification }
+	bisClothing := IsVisualSlot(Slots) 
+		or (Pos('Ring ', Slots) > 0) 
+		or (Pos('Amulet ', Slots) > 0) 
+		or (Pos('Backpack ', Slots) > 0);
 
 	if bisClothing then begin
-		{ Set Armor Type enum }
 		SetEditValue(armorTypeField, 'Clothing');
-		
-		{ Sync Keywords for Clothing }
-		removeKeyword(e, 'ArmorHeavy');
-		removeKeyword(e, 'ArmorLight');
-		addKeyword(e, GetKeywordByEditorID('ArmorClothing'));
-		
-		{ Vendor Logic: Jewelry vs General Clothing }
-		if isJewelry then begin
-			removeKeyword(e, 'VendorItemClothing');
-			addKeyword(e, GetKeywordByEditorID('VendorItemJewelry'));
-			addKeyword(e, GetKeywordByEditorID('ArmorJewelry'));
-			AddMessage('Set to Clothing (Jewelry): ' + Name(e));
-		end else begin
-			addKeyword(e, GetKeywordByEditorID('VendorItemClothing'));
-			AddMessage('Set to Clothing (Accessory/Visual): ' + Name(e));
-		end;
 		Exit;
 	end;
 	
-	{ 2. Heavy Armor Material }
-	if IsHeavyArmorMaterial(e) then begin
-		SetEditValue(armorTypeField, 'Heavy Armor');
-		
-		removeKeyword(e, 'ArmorLight');
-		removeKeyword(e, 'ArmorClothing');
-		addKeyword(e, GetKeywordByEditorID('ArmorHeavy'));
-		addKeyword(e, GetKeywordByEditorID('VendorItemArmor'));
-		
-		AddMessage('Set to Heavy Armor: ' + Name(e));
-		Exit;
-	end;
-	
-	{ 3. Light Armor Material (Default) }
-	if not IsHeavyArmorMaterial(e) then begin
+	if IsHeavyArmorMaterial(e) then 
+		SetEditValue(armorTypeField, 'Heavy Armor')
+	else 
 		SetEditValue(armorTypeField, 'Light Armor');
-		
-		removeKeyword(e, 'ArmorHeavy');
-		removeKeyword(e, 'ArmorClothing');
-		addKeyword(e, GetKeywordByEditorID('ArmorLight'));
-		addKeyword(e, GetKeywordByEditorID('VendorItemArmor'));
-		
-		AddMessage('Set to Light Armor: ' + Name(e));
-		Exit;
-	end;	
 end;
 {========================================================}
 { ADD VITAL ARMOR KEYWORDS                               }
@@ -411,12 +376,12 @@ procedure AddVitalKeywords(e: IInterface; Slots: string);
 var
 	kw: IInterface;
 	m_sig: string;
+	isJewelry, isClothing: Boolean;
 begin
 	m_sig := Signature(e);
 
 	{ 1. WEAPON LOGIC }
 	if m_sig = 'WEAP' then begin
-		{ Ensure VendorItemWeapon is present }
 		if not HasKeyword(e, 'VendorItemWeapon') then begin
 			kw := GetKeywordByEditorID('VendorItemWeapon');
 			if Assigned(kw) then addKeyword(e, kw);
@@ -426,15 +391,46 @@ begin
 
 	{ 2. ARMOR LOGIC }
 	if m_sig = 'ARMO' then begin
-		{ Initial Cleanup: Remove ALL major armor keywords }
-		if HasKeyword(e, 'ArmorHelmet')    then removeKeyword(e, 'ArmorHelmet');
-		if HasKeyword(e, 'ArmorCuirass')   then removeKeyword(e, 'ArmorCuirass');
-		if HasKeyword(e, 'ArmorGauntlets') then removeKeyword(e, 'ArmorGauntlets');
-		if HasKeyword(e, 'ArmorBoots')     then removeKeyword(e, 'ArmorBoots');
+		{ Initial Cleanup: Remove all conflicting Type and Vital keywords }
+		removeKeyword(e, 'ArmorHelmet');
+		removeKeyword(e, 'ArmorCuirass');
+		removeKeyword(e, 'ArmorGauntlets');
+		removeKeyword(e, 'ArmorBoots');
+		removeKeyword(e, 'ArmorShield');
+		removeKeyword(e, 'ArmorHeavy');
+		removeKeyword(e, 'ArmorLight');
+		removeKeyword(e, 'ArmorClothing');
 
-		{ Exit early for accessories and visual slots }
-		if IsVisualSlot(Slots) then Exit;
-		if (Pos('Amulet ', Slots) > 0) or (Pos('Ring ', Slots) > 0) or (Pos('Backpack ', Slots) > 0) then Exit;
+		{ Accessory Logic }
+		isJewelry := (Pos('Ring ', Slots) > 0) or (Pos('Amulet ', Slots) > 0);
+		isClothing := IsVisualSlot(Slots) or isJewelry or (Pos('Backpack ', Slots) > 0);
+
+		if isClothing then begin
+			addKeyword(e, GetKeywordByEditorID('ArmorClothing'));
+			if isJewelry then begin
+				addKeyword(e, GetKeywordByEditorID('VendorItemJewelry'));
+				addKeyword(e, GetKeywordByEditorID('ArmorJewelry'));
+			end else begin
+				addKeyword(e, GetKeywordByEditorID('VendorItemClothing'));
+			end;
+			Exit;
+		end;
+
+		{ Standard Armor Logic }
+		if IsHeavyArmorMaterial(e) then begin
+			addKeyword(e, GetKeywordByEditorID('ArmorHeavy'));
+			addKeyword(e, GetKeywordByEditorID('VendorItemArmor'));
+		end else begin
+			addKeyword(e, GetKeywordByEditorID('ArmorLight'));
+			addKeyword(e, GetKeywordByEditorID('VendorItemArmor'));
+		end;
+
+		{ SHIELD (Slot 39) }
+		if Pos('Shield ', Slots) > 0 then begin
+			kw := GetKeywordByEditorID('ArmorShield');
+			if Assigned(kw) then addKeyword(e, kw);
+			Exit;
+		end;
 
 		{ BODY }
 		if Pos('Body ', Slots) > 0 then begin
@@ -450,10 +446,11 @@ begin
 			Exit;
 		end;
 
-		{ HANDS }
-		if Pos('Hands ', Slots) > 0 then begin
+		{ HANDS / FOREARMS }
+		if (Pos('Hands ', Slots) > 0) or ((Pos('Forearms ', Slots) > 0) and (not GlobalHasHands)) then begin
 			kw := GetKeywordByEditorID('ArmorGauntlets');
 			if Assigned(kw) then addKeyword(e, kw);
+			AddFistKeywords(e);
 			Exit;
 		end;
 
@@ -463,17 +460,6 @@ begin
 			if Assigned(kw) then addKeyword(e, kw);
 			Exit;
 		end;
-
-		{ FOREARMS }
-		if Pos('Forearms ', Slots) > 0 then begin
-			if not GlobalHasHands then begin
-				kw := GetKeywordByEditorID('ArmorGauntlets');
-				if Assigned(kw) then addKeyword(e, kw);
-			end;
-			Exit;
-		end;
-		
-		AddFistKeywords(e);
 	end;
 end;
 {========================================================}
@@ -883,6 +869,7 @@ begin
 		if HasKeyword(e, 'ArmorMaterialIron') then begin
 			if Pos('Body ', Slots) > 0 then Result := 25 + GlobalArmorBonus;
 			if (Pos('Head ', Slots) > 0) or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0) then Result := 15 + GlobalArmorBonus;
+			if Pos('Shield ', Slots) > 0 then Result := 20 + GlobalArmorBonus;
 			if Pos('Hands ', Slots) > 0 then Result := 10 + GlobalArmorBonus;
 			if Pos('Feet ', Slots) > 0 then Result := 10 + GlobalArmorBonus;
 			if Pos('Forearms ', Slots) > 0 then begin
@@ -895,6 +882,7 @@ begin
 		if HasKeyword(e, 'ArmorMaterialSteel') then begin
 			if Pos('Body ', Slots) > 0 then Result := 31 + GlobalArmorBonus;
 			if (Pos('Head ', Slots) > 0) or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0) then Result := 17 + GlobalArmorBonus;
+			if Pos('Shield ', Slots) > 0 then Result := 24 + GlobalArmorBonus;
 			if Pos('Hands ', Slots) > 0 then Result := 12 + GlobalArmorBonus;
 			if Pos('Feet ', Slots) > 0 then Result := 12 + GlobalArmorBonus;
 			if Pos('Forearms ', Slots) > 0 then begin
@@ -907,6 +895,7 @@ begin
 		if HasKeyword(e, 'ArmorMaterialDwarven') then begin
 			if Pos('Body ', Slots) > 0 then Result := 34 + GlobalArmorBonus;
 			if (Pos('Head ', Slots) > 0) or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0) then Result := 18 + GlobalArmorBonus;
+			if Pos('Shield ', Slots) > 0 then Result := 26 + GlobalArmorBonus;
 			if Pos('Hands ', Slots) > 0 then Result := 13 + GlobalArmorBonus;
 			if Pos('Feet ', Slots) > 0 then Result := 13 + GlobalArmorBonus;
 			if Pos('Forearms ', Slots) > 0 then begin
@@ -919,6 +908,7 @@ begin
 		if HasKeyword(e, 'ArmorMaterialOrcish') then begin
 			if Pos('Body ', Slots) > 0 then Result := 40 + GlobalArmorBonus;
 			if (Pos('Head ', Slots) > 0) or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0) then Result := 20 + GlobalArmorBonus;
+			if Pos('Shield ', Slots) > 0 then Result := 30 + GlobalArmorBonus;
 			if Pos('Hands ', Slots) > 0 then Result := 15 + GlobalArmorBonus;
 			if Pos('Feet ', Slots) > 0 then Result := 15 + GlobalArmorBonus;
 			if Pos('Forearms ', Slots) > 0 then begin
@@ -931,6 +921,7 @@ begin
 		if HasKeyword(e, 'ArmorMaterialSteelPlate') then begin
 			if Pos('Body ', Slots) > 0 then Result := 40 + GlobalArmorBonus;
 			if (Pos('Head ', Slots) > 0) or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0) then Result := 19 + GlobalArmorBonus;
+			if Pos('Shield ', Slots) > 0 then Result := 28 + GlobalArmorBonus;
 			if Pos('Hands ', Slots) > 0 then Result := 14 + GlobalArmorBonus;
 			if Pos('Feet ', Slots) > 0 then Result := 14 + GlobalArmorBonus;
 			if Pos('Forearms ', Slots) > 0 then begin
@@ -943,6 +934,7 @@ begin
 		if HasKeyword(e, 'ArmorMaterialEbony') then begin
 			if Pos('Body ', Slots) > 0 then Result := 43 + GlobalArmorBonus;
 			if (Pos('Head ', Slots) > 0) or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0) then Result := 21 + GlobalArmorBonus;
+			if Pos('Shield ', Slots) > 0 then Result := 32 + GlobalArmorBonus;
 			if Pos('Hands ', Slots) > 0 then Result := 16 + GlobalArmorBonus;
 			if Pos('Feet ', Slots) > 0 then Result := 16 + GlobalArmorBonus;
 			if Pos('Forearms ', Slots) > 0 then begin
@@ -955,6 +947,7 @@ begin
 		if HasKeyword(e, 'ArmorMaterialDaedric') or HasKeyword(e, 'ArmorMaterialDragonplate') then begin
 			if Pos('Body ', Slots) > 0 then Result := 49 + GlobalArmorBonus;
 			if (Pos('Head ', Slots) > 0) or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0) then Result := 23 + GlobalArmorBonus;
+			if Pos('Shield ', Slots) > 0 then Result := 36 + GlobalArmorBonus;
 			if Pos('Hands ', Slots) > 0 then Result := 18 + GlobalArmorBonus;
 			if Pos('Feet ', Slots) > 0 then Result := 18 + GlobalArmorBonus;
 			if Pos('Forearms ', Slots) > 0 then begin
@@ -969,6 +962,7 @@ begin
 		if HasKeyword(e, 'ArmorMaterialLeather') then begin
 			if Pos('Body ', Slots) > 0 then Result := 26 + GlobalArmorBonus;
 			if (Pos('Head ', Slots) > 0) or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0) then Result := 12 + GlobalArmorBonus;
+			if Pos('Shield ', Slots) > 0 then Result := 18 + GlobalArmorBonus;
 			if Pos('Hands ', Slots) > 0 then Result := 7 + GlobalArmorBonus;
 			if Pos('Feet ', Slots) > 0 then Result := 7 + GlobalArmorBonus;
 			if Pos('Forearms ', Slots) > 0 then begin
@@ -981,6 +975,7 @@ begin
 		if HasKeyword(e, 'ArmorMaterialScaled') then begin
 			if Pos('Body ', Slots) > 0 then Result := 32 + GlobalArmorBonus;
 			if (Pos('Head ', Slots) > 0) or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0) then Result := 14 + GlobalArmorBonus;
+			if Pos('Shield ', Slots) > 0 then Result := 20 + GlobalArmorBonus;
 			if Pos('Hands ', Slots) > 0 then Result := 9 + GlobalArmorBonus;
 			if Pos('Feet ', Slots) > 0 then Result := 9 + GlobalArmorBonus;
 			if Pos('Forearms ', Slots) > 0 then begin
@@ -993,6 +988,7 @@ begin
 		if HasKeyword(e, 'ArmorMaterialElven') then begin
 			if Pos('Body ', Slots) > 0 then Result := 29 + GlobalArmorBonus;
 			if (Pos('Head ', Slots) > 0) or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0) then Result := 13 + GlobalArmorBonus;
+			if Pos('Shield ', Slots) > 0 then Result := 21 + GlobalArmorBonus;
 			if Pos('Hands ', Slots) > 0 then Result := 8 + GlobalArmorBonus;
 			if Pos('Feet ', Slots) > 0 then Result := 8 + GlobalArmorBonus;
 			if Pos('Forearms ', Slots) > 0 then begin
@@ -1005,6 +1001,7 @@ begin
 		if HasKeyword(e, 'ArmorMaterialGlass') then begin
 			if Pos('Body ', Slots) > 0 then Result := 38 + GlobalArmorBonus;
 			if (Pos('Head ', Slots) > 0) or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0) then Result := 16 + GlobalArmorBonus;
+			if Pos('Shield ', Slots) > 0 then Result := 27 + GlobalArmorBonus;
 			if Pos('Hands ', Slots) > 0 then Result := 11 + GlobalArmorBonus;
 			if Pos('Feet ', Slots) > 0 then Result := 11 + GlobalArmorBonus;
 			if Pos('Forearms ', Slots) > 0 then begin
@@ -1017,6 +1014,7 @@ begin
 		if HasKeyword(e, 'ArmorMaterialDragonscale') then begin
 			if Pos('Body ', Slots) > 0 then Result := 41 + GlobalArmorBonus;
 			if (Pos('Head ', Slots) > 0) or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0) then Result := 17 + GlobalArmorBonus;
+			if Pos('Shield ', Slots) > 0 then Result := 29 + GlobalArmorBonus;
 			if Pos('Hands ', Slots) > 0 then Result := 12 + GlobalArmorBonus;
 			if Pos('Feet ', Slots) > 0 then Result := 12 + GlobalArmorBonus;
 			if Pos('Forearms ', Slots) > 0 then begin
@@ -1042,6 +1040,7 @@ begin
 		if HasKeyword(e, 'ArmorMaterialIron') then begin
 			if Pos('Body ', Slots) > 0 then Result := 30 - m_WeightReduceHeavy;
 			if (Pos('Head ', Slots) > 0) or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0) then Result := 6;
+			if Pos('Shield ', Slots) > 0 then Result := 12;
 			if Pos('Hands ', Slots) > 0 then Result := 5;
 			if Pos('Feet ', Slots) > 0 then Result := 5;
 			if Pos('Forearms ', Slots) > 0 then begin
@@ -1054,6 +1053,7 @@ begin
 		if HasKeyword(e, 'ArmorMaterialSteel') then begin
 			if Pos('Body ', Slots) > 0 then Result := 35 - m_WeightReduceHeavy;
 			if (Pos('Head ', Slots) > 0) or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0) then Result := 5;
+			if Pos('Shield ', Slots) > 0 then Result := 12;
 			if Pos('Hands ', Slots) > 0 then Result := 4;
 			if Pos('Feet ', Slots) > 0 then Result := 4;
 			if Pos('Forearms ', Slots) > 0 then begin
@@ -1066,6 +1066,7 @@ begin
 		if HasKeyword(e, 'ArmorMaterialDwarven') then begin
 			if Pos('Body ', Slots) > 0 then Result := 45 - m_WeightReduceHeavy;
 			if (Pos('Head ', Slots) > 0) or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0) then Result := 12;
+			if Pos('Shield ', Slots) > 0 then Result := 15;
 			if Pos('Hands ', Slots) > 0 then Result := 8;
 			if Pos('Feet ', Slots) > 0 then Result := 8;
 			if Pos('Forearms ', Slots) > 0 then begin
@@ -1078,6 +1079,7 @@ begin
 		if HasKeyword(e, 'ArmorMaterialOrcish') then begin
 			if Pos('Body ', Slots) > 0 then Result := 35 - m_WeightReduceHeavy;
 			if (Pos('Head ', Slots) > 0) or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0) then Result := 8;
+			if Pos('Shield ', Slots) > 0 then Result := 14;
 			if Pos('Hands ', Slots) > 0 then Result := 7;
 			if Pos('Feet ', Slots) > 0 then Result := 7;
 			if Pos('Forearms ', Slots) > 0 then begin
@@ -1090,6 +1092,7 @@ begin
 		if HasKeyword(e, 'ArmorMaterialSteelPlate') then begin
 			if Pos('Body ', Slots) > 0 then Result := 38 - m_WeightReduceHeavy;
 			if (Pos('Head ', Slots) > 0) or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0) then Result := 9;
+			if Pos('Shield ', Slots) > 0 then Result := 12; { Plate sets usually use standard Steel shields }
 			if Pos('Hands ', Slots) > 0 then Result := 6;
 			if Pos('Feet ', Slots) > 0 then Result := 6;
 			if Pos('Forearms ', Slots) > 0 then begin
@@ -1102,6 +1105,7 @@ begin
 		if HasKeyword(e, 'ArmorMaterialEbony') then begin
 			if Pos('Body ', Slots) > 0 then Result := 38 - m_WeightReduceHeavy;
 			if (Pos('Head ', Slots) > 0) or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0) then Result := 10;
+			if Pos('Shield ', Slots) > 0 then Result := 14;
 			if Pos('Hands ', Slots) > 0 then Result := 7;
 			if Pos('Feet ', Slots) > 0 then Result := 7;
 			if Pos('Forearms ', Slots) > 0 then begin
@@ -1114,6 +1118,7 @@ begin
 		if HasKeyword(e, 'ArmorMaterialDaedric') then begin
 			if Pos('Body ', Slots) > 0 then Result := 50 - m_WeightReduceHeavy;
 			if (Pos('Head ', Slots) > 0) or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0) then Result := 10;
+			if Pos('Shield ', Slots) > 0 then Result := 15;
 			if Pos('Hands ', Slots) > 0 then Result := 6;
 			if Pos('Feet ', Slots) > 0 then Result := 6;
 			if Pos('Forearms ', Slots) > 0 then begin
@@ -1127,6 +1132,7 @@ begin
 		if HasKeyword(e, 'ArmorMaterialLeather') then begin
 			if Pos('Body ', Slots) > 0 then Result := 6;
 			if (Pos('Head ', Slots) > 0) or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0) then Result := 2;
+			if Pos('Shield ', Slots) > 0 then Result := 4;
 			if Pos('Hands ', Slots) > 0 then Result := 2;
 			if Pos('Feet ', Slots) > 0 then Result := 2;
 			if Pos('Forearms ', Slots) > 0 then begin
@@ -1139,6 +1145,7 @@ begin
 		if HasKeyword(e, 'ArmorMaterialScaled') then begin
 			if Pos('Body ', Slots) > 0 then Result := 6;
 			if (Pos('Head ', Slots) > 0) or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0) then Result := 2;
+			if Pos('Shield ', Slots) > 0 then Result := 6;
 			if Pos('Hands ', Slots) > 0 then Result := 2;
 			if Pos('Feet ', Slots) > 0 then Result := 2;
 			if Pos('Forearms ', Slots) > 0 then begin
@@ -1151,6 +1158,7 @@ begin
 		if HasKeyword(e, 'ArmorMaterialElven') then begin
 			if Pos('Body ', Slots) > 0 then Result := 4;
 			if (Pos('Head ', Slots) > 0) or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0) then Result := 1;
+			if Pos('Shield ', Slots) > 0 then Result := 4;
 			if Pos('Hands ', Slots) > 0 then Result := 1;
 			if Pos('Feet ', Slots) > 0 then Result := 1;
 			if Pos('Forearms ', Slots) > 0 then begin
@@ -1163,7 +1171,8 @@ begin
 		if HasKeyword(e, 'ArmorMaterialGlass') then begin
 			if Pos('Body ', Slots) > 0 then Result := 7;
 			if (Pos('Head ', Slots) > 0) or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0) then Result := 2;
-			if Pos('Hands ', Slots) > 0 then Result := 11; { Note: Reverted to your provided value logic }
+			if Pos('Shield ', Slots) > 0 then Result := 6;
+			if Pos('Hands ', Slots) > 0 then Result := 11;
 			if Pos('Feet ', Slots) > 0 then Result := 2;
 			if Pos('Forearms ', Slots) > 0 then begin
 				if GlobalHasHands then Result := 0
@@ -1175,6 +1184,7 @@ begin
 		if HasKeyword(e, 'ArmorMaterialDragonscale') then begin
 			if Pos('Body ', Slots) > 0 then Result := 10;
 			if (Pos('Head ', Slots) > 0) or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0) then Result := 4;
+			if Pos('Shield ', Slots) > 0 then Result := 6;
 			if Pos('Hands ', Slots) > 0 then Result := 3;
 			if Pos('Feet ', Slots) > 0 then Result := 3;
 			if Pos('Forearms ', Slots) > 0 then begin
@@ -1199,6 +1209,7 @@ begin
 			if (Pos('Head ', Slots) > 0) or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0) then Result := 60;
 			if Pos('Hands ', Slots) > 0 then Result := 25;
 			if Pos('Feet ', Slots) > 0 then Result := 25;
+			if Pos('Shield ', Slots) > 0 then Result := 60;
 			if Pos('Forearms ', Slots) > 0 then begin
 				if GlobalHasHands then Result := 0
 				else Result := 25;
@@ -1210,6 +1221,7 @@ begin
 			if (Pos('Head ', Slots) > 0) or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0) then Result := 125;
 			if Pos('Hands ', Slots) > 0 then Result := 55;
 			if Pos('Feet ', Slots) > 0 then Result := 55;
+			if Pos('Shield ', Slots) > 0 then Result := 150;
 			if Pos('Forearms ', Slots) > 0 then begin
 				if GlobalHasHands then Result := 0
 				else Result := 55;
@@ -1221,6 +1233,7 @@ begin
 			if (Pos('Head ', Slots) > 0) or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0) then Result := 200;
 			if Pos('Hands ', Slots) > 0 then Result := 85;
 			if Pos('Feet ', Slots) > 0 then Result := 85;
+			if Pos('Shield ', Slots) > 0 then Result := 225;
 			if Pos('Forearms ', Slots) > 0 then begin
 				if GlobalHasHands then Result := 0
 				else Result := 85;
@@ -1232,6 +1245,7 @@ begin
 			if (Pos('Head ', Slots) > 0) or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0) then Result := 500;
 			if Pos('Hands ', Slots) > 0 then Result := 200;
 			if Pos('Feet ', Slots) > 0 then Result := 200;
+			if Pos('Shield ', Slots) > 0 then Result := 500;
 			if Pos('Forearms ', Slots) > 0 then begin
 				if GlobalHasHands then Result := 0
 				else Result := 200;
@@ -1243,6 +1257,7 @@ begin
 			if (Pos('Head ', Slots) > 0) or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0) then Result := 300;
 			if Pos('Hands ', Slots) > 0 then Result := 125;
 			if Pos('Feet ', Slots) > 0 then Result := 125;
+			if Pos('Shield ', Slots) > 0 then Result := 150; 
 			if Pos('Forearms ', Slots) > 0 then begin
 				if GlobalHasHands then Result := 0
 				else Result := 125;
@@ -1254,6 +1269,7 @@ begin
 			if (Pos('Head ', Slots) > 0) or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0) then Result := 750;
 			if Pos('Hands ', Slots) > 0 then Result := 275;
 			if Pos('Feet ', Slots) > 0 then Result := 275;
+			if Pos('Shield ', Slots) > 0 then Result := 750;
 			if Pos('Forearms ', Slots) > 0 then begin
 				if GlobalHasHands then Result := 0
 				else Result := 275;
@@ -1265,9 +1281,22 @@ begin
 			if (Pos('Head ', Slots) > 0) or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0) then Result := 1600;
 			if Pos('Hands ', Slots) > 0 then Result := 625;
 			if Pos('Feet ', Slots) > 0 then Result := 625;
+			if Pos('Shield ', Slots) > 0 then Result := 1600;
 			if Pos('Forearms ', Slots) > 0 then begin
 				if GlobalHasHands then Result := 0
 				else Result := 625;
+			end;
+		end
+
+		else if HasKeyword(e, 'ArmorMaterialDragonplate') then begin
+			if Pos('Body ', Slots) > 0 then Result := 2125;
+			if (Pos('Head ', Slots) > 0) or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0) then Result := 1050;
+			if Pos('Hands ', Slots) > 0 then Result := 425;
+			if Pos('Feet ', Slots) > 0 then Result := 425;
+			if Pos('Shield ', Slots) > 0 then Result := 1050;
+			if Pos('Forearms ', Slots) > 0 then begin
+				if GlobalHasHands then Result := 0
+				else Result := 425;
 			end;
 		end
 
@@ -1277,6 +1306,7 @@ begin
 			if (Pos('Head ', Slots) > 0) or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0) then Result := 60;
 			if Pos('Hands ', Slots) > 0 then Result := 25;
 			if Pos('Feet ', Slots) > 0 then Result := 25;
+			if Pos('Shield ', Slots) > 0 then Result := 40;
 			if Pos('Forearms ', Slots) > 0 then begin
 				if GlobalHasHands then Result := 0
 				else Result := 25;
@@ -1288,6 +1318,7 @@ begin
 			if (Pos('Head ', Slots) > 0) or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0) then Result := 175;
 			if Pos('Hands ', Slots) > 0 then Result := 70;
 			if Pos('Feet ', Slots) > 0 then Result := 70;
+			if Pos('Shield ', Slots) > 0 then Result := 175; 
 			if Pos('Forearms ', Slots) > 0 then begin
 				if GlobalHasHands then Result := 0
 				else Result := 70;
@@ -1299,6 +1330,7 @@ begin
 			if (Pos('Head ', Slots) > 0) or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0) then Result := 110;
 			if Pos('Hands ', Slots) > 0 then Result := 45;
 			if Pos('Feet ', Slots) > 0 then Result := 45;
+			if Pos('Shield ', Slots) > 0 then Result := 115;
 			if Pos('Forearms ', Slots) > 0 then begin
 				if GlobalHasHands then Result := 0
 				else Result := 45;
@@ -1310,6 +1342,7 @@ begin
 			if (Pos('Head ', Slots) > 0) or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0) then Result := 450;
 			if Pos('Hands ', Slots) > 0 then Result := 190;
 			if Pos('Feet ', Slots) > 0 then Result := 190;
+			if Pos('Shield ', Slots) > 0 then Result := 450;
 			if Pos('Forearms ', Slots) > 0 then begin
 				if GlobalHasHands then Result := 0
 				else Result := 190;
@@ -1321,6 +1354,7 @@ begin
 			if (Pos('Head ', Slots) > 0) or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0) then Result := 750;
 			if Pos('Hands ', Slots) > 0 then Result := 300;
 			if Pos('Feet ', Slots) > 0 then Result := 300;
+			if Pos('Shield ', Slots) > 0 then Result := 750;
 			if Pos('Forearms ', Slots) > 0 then begin
 				if GlobalHasHands then Result := 0
 				else Result := 300;
@@ -1397,8 +1431,8 @@ begin
 	if aName = 'IngotIron' then fID := '0005ACE4'
 	else if aName = 'Gold001' then fID := '0000000F'
 	else if aName = 'IngotSteel' then fID := '0005ACE5'
-	else if aName = 'IngotCorundum' then fID := '0005AD93' { <--- Added Corundum }
-	else if aName = 'IngotDwarven' then fID := '000DB611'
+	else if aName = 'IngotCorundum' then fID := '0005AD93'
+	else if aName = 'IngotDwarven' then fID := '000DB8A2' { Corrected to Ingot }
 	else if aName = 'IngotRefinedMoonstone' then fID := '0005AD9F'
 	else if aName = 'IngotRefinedMalachite' then fID := '0005ADA1'
 	else if aName = 'IngotEbony' then fID := '0005AD9D'
@@ -1411,7 +1445,9 @@ begin
 	else if aName = 'DaedraHeart' then fID := '0003AD5B'
 	else if aName = 'GoldIngot' then fID := '0005AD9E';
 	
-	Result := getRecordByFormID(fID);
+	{ Direct lookup via the internal xEdit helper }
+	//Result := getRecordByFormID(fID);
+	Result := RecordByFormID(FileByIndex(0), fID, True);
 	
 	{ 3. Strict NULL and Zero-Reference Check }
 	if not Assigned(Result) or (FixedFormID(Result) = 0) then begin
@@ -1898,6 +1934,10 @@ begin
 				addItemV2(recipeItems, GetMaterial('Leather01'), 1);
 				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 2);
 			end;
+			if HasKeyword(itemRecord, 'ArmorShield') then begin
+				addItemV2(recipeItems, GetMaterial('Leather01'), 4);
+				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 2);
+			end;
 		end;
 		
 		{ --- SCALED ARMOR --- }
@@ -1926,6 +1966,13 @@ begin
 				addItemV2(recipeItems, GetMaterial('IngotCorundum'), 1);
 				addItemV2(recipeItems, GetMaterial('IngotSteel'), 1);
 			end;
+			{ Scaled Shield - Custom or Mod-specific as Scaled doesn't have a vanilla shield }
+			if HasKeyword(itemRecord, 'ArmorShield') then begin
+				addItemV2(recipeItems, GetMaterial('Leather01'), 2);
+				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 3);
+				addItemV2(recipeItems, GetMaterial('IngotCorundum'), 2);
+				addItemV2(recipeItems, GetMaterial('IngotSteel'), 3);
+			end;
 		end;
 
 		{ --- ELVEN ARMOR --- }
@@ -1946,6 +1993,10 @@ begin
 			end;
 			if HasKeyword(itemRecord, 'ArmorGauntlets') then begin
 				addItemV2(recipeItems, GetMaterial('IngotRefinedMoonstone'), 1);
+				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 2);
+			end;
+			if HasKeyword(itemRecord, 'ArmorShield') then begin
+				addItemV2(recipeItems, GetMaterial('IngotRefinedMoonstone'), 4);
 				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 2);
 			end;		
 		end;
@@ -1973,6 +2024,11 @@ begin
 				addItemV2(recipeItems, GetMaterial('IngotRefinedMoonstone'), 1);
 				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 2);
 			end;
+			if HasKeyword(itemRecord, 'ArmorShield') then begin
+				addItemV2(recipeItems, GetMaterial('IngotRefinedMalachite'), 4);
+				addItemV2(recipeItems, GetMaterial('IngotRefinedMoonstone'), 1);
+				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 2);
+			end;
 		end;
 		
 		{ --- DRAGONSCALE ARMOR --- }
@@ -1995,6 +2051,10 @@ begin
 				addItemV2(recipeItems, GetMaterial('DragonScales'), 2);
 				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 2);
 			end;
+			if HasKeyword(itemRecord, 'ArmorShield') then begin
+				addItemV2(recipeItems, GetMaterial('DragonScales'), 4);
+				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 2);
+			end;
 		end;
 
 		{========================================================}
@@ -2012,6 +2072,8 @@ begin
 			if HasKeyword(itemRecord, 'ArmorBoots') then 
 				addItemV2(recipeItems, GetMaterial('IngotSteel'), 2);
 			if HasKeyword(itemRecord, 'ArmorGauntlets') then 
+				addItemV2(recipeItems, GetMaterial('IngotSteel'), 2);
+			if HasKeyword(itemRecord, 'ArmorShield') then 
 				addItemV2(recipeItems, GetMaterial('IngotSteel'), 2);
 		end;
 
@@ -2035,7 +2097,11 @@ begin
 			if HasKeyword(itemRecord, 'ArmorGauntlets') then begin
 				addItemV2(recipeItems, GetMaterial('IngotDwarven'), 2);
 				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 2);
-			end;	
+			end;
+			if HasKeyword(itemRecord, 'ArmorShield') then begin
+				addItemV2(recipeItems, GetMaterial('IngotDwarven'), 2);
+				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 1);
+			end;
 		end;
 		
 		{ --- ORCISH ARMOR --- }
@@ -2059,6 +2125,11 @@ begin
 			if HasKeyword(itemRecord, 'ArmorGauntlets') then begin
 				addItemV2(recipeItems, GetMaterial('IngotOrichalcum'), 1);
 				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 2);
+				addItemV2(recipeItems, GetMaterial('Leather01'), 1);
+			end;
+			if HasKeyword(itemRecord, 'ArmorShield') then begin
+				addItemV2(recipeItems, GetMaterial('IngotOrichalcum'), 4);
+				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 1);
 				addItemV2(recipeItems, GetMaterial('Leather01'), 1);
 			end;
 		end;
@@ -2087,9 +2158,13 @@ begin
 				addItemV2(recipeItems, GetMaterial('IngotCorundum'), 1);
 				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 2);
 			end;
+			{ Steel Plate uses the standard Steel Shield recipe }
+			if HasKeyword(itemRecord, 'ArmorShield') then begin
+				addItemV2(recipeItems, GetMaterial('IngotSteel'), 2);
+				addItemV2(recipeItems, GetMaterial('IngotIron'), 1);
+			end;
 		end;
 
-		
 		{ --- EBONY ARMOR --- }
 		if HasKeyword(itemRecord, 'ArmorMaterialEbony') then begin
 			addItemV2(recipeItems, GetMaterial('Leather01'), 1);
@@ -2108,6 +2183,10 @@ begin
 			if HasKeyword(itemRecord, 'ArmorGauntlets') then begin
 				addItemV2(recipeItems, GetMaterial('IngotEbony'), 1);
 				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 2);
+			end;
+			if HasKeyword(itemRecord, 'ArmorShield') then begin
+				addItemV2(recipeItems, GetMaterial('IngotEbony'), 2);
+				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 1);
 			end;
 		end;
 
@@ -2129,6 +2208,10 @@ begin
 				addItemV2(recipeItems, GetMaterial('Leather01'), 1);
 			end;
 			if HasKeyword(itemRecord, 'ArmorGauntlets') then begin
+				addItemV2(recipeItems, GetMaterial('IngotEbony'), 2);
+				addItemV2(recipeItems, GetMaterial('Leather01'), 1);
+			end;
+			if HasKeyword(itemRecord, 'ArmorShield') then begin
 				addItemV2(recipeItems, GetMaterial('IngotEbony'), 2);
 				addItemV2(recipeItems, GetMaterial('Leather01'), 1);
 			end;
@@ -2158,10 +2241,13 @@ begin
 				addItemV2(recipeItems, GetMaterial('DragonScales'), 2);
 				addItemV2(recipeItems, GetMaterial('Leather01'), 1);
 			end;
+			if HasKeyword(itemRecord, 'ArmorShield') then begin
+				addItemV2(recipeItems, GetMaterial('DragonBone'), 1);
+				addItemV2(recipeItems, GetMaterial('DragonScales'), 1);
+			end;
 		end;
 		
-	end;	
-		
+	end;
 	// Cleanup and Validation
 	removeInvalidEntries(recipeCraft);
 
@@ -2179,4 +2265,5 @@ begin
 	AddMessage('--- SCRIPT PROCESSED ' + IntToStr(GlobalProcessedRecords) + ' RECORDS ---');
 	Result := 0;
 end;
+
 end.
