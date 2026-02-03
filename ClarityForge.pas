@@ -5,7 +5,7 @@
 	https://creativecommons.org
 
 	Copyright (c) 2024 Oleksandr Moskaliuk (Dru9Dealer)
-	Repository: https://github.com
+	Repository: https://github.com/OleksandrMoskaliuk/SSEEidtArmorTools
 
 	You are free to:
 	- Share: copy and redistribute the material in any medium or format.
@@ -37,7 +37,7 @@ const
 	{========================================================}
 	{ GLOBAL VARS CONFIGURATION                              }
 	{========================================================}
-	REQUIRED_SMITHING_SKILL = 100;
+	REQUIRED_SMITHING_SKILL = 25;
 	FOR_FEMALE_ONLY = True;
 	FOREARMS_DEBUFF_MULTIPLIER = 2.5;
 	BACKPACK_SLOT_ENCHANTABLE = False;
