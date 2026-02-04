@@ -1816,7 +1816,7 @@ begin
 		{ --- GLASS MATERIAL WEAPONS --- }
 		else if HasKeyword(itemRecord, 'WeapMaterialGlass') then begin
 			if HasKeyword(itemRecord, 'WeapTypeDagger') then begin
-				addItemV2(recipeItems, GetMaterial('IngotIngotRefinedMalachite'), 1);
+				addItemV2(recipeItems, GetMaterial('IngotRefinedMalachite'), 1);
 				addItemV2(recipeItems, GetMaterial('IngotRefinedMoonstone'), 1);
 			end else if (HasKeyword(itemRecord, 'WeapTypeSword')) or (HasKeyword(itemRecord, 'WeapTypeWarAxe')) or (HasKeyword(itemRecord, 'WeapTypeMace')) then begin
 				addItemV2(recipeItems, GetMaterial('IngotRefinedMalachite'), 1);
