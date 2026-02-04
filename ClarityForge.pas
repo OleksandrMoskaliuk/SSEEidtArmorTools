@@ -37,7 +37,7 @@ const
 	{========================================================}
 	{ GLOBAL VARS CONFIGURATION                              }
 	{========================================================}
-	REQUIRED_SMITHING_SKILL = 25;
+	REQUIRED_SMITHING_SKILL = 80;
 	FOR_FEMALE_ONLY = True;
 	FOREARMS_DEBUFF_MULTIPLIER = 2.5;
 	BACKPACK_SLOT_ENCHANTABLE = False;
@@ -1816,18 +1816,18 @@ begin
 		{ --- GLASS MATERIAL WEAPONS --- }
 		else if HasKeyword(itemRecord, 'WeapMaterialGlass') then begin
 			if HasKeyword(itemRecord, 'WeapTypeDagger') then begin
-				addItemV2(recipeItems, GetMaterial('RefinedMalachite'), 1);
+				addItemV2(recipeItems, GetMaterial('IngotIngotRefinedMalachite'), 1);
 				addItemV2(recipeItems, GetMaterial('IngotRefinedMoonstone'), 1);
 			end else if (HasKeyword(itemRecord, 'WeapTypeSword')) or (HasKeyword(itemRecord, 'WeapTypeWarAxe')) or (HasKeyword(itemRecord, 'WeapTypeMace')) then begin
-				addItemV2(recipeItems, GetMaterial('RefinedMalachite'), 1);
+				addItemV2(recipeItems, GetMaterial('IngotRefinedMalachite'), 1);
 				addItemV2(recipeItems, GetMaterial('IngotRefinedMoonstone'), 1);
 				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 1);
 			end else if (HasKeyword(itemRecord, 'WeapTypeGreatsword')) or (HasKeyword(itemRecord, 'WeapTypeBattleaxe')) or (HasKeyword(itemRecord, 'WeapTypeWarhammer')) then begin
-				addItemV2(recipeItems, GetMaterial('RefinedMalachite'), 2);
+				addItemV2(recipeItems, GetMaterial('IngotRefinedMalachite'), 2);
 				addItemV2(recipeItems, GetMaterial('IngotRefinedMoonstone'), 1);
 				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 3);
 			end else if HasKeyword(itemRecord, 'WeapTypeBow') then begin
-				addItemV2(recipeItems, GetMaterial('RefinedMalachite'), 2);
+				addItemV2(recipeItems, GetMaterial('IngotRefinedMalachite'), 2);
 				addItemV2(recipeItems, GetMaterial('IngotRefinedMoonstone'), 1);
 			end;
 		end
@@ -2080,27 +2080,27 @@ begin
 		if HasKeyword(itemRecord, 'ArmorMaterialGlass') then begin
 			addItemV2(recipeItems, GetMaterial('Leather01'), 1);
 			if HasKeyword(itemRecord, 'ArmorCuirass') then begin
-				addItemV2(recipeItems, GetMaterial('IngotRefinedMalachite'), 4);
+				addItemV2(recipeItems, GetMaterial('IngotIngotRefinedMalachite'), 4);
 				addItemV2(recipeItems, GetMaterial('IngotRefinedMoonstone'), 2);
 				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 2);
 			end;
 			if HasKeyword(itemRecord, 'ArmorHelmet') then begin
-				addItemV2(recipeItems, GetMaterial('IngotRefinedMalachite'), 2);
+				addItemV2(recipeItems, GetMaterial('IngotIngotRefinedMalachite'), 2);
 				addItemV2(recipeItems, GetMaterial('IngotRefinedMoonstone'), 1);
 				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 1);
 			end; 
 			if HasKeyword(itemRecord, 'ArmorBoots') then begin
-				addItemV2(recipeItems, GetMaterial('IngotRefinedMalachite'), 2);
+				addItemV2(recipeItems, GetMaterial('IngotIngotRefinedMalachite'), 2);
 				addItemV2(recipeItems, GetMaterial('IngotRefinedMoonstone'), 1);
 				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 2);
 			end;
 			if HasKeyword(itemRecord, 'ArmorGauntlets') then begin
-				addItemV2(recipeItems, GetMaterial('IngotRefinedMalachite'), 1);
+				addItemV2(recipeItems, GetMaterial('IngotIngotRefinedMalachite'), 1);
 				addItemV2(recipeItems, GetMaterial('IngotRefinedMoonstone'), 1);
 				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 2);
 			end;
 			if HasKeyword(itemRecord, 'ArmorShield') then begin
-				addItemV2(recipeItems, GetMaterial('IngotRefinedMalachite'), 4);
+				addItemV2(recipeItems, GetMaterial('IngotIngotRefinedMalachite'), 4);
 				addItemV2(recipeItems, GetMaterial('IngotRefinedMoonstone'), 1);
 				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 2);
 			end;
