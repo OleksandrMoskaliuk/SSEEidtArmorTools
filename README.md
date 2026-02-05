@@ -7,7 +7,7 @@ To ensure the script functions correctly and follows your **Game Balance Philoso
 Before running the script, you **MUST** perform these two steps in xEdit:
 
 1. **Set First Person Flags (BOD2):** Define which body parts the item covers (Body, Head, Hands, Feet, etc.). This is the primary data used to distinguish between **Mechanical** and **Visual** slots.
-2. **Assign Armor Material Keyword:** Add exactly **ONE** material keyword (e.g., `ArmorMaterialEbony`). This serves as the "Master Instruction" for calculating Armor Rating, Weight, Price, and crafting recipes.
+2. **Assign Armor Material Keyword:** Add exactly **ONE** material keyword (e.g., `ArmorMaterialEbony`). This serves as the "Master Instruction" for calculating stats and recipes.
 
 > [!NOTE]
 > The script currently does not support Clothing-only crafting (Linen/Silk). It is designed for Armor-grade materials requiring a forge.
@@ -15,8 +15,6 @@ Before running the script, you **MUST** perform these two steps in xEdit:
 ---
 
 ## 🔑 Required Keywords
-
-For correct price and protection calculations, the record must have one of these vanilla keywords:
 
 ### Armor Materials
 
@@ -49,24 +47,45 @@ For correct price and protection calculations, the record must have one of these
 
 
 * **`FOR_FEMALE_ONLY` (Default: True)**
-* Injects a gender check into the recipe. If enabled, female-only "fancy" outfits will not appear in the forge for male characters.
+* Injects a gender check into the recipe to keep crafting menus clean.
 
 
 
 ### 2. Balance & Difficulty
 
 * **`ADVANCED_ENCHANTMENT_PROTECTION` (Default: True)**
-* Injects a **Dummy Enchantment** into Visual Slots. This prevents players from using "free" accessory slots to stack extra enchantments, preserving intended game difficulty.
+* Injects a **Dummy Enchantment** into Visual Slots to prevent "enchantment stacking" exploits.
 
 
 * **`BACKPACK_SLOT_ENCHANTABLE` (Default: False)**
-* Determines if **Slot 47** is a gameplay or visual slot. Setting this to `False` prevents power-creep from items that share space with standard armor.
+* Determines if **Slot 47** is a gameplay or visual slot.
 
 
 * **`FOREARMS_DEBUFF_MULTIPLIER` (Default: 2.5)**
-* Applies to **Slot 34**. If an outfit has no Hands (Gauntlets) slot, Forearms provide protection but are debuffed by this factor to discourage "slot-stacking" with vanilla heavy gauntlets.
+* Applies a debuff to Slot 34 if used as the primary arm protection to discourage "slot-stacking."
 
 
+
+---
+
+## ⚖️ Dynamic Slot Balancing (The "Enchantment Budget" Rule)
+
+ClarityForge features a unique balancing system that automatically adjusts based on how "merged" your armor pieces are.
+
+### **The Hair + Circlet Logic**
+
+* **The Problem:** Many mods merge **Hair [31]** and **Circlets [42]** into one item, causing the player to lose one full enchantment slot.
+* **The Solution:** If the script detects a **Hair + Circlet** merged record, it automatically "promotes" the **Forearms [34]** slot to a Gameplay Slot.
+* **The Result:** The Forearms remain protective and enchantable to compensate for the lost headwear slot, keeping your "Total Enchantment Budget" balanced.
+
+### **The Forearms Logic**
+
+* **Standard Case:** If you have **Hands [33]**, the **Forearms [34]** are treated as decoration (0 AR).
+* **Automatic Failover:** If no Hands slot is found, the script enables Forearms as primary protection.
+* **Manual Override:** Set `FOREARMS_SLOT_ALWAYS_ENABLED = True` to always keep modular forearms gameplay-relevant.
+
+> [!TIP]
+> **Dynamic Detection:** The script performs a pre-scan of your `.esp` to identify slot overlaps. This ensures that "Modular" and "All-in-One" mods are balanced differently to maintain a consistent power level.
 
 ---
 
@@ -74,17 +93,14 @@ For correct price and protection calculations, the record must have one of these
 
 ### The Smithing/Armor Rating Curve
 
-The script provides a quality-based protection boost. A high-tier masterwork (Skill 100) coaxes more protection out of the material than a crude initiate-level forging.
-
-* **Calculation:** 
+The script provides a quality-based protection boost based on your expertise:
 
 
 ### Visual Slot Finalization
 
-* **Definition:** Any item not occupying a primary combat slot (Head, Body, Hands, Feet, Shield) is treated as **Visual**.
-* **Stats:** Visual items are set to **1.0 Weight**, **0 Armor Rating**, and **0 Gold Value**.
-* **Enchanting Block:** Receives the `MagicDisallowEnchanting` keyword.
-* **Accessory Exception:** Amulets (Slot 35) and Rings (Slot 42) are treated as Visual (0 stats) but remain **Enchantable**.
+* **Definition:** Any item not occupying a primary combat slot (Head, Body, Hands, Feet, Shield).
+* **Stats:** Set to **1.0 Weight**, **0 Armor Rating**, and **0 Gold Value**.
+* **Accessory Exception:** Amulets (Slot 35) and Rings (Slot 42) remain **Enchantable** but have 0 stats.
 
 ---
 
@@ -94,23 +110,12 @@ The script provides a quality-based protection boost. A high-tier masterwork (Sk
 
 **Avoid combining: Body [32], Hands [33], Feet [37], or Head [30/31] in one record.**
 
-* **Logic Conflict:** Records with multiple primary slots trigger result overrides, leading to unpredictable AR and Weight.
-* **Inventory Issues:** If one item occupies Body and Hands, the player cannot wear separate gauntlets; equipping gloves will unequip the entire suit.
-* **Visual Bugs:** Combining slots often forces the ARMA to hide multiple body parts, causing gaping holes in character models.
-* **Recommendation:** Always split "Suits" into modular pieces (Cuirass, Boots, Gauntlets) via xEdit.
+* **Inventory Issues:** Equipping a merged "Suit" will force other modular pieces to unequip.
+* **Enchanting Limitations:** You lose 2–3 potential enchantment slots by merging major pieces.
 
 ### ⚠️ Multiple Material Keywords
 
 **Each record MUST have exactly ONE ArmorMaterial keyword.**
 
-* **Logic Conflict:** The script scans the `KWDA` array and prioritizes the first material it finds. Multiple keywords cause incorrect stat calculations.
-* **Perk Incompatibility:** Vanilla perks (Matching Set/Well Fitted) only calculate bonuses based on a single material type.
-* **Recommendation:** Use the xEdit Record Header view to remove redundant material keywords before execution.
-
-### ⚠️ Visual Slots & Requiem
-
-Visual slots are intentionally stripped of `ArmorMaterial` keywords. This ensures cosmetic items do not trigger **Requiem's** tier-based perk buffs, keeping them strictly aesthetic.
-
----
-
-**Would you like me to generate a "Quick Start" summary block you can place at the very top of the README?**
+* **Logic Conflict:** The script will only recognize the first keyword found, potentially leading to incorrect stats.
+* **Perk Incompatibility:** Vanilla and Requiem perks require a single material type to function.

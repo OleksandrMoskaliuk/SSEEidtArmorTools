@@ -26,7 +26,6 @@ PRE-REQUISITES FOR USE:
 CORE PHILOSOPHY:
 - Modular Outfits: Distinguishes between Functional (AR-bearing) and Visual (Cosmetic) pieces.
 - Requirement Scaling: Armor Rating increases based on the Smithing Skill requirement.
-- Economic Balance: Visual slots are free to craft (1 Gold) and have 0 resale value.
 - Requiem Ready: Automatically manages ArmorType (Heavy/Light/Clothing) and Fists perks.
 ================================================================================
 }
@@ -41,8 +40,8 @@ const
 	FOR_FEMALE_ONLY = True;
 	BACKPACK_SLOT_ENCHANTABLE = False;
 	ADVANCED_ENCHANTMENT_PROTECTION = True;
-	FOREARMS_SLOT_ENABLED = True; // Forearms will be considered as "full armor" if outfit have no hands slot
-	FOREARMS_DEBUFF_MULTIPLIER = 2.5; // If FOREARMS_SLOT_ENABLED = True, the forearms will have debuff.  Set to 1 to disable.
+	FOREARMS_SLOT_ALWAYS_ENABLED = False; // Forearms will be always considered as "Armor Gauntlets".
+	FOREARMS_DEBUFF_MULTIPLIER = 2.5; // forearms Armor Rating debuff.  Set to 1 to disable.
 
 	sScriptVersion = '1.0.0';
 	sRepoUrl = 'https://github.com/OleksandrMoskaliuk/SSEEidtArmorTools';	
@@ -51,7 +50,7 @@ var
 	GlobalSmithingReq: Integer;
 	GlobalArmorBonus: Float;
 	GlobalHasHands: Boolean;
-	GlobalHasHandsWasExecuted: Boolean;
+	GlobalDoOnce: Boolean;
 	GlobalProcessedRecords: Integer;
 	GlobalForearmsDebuffMultiplier: Float;
 	GlobalWeaponDamageBonus: integer;
@@ -85,7 +84,7 @@ begin
 	
 	{ Reset Tracking Booleans }
 	GlobalHasHands := False;
-	GlobalHasHandsWasExecuted := False;
+	GlobalDoOnce := False;
 	GlobalProcessedRecords := 0;
 	
 	{ Logging Configuration }
@@ -128,16 +127,17 @@ begin
 		m_Slots := GetFirstPersonFlags(selectedRecord);
 		
 		{ 1.1 Initialization: Scan for Hands once per file }
-		if not GlobalHasHandsWasExecuted then begin // Do Once
+		if not GlobalDoOnce then begin // Do Once
 			AddMessage('ARMOR RATING BONUS FROM SMITHING SKILL = ' + FloatToStr(GlobalArmorBonus));
 			m_currentFile := GetFile(selectedRecord);
 			OutfitHasHands(m_currentFile);	
 		end;
 		
-		if not Assigned(m_DummyEnch) then begin
-			m_currentFile := GetFile(selectedRecord);
-			m_DummyEnch := CreateDummyEnchantment(m_currentFile);
-			
+		if ADVANCED_ENCHANTMENT_PROTECTION then begin		
+			if not Assigned(m_DummyEnch) then begin
+				m_currentFile := GetFile(selectedRecord);
+				m_DummyEnch := CreateDummyEnchantment(m_currentFile);
+			end;
 		end;
 		
 		{ 1.2 Classification & Cleanup }
@@ -171,9 +171,9 @@ begin
 	{ 2. Filter: Weapon (WEAP) }
 	if m_recordSignature = 'WEAP' then begin
 	
-		if not GlobalHasHandsWasExecuted then begin
+		if not GlobalDoOnce then begin
 		AddMessage(Name(selectedRecord) + ' DAMAGE BONUS FROM SMITHING SKILL + ' + FloatToStr(GlobalArmorBonus));
-			GlobalHasHandsWasExecuted := true;
+			GlobalDoOnce := true;
 		end;
 
 		{ Standardize Weapon Keywords (VendorItemWeapon, etc.) }
@@ -569,8 +569,35 @@ var
 	i: Integer;
 	rec: IInterface;
 begin
-	if FOREARMS_SLOT_ENABLED then begin
-		if (GlobalHasHandsWasExecuted = true) then Exit;
+	if (GlobalDoOnce = true) then Exit;
+	
+	if FOREARMS_SLOT_ALWAYS_ENABLED then begin
+		GlobalDoOnce := True;
+		GlobalHasHands  := False;
+		AddMessage('ARMOR -FOREARMS- WIL BE CONSIDERED AS -ARMOR GAUNTLETS-');
+		Exit;
+	end;
+	
+	{ Logic: Check for Merged Headwear (Hair + Circlet) }
+	{ If an outfit merges Hair [31] and Circlet [42] into one item, the player loses an enchantment slot. }
+	{ To maintain game balance, we "promote" the Forearms [34] to a playable/enchantable piece, }
+	{ even if the outfit already contains a standard Hands [33] slot. }
+	for i := 0 to Pred(RecordCount(file)) do begin
+		rec := RecordByIndex(file, i);
+		if Signature(rec) = 'ARMO' then begin
+			if Pos('Hair', GetFirstPersonFlags(rec)) > 0 then begin
+				if Pos('Circlet', GetFirstPersonFlags(rec)) > 0 then begin
+					GlobalHasHands  := False;
+					AddMessage('FOUND -HAIR- and -CIRCLET- SLOT IN ONE ARMOR PIECE !!!');
+					AddMessage('ARMOR -FOREARMS- WIL BE CONSIDERED AS -ARMOR GAUNTLETS-');
+					GlobalDoOnce := True;
+					Exit;
+				end;	
+			end;
+		end;
+	end;
+	
+	if (FOREARMS_SLOT_ALWAYS_ENABLED = False) then begin // Check if outfit has "Hands" slot.
 		for i := 0 to Pred(RecordCount(file)) do begin
 			rec := RecordByIndex(file, i);
 			if Signature(rec) = 'ARMO' then begin
@@ -578,13 +605,11 @@ begin
 					GlobalHasHands  := True;
 					AddMessage('FOUND -HANDS- SLOT IN CURRENT OUTFIT !!!');
 					AddMessage('ARMOR -FOREARMS- WIL BE CONSIDERED AS -DECORATION-');
-					GlobalHasHandsWasExecuted := True;
+					GlobalDoOnce := True;
 					Exit;
 				end;
 			end;
 		end;
-	end else begin
-		GlobalHasHands  := True;
 	end;
 end;
 {========================================================}
