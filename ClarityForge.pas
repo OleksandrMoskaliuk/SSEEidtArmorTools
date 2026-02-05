@@ -37,11 +37,12 @@ const
 	{========================================================}
 	{ GLOBAL VARS CONFIGURATION                              }
 	{========================================================}
-	REQUIRED_SMITHING_SKILL = 80;
+	REQUIRED_SMITHING_SKILL = 100;
 	FOR_FEMALE_ONLY = True;
-	FOREARMS_DEBUFF_MULTIPLIER = 2.5;
 	BACKPACK_SLOT_ENCHANTABLE = False;
 	ADVANCED_ENCHANTMENT_PROTECTION = True;
+	FOREARMS_SLOT_ENABLED = True; // Forearms will be considered as "full armor" if outfit have no hands slot
+	FOREARMS_DEBUFF_MULTIPLIER = 2.5; // If FOREARMS_SLOT_ENABLED = True, the forearms will have debuff.  Set to 1 to disable.
 
 	sScriptVersion = '1.0.0';
 	sRepoUrl = 'https://github.com/OleksandrMoskaliuk/SSEEidtArmorTools';	
@@ -72,10 +73,10 @@ begin
 
 	{ Set Global Values }
 	GlobalSmithingReq := REQUIRED_SMITHING_SKILL ;
-	GlobalArmorBonus := GlobalSmithingReq / 10.0;
+	GlobalArmorBonus := GlobalSmithingReq / 15.0; // Too much ArmorRating will cause Requiem script to fail
 	
 	{ Note: Result of division is Float, so we Round for Integer bonuses }
-	GlobalWeaponDamageBonus := Round(GlobalSmithingReq / 20.0);
+	GlobalWeaponDamageBonus := Round(GlobalSmithingReq / 40.0);
 	GlobalWeaponPriceBonus := GlobalSmithingReq;
 	GlobalArmorPriceBonus := Round(GlobalSmithingReq / 10.0);
 	
@@ -568,20 +569,23 @@ var
 	i: Integer;
 	rec: IInterface;
 begin
-	if (GlobalHasHandsWasExecuted = true) then Exit;
-	for i := 0 to Pred(RecordCount(file)) do begin
-		rec := RecordByIndex(file, i);
-		if Signature(rec) = 'ARMO' then begin
-			if Pos('Hands', GetFirstPersonFlags(rec)) > 0 then begin
-				GlobalHasHands  := True;
-				AddMessage('FOUND -HANDS- SLOT IN CURRENT OUTFIT !!!');
-				AddMessage('ARMOR -FOREARMS- WIL BE CONSIDERED AS -DECORATION-');
-				GlobalHasHandsWasExecuted := True;
-				Exit;
+	if FOREARMS_SLOT_ENABLED then begin
+		if (GlobalHasHandsWasExecuted = true) then Exit;
+		for i := 0 to Pred(RecordCount(file)) do begin
+			rec := RecordByIndex(file, i);
+			if Signature(rec) = 'ARMO' then begin
+				if Pos('Hands', GetFirstPersonFlags(rec)) > 0 then begin
+					GlobalHasHands  := True;
+					AddMessage('FOUND -HANDS- SLOT IN CURRENT OUTFIT !!!');
+					AddMessage('ARMOR -FOREARMS- WIL BE CONSIDERED AS -DECORATION-');
+					GlobalHasHandsWasExecuted := True;
+					Exit;
+				end;
 			end;
 		end;
+	end else begin
+		GlobalHasHands  := True;
 	end;
-	
 end;
 {========================================================}
 { GET VANILLA WEAPON DAMAGE                              }
