@@ -36,14 +36,14 @@ const
 	{========================================================}
 	{ GLOBAL VARS CONFIGURATION                              }
 	{========================================================}
-	REQUIRED_SMITHING_SKILL = 25;
+	REQUIRED_SMITHING_SKILL = 64;
 	FOR_FEMALE_ONLY = True;
 	BACKPACK_SLOT_ENCHANTABLE = False;
 	ADVANCED_ENCHANTMENT_PROTECTION = True;
 	FOREARMS_SLOT_ALWAYS_ENABLED = False; // Forearms will be always considered as "Armor Gauntlets".
 	FOREARMS_DEBUFF_MULTIPLIER = 2.5; // forearms Armor Rating debuff.  Set to 1 to disable.
 
-	sScriptVersion = '1.0.0';
+	sScriptVersion = '1.0.1';
 	sRepoUrl = 'https://github.com/OleksandrMoskaliuk/SSEEidtArmorTools';	
 
 var
