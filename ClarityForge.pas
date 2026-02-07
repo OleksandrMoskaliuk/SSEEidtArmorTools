@@ -36,7 +36,7 @@ const
 	{========================================================}
 	{ GLOBAL VARS CONFIGURATION                              }
 	{========================================================}
-	REQUIRED_SMITHING_SKILL = 100;
+	REQUIRED_SMITHING_SKILL = 25;
 	FOR_FEMALE_ONLY = True;
 	BACKPACK_SLOT_ENCHANTABLE = False;
 	ADVANCED_ENCHANTMENT_PROTECTION = True;
@@ -1056,6 +1056,20 @@ begin
 			end;
 			Exit;
 		end;
+		
+		{ --- DRAGONPLATE --- }
+		if HasKeyword(e, 'ArmorMaterialDragonplate') then begin
+			if Pos('Body ', Slots) > 0 then Result := 46 + GlobalArmorBonus;
+			if (Pos('Head ', Slots) > 0) or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0) then Result := 22 + GlobalArmorBonus;
+			if Pos('Shield ', Slots) > 0 then Result := 34 + GlobalArmorBonus;
+			if Pos('Hands ', Slots) > 0 then Result := 17 + GlobalArmorBonus;
+			if Pos('Feet ', Slots) > 0 then Result := 17 + GlobalArmorBonus;
+			if Pos('Forearms ', Slots) > 0 then begin
+				if GlobalHasHands then Result := 0
+				else Result := 17 / GlobalForearmsDebuffMultiplier + GlobalArmorBonus;
+			end;
+			Exit;
+		end;
 
 		{==================== LIGHT ====================}
 
@@ -1224,6 +1238,20 @@ begin
 			if Pos('Forearms ', Slots) > 0 then begin
 				if GlobalHasHands then Result := 0
 				else Result := 6 / GlobalForearmsDebuffMultiplier;
+			end;
+			Exit;
+		end;
+		
+		{ --- DRAGONPLATE --- }
+		if HasKeyword(e, 'ArmorMaterialDragonplate') then begin
+			if Pos('Body ', Slots) > 0 then Result := 40 - m_WeightReduceHeavy;
+			if (Pos('Head ', Slots) > 0) or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0) then Result := 8;
+			if Pos('Shield ', Slots) > 0 then Result := 12;
+			if Pos('Hands ', Slots) > 0 then Result := 8;
+			if Pos('Feet ', Slots) > 0 then Result := 8;
+			if Pos('Forearms ', Slots) > 0 then begin
+				if GlobalHasHands then Result := 0
+				else Result := 8 / GlobalForearmsDebuffMultiplier;
 			end;
 			Exit;
 		end;

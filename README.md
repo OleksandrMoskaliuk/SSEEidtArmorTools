@@ -93,13 +93,13 @@ ClarityForge features a unique balancing system that automatically adjusts based
 
 ### The Smithing/Armor Rating Curve
 
-The script provides a quality-based protection boost based on your expertise:
+The script provides a quality-based protection boost based on your expertise [Smithing Skill]
 
 
 ### Visual Slot Finalization
 
 * **Definition:** Any item not occupying a primary combat slot (Head, Body, Hands, Feet, Shield).
-* **Stats:** Set to **1.0 Weight**, **0 Armor Rating**, and **0 Gold Value**.
+* **Stats:** Set to **1.0 Weight**, **0 Armor Rating**, and **(25 + [Smithing Skill]) Gold Value**.
 * **Accessory Exception:** Amulets (Slot 35) and Rings (Slot 42) remain **Enchantable** but have 0 stats.
 
 ---
@@ -109,9 +109,6 @@ The script provides a quality-based protection boost based on your expertise:
 ### 🔴 Main Slot Conflicts (ARMO Records)
 
 **Avoid combining: Body [32], Hands [33], Feet [37], or Head [30/31] in one record.**
-
-* **Inventory Issues:** Equipping a merged "Suit" will force other modular pieces to unequip.
-* **Enchanting Limitations:** You lose 2–3 potential enchantment slots by merging major pieces.
 
 ### ⚠️ Multiple Material Keywords
 
