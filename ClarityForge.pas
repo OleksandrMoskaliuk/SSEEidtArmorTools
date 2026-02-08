@@ -36,7 +36,7 @@ const
 	{========================================================}
 	{ GLOBAL VARS CONFIGURATION                              }
 	{========================================================}
-	REQUIRED_SMITHING_SKILL = 45;
+	REQUIRED_SMITHING_SKILL = 30;
 	FOR_FEMALE_ONLY = True;
 	BACKPACK_SLOT_ENCHANTABLE = False;
 	ADVANCED_ENCHANTMENT_PROTECTION = True;
@@ -139,14 +139,6 @@ begin
 			AddMessage('Initialization: Working with ' + GlobalFileName);
 		end;
 		
-		// Creates Dummy Enchant
-		if ADVANCED_ENCHANTMENT_PROTECTION then begin		
-			if not Assigned(m_DummyEnch) then begin
-				//m_currentFile := GetFile(selectedRecord);
-				m_DummyEnch := CreateDummyEnchantment(GlobalFILE);
-			end;
-		end;
-		
 		GlobalCraftingManual := CopyBookAsNewRecord(GlobalFILE, '0001AFCF', GlobalFileName + ' Book');
 		
 		// Counts how many times each ArmorMaterial keyword appears in your outfit file and
@@ -163,8 +155,16 @@ begin
 	
 	{ 1. Filter: Armor (ARMO) }
 	if m_recordSignature = 'ARMO' then begin
+		
+		if ADVANCED_ENCHANTMENT_PROTECTION then begin		
+			if not Assigned(m_DummyEnch) then begin
+				m_currentFile := GetFile(selectedRecord);
+				m_DummyEnch := CreateDummyEnchantment(m_currentFile);
+			end;
+		end;
+		
 		m_Slots := GetFirstPersonFlags(selectedRecord);
-
+		
 		
 		{ 1.2 Classification & Cleanup }
 		AddVitalKeywords(selectedRecord, m_Slots);
@@ -1708,7 +1708,7 @@ begin
 		{ 5. Set the Display Name (Name seen by Player) }
 		SetElementEditValues(newBook, 'FULL', m_BookName);
 		SetElementEditValues(newBook, 'DATA\Weight', '0.1');
-		SetElementEditValues(newBook, 'DATA\Item Value', '50');
+		SetElementEditValues(newBook, 'DATA\Item Value', IntToStr(GlobalSmithingReq * 8));
 		
 		{ 6. Set Skill to NONE (Prevents accidental skill ups) }
 		{ In the DATA sub-record, 255 represents 'None' }
