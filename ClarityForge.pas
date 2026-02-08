@@ -1894,6 +1894,8 @@ begin
 	if (itemSignature = 'BOOK') then begin
 		
 		SetElementEditValues(recipeCraft, 'EDID', 'RecipeCraftingManual' + GetElementEditValues(itemRecord, 'EDID'));
+		SetElementEditValues(recipeCraft, 'BNAM', GetEditValue(getRecordByFormID(ARMOR_CRAFTING_WORKBENCH_FORM_ID)));
+		
 		addFemaleCondition(recipeCraft);
 		// Materials
 		addItemV2(recipeItems, GetMaterial('Leather01'), 1);
