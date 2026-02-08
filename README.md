@@ -73,4 +73,5 @@ ClarityForge automatically generates a **Unique Crafting Manual** for every outf
 ## 🚫 Critical Warnings
 
 * **One Material Rule:** Each record **MUST** have exactly **ONE** `ArmorMaterial` or `WeaponMaterial` keyword.
-* **Patching Required:** Always run this script into a **New Patch ESP**. Do not modify Master files (`.esm`) directly, as the script needs to create new Book and Enchantment records.
+
+* **One BOD2 (First Person Flag) Rule:** Each record **MUST** have exactly **ONE** `BOD2 (First Person Flags)` .
