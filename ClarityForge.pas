@@ -36,7 +36,7 @@ const
 	{========================================================}
 	{ GLOBAL VARS CONFIGURATION                              }
 	{========================================================}
-	REQUIRED_SMITHING_SKILL = 64;
+	REQUIRED_SMITHING_SKILL = 45;
 	FOR_FEMALE_ONLY = True;
 	BACKPACK_SLOT_ENCHANTABLE = False;
 	ADVANCED_ENCHANTMENT_PROTECTION = True;
@@ -57,6 +57,11 @@ var
 	GlobalWeaponPriceBonus: integer;
 	GlobalArmorPriceBonus: integer;
 	GlobalWeaponWeightBonus: Float;
+	GlobalFileName: string;
+	GlobalCraftingManual: IInterface;
+	GlobalOutfitMaterial: string;
+	GlobalFILE: IInterface;
+
 
 {========================================================}
 { INITIALIZE                                             }
@@ -73,7 +78,9 @@ begin
 	{ Set Global Values }
 	GlobalSmithingReq := REQUIRED_SMITHING_SKILL ;
 	GlobalArmorBonus := GlobalSmithingReq / 15.0; // Too much ArmorRating will cause Requiem script to fail
-	
+	GlobalFileName := '';
+	GlobalOutfitMaterial := '';
+
 	{ Note: Result of division is Float, so we Round for Integer bonuses }
 	GlobalWeaponDamageBonus := Round(GlobalSmithingReq / 40.0);
 	GlobalWeaponPriceBonus := GlobalSmithingReq;
@@ -122,23 +129,42 @@ begin
 	m_recordSignature := Signature(selectedRecord);
 	GlobalProcessedRecords := GlobalProcessedRecords + 1;
 	
+	{Initialization}
+	if not GlobalDoOnce then begin // Do Once
+		GlobalFILE := GetFile(selectedRecord);
+		
+		if GlobalFileName = '' then begin
+			GlobalFileName := GetFileName(GlobalFILE);
+			GlobalFileName := ChangeFileExt(GlobalFileName, '');
+			AddMessage('Initialization: Working with ' + GlobalFileName);
+		end;
+		
+		// Creates Dummy Enchant
+		if ADVANCED_ENCHANTMENT_PROTECTION then begin		
+			if not Assigned(m_DummyEnch) then begin
+				//m_currentFile := GetFile(selectedRecord);
+				m_DummyEnch := CreateDummyEnchantment(GlobalFILE);
+			end;
+		end;
+		
+		GlobalCraftingManual := CopyBookAsNewRecord(GlobalFILE, '0001AFCF', GlobalFileName + ' Book');
+		
+		// Counts how many times each ArmorMaterial keyword appears in your outfit file and
+		// then pick the one that appears most frequently.
+		GlobalOutfitMaterial := GetOutfitMaterial(GlobalFILE);
+		
+		AddMessage('SMART MATERIAL DETECTION  = ' + GlobalOutfitMaterial);
+		
+		MakeCraftableV2(GlobalCraftingManual);
+		// Scan for Hands once per file 
+		OutfitHasHands(m_currentFile);	
+		GlobalDoOnce := true;
+	end;
+	
 	{ 1. Filter: Armor (ARMO) }
 	if m_recordSignature = 'ARMO' then begin
 		m_Slots := GetFirstPersonFlags(selectedRecord);
-		
-		{ 1.1 Initialization: Scan for Hands once per file }
-		if not GlobalDoOnce then begin // Do Once
-			AddMessage('ARMOR RATING BONUS FROM SMITHING SKILL = ' + FloatToStr(GlobalArmorBonus));
-			m_currentFile := GetFile(selectedRecord);
-			OutfitHasHands(m_currentFile);	
-		end;
-		
-		if ADVANCED_ENCHANTMENT_PROTECTION then begin		
-			if not Assigned(m_DummyEnch) then begin
-				m_currentFile := GetFile(selectedRecord);
-				m_DummyEnch := CreateDummyEnchantment(m_currentFile);
-			end;
-		end;
+
 		
 		{ 1.2 Classification & Cleanup }
 		AddVitalKeywords(selectedRecord, m_Slots);
@@ -1649,6 +1675,78 @@ begin
 	end;
 end;
 
+function CopyBookAsNewRecord(destFile: IInterface; sourceFormID: string; newEditorID: string): IInterface;
+var
+	sourceBook, newBook: IInterface;
+	mgefGroup: IInterface;
+	m_BookName, m_BookDesc: string;
+begin
+	Result := nil;
+	
+	{ 1. Check if the book already exists in the destination file to avoid duplicates }
+	Result := MainRecordByEditorID(GroupBySignature(destFile, 'BOOK'), newEditorID);
+	if Assigned(Result) then Exit;
+
+	{ 2. Resolve source (Skyrim.esm) }
+	sourceBook := RecordByFormID(FileByIndex(0), StrToInt64('$' + sourceFormID), True);
+	
+	if not Assigned(sourceBook) then begin
+		AddMessage('ERROR: Source Book ' + sourceFormID + ' not found in Skyrim.esm');
+		Exit;
+	end;
+
+	{ 3. Copy as NEW Record }
+	{ Parameter 3: True = asNew (This generates a NEW FormID in your ESP) }
+	{ Parameter 4: True = copyValues (Copies all text/data from the source) }
+	newBook := wbCopyElementToFile(sourceBook, destFile, True, True);
+	
+	if Assigned(newBook) then begin
+		{ 4. Set the internal EditorID (Technical Name) }
+		SetElementEditValues(newBook, 'EDID', newEditorID);
+		
+		m_BookName := newEditorID + ' Lv ' + IntToStr(GlobalSmithingReq);
+		{ 5. Set the Display Name (Name seen by Player) }
+		SetElementEditValues(newBook, 'FULL', m_BookName);
+		SetElementEditValues(newBook, 'DATA\Weight', '0.1');
+		SetElementEditValues(newBook, 'DATA\Item Value', '50');
+		
+		{ 6. Set Skill to NONE (Prevents accidental skill ups) }
+		{ In the DATA sub-record, 255 represents 'None' }
+		SetElementEditValues(newBook, 'DATA\Skill', 'None'); 
+		
+		{ This text will explain the mechanic to the player }
+		m_BookDesc := 'A technical guide for crafting ' + GlobalFileName + ' outfit. ' + #13#10 + #13#10 +
+		              'Keep this manual in your inventory to enable its recipes at the forge.';
+		
+		SetElementEditValues(newBook, 'DESC', m_BookDesc);
+		
+		AddMessage('Successfully created new book: ' + m_BookName + ' [' + newEditorID + ']');
+		Result := newBook;
+	end;
+end;
+
+// Creates a condition that checks if the player has exactly 1 or more of the manual in their inventory
+procedure AddManualCondition(recipe: IInterface; manual: IInterface);
+var
+	conditions, cond: IInterface;
+begin
+	if not Assigned(manual) then Exit;
+
+	conditions := ElementByPath(recipe, 'Conditions');
+	if not Assigned(conditions) then
+		conditions := Add(recipe, 'Conditions', True);
+
+	{ Create new condition entry }
+	cond := ElementAssign(conditions, HighInteger, nil, False);
+	
+	{ GetItemCount(Manual) >= 1 }
+	SetElementEditValues(cond, 'CTDA\Type', '11000000'); { Equal to / Or Greater Than }
+	SetElementEditValues(cond, 'CTDA\Comparison Value', '1.000000');
+	SetElementEditValues(cond, 'CTDA\Function', 'GetItemCount');
+	SetNativeValue(ElementByPath(cond, 'CTDA\Inventory Object'), FixedFormID(manual));
+	SetElementEditValues(cond, 'CTDA\Run On', 'Subject');
+end;
+
 // adds item record reference to the list
 function addItemV2(list: IInterface; item: IInterface; amount: integer): IInterface;
 var
@@ -1684,6 +1782,58 @@ begin
 	
 	
 	Result := newItem;
+end;
+{========================================================}
+{ SMART OUTFIT MATERIAL DETECTION                        }
+{========================================================}
+function GetOutfitMaterial(f: IInterface): string;
+var
+	i, j, maxCount: Integer;
+	rec, kwda, kw: IInterface;
+	edid: string;
+	counts: TStringList;
+	group: IInterface;
+begin
+	Result := '';
+	counts := TStringList.Create;
+	try
+		{ 1. Get the Armor (ARMO) group from the file }
+		group := GroupBySignature(f, 'ARMO');
+		if not Assigned(group) then Exit;
+
+		{ 2. Loop through all ARMO records in that group }
+		for i := 0 to Pred(ElementCount(group)) do begin
+			rec := ElementByIndex(group, i);
+			
+			{ 3. Access the raw Keywords (KWDA) array }
+			kwda := ElementByPath(rec, 'KWDA');
+			for j := 0 to Pred(ElementCount(kwda)) do begin
+				{ LinksTo gets the actual KYWD record from the reference }
+				kw := LinksTo(ElementByIndex(kwda, j));
+				edid := GetElementEditValues(kw, 'EDID');
+
+				{ 4. Count only keywords containing 'ArmorMaterial' }
+				if Pos('ArmorMaterial', edid) > 0 then begin
+					if counts.IndexOfName(edid) = -1 then
+						counts.Values[edid] := '1'
+					else
+						counts.Values[edid] := IntToStr(StrToInt(counts.Values[edid]) + 1);
+				end;
+			end;
+		end;
+
+		{ 5. Identify the winner }
+		maxCount := -1;
+		for i := 0 to Pred(counts.Count) do begin
+			if StrToInt(counts.ValueFromIndex[i]) > maxCount then begin
+				maxCount := StrToInt(counts.ValueFromIndex[i]);
+				Result := counts.Names[i];
+			end;
+		end;
+
+	finally
+		counts.Free;
+	end;
 end;
 {========================================================}
 { ADD VANILLA ENCHANTMENT TO ARMOR                       }
@@ -1739,6 +1889,73 @@ begin
 	{ 4. Add your global skill requirement condition (e.g. Smithing 25) }
 	if GlobalSmithingReq > 0 then begin
 		addSkillCondition(recipeCraft, GlobalSmithingReq);
+	end;
+	
+	{--- CRAFING MANUAL ---}
+	if (itemSignature = 'BOOK') then begin
+		
+		SetElementEditValues(recipeCraft, 'EDID', 'RecipeCraftingManual' + GetElementEditValues(itemRecord, 'EDID'));
+		addFemaleCondition(recipeCraft);
+		// Materials
+		addItemV2(recipeItems, GetMaterial('Leather01'), 1);
+		addItemV2(recipeItems, GetMaterial('LeatherStrips'), 1);
+		addItemV2(recipeItems, GetMaterial('Gold001'), GlobalSmithingReq * 10);
+		
+		{ Loop keywords to assign Perks }
+		for i := 0 to ElementCount(tmpKeywordsCollection) - 1 do begin
+			currentKeywordEDID := GlobalOutfitMaterial;
+			
+			{ Requiem: Leather and Steel both require Steel Smithing perk }
+			if ((currentKeywordEDID = 'ArmorMaterialSteel') or (currentKeywordEDID = 'ArmorMaterialLeather') or
+				(currentKeywordEDID = 'DLC2ArmorMaterialBonemoldLight') or (currentKeywordEDID = 'ArmorMaterialImperialHeavy') or 
+				(currentKeywordEDID = 'ArmorMaterialStormcloak') or (currentKeywordEDID = 'DLC1ArmorMaterialDawnguard')) then begin
+				addPerkCondition(recipeCraft, getRecordByFormID('000CB40D')); // Steel Smithing
+				Break;
+
+			end else if ((currentKeywordEDID = 'ArmorMaterialScaled') or (currentKeywordEDID = 'ArmorMaterialSteelPlate') or 
+				(currentKeywordEDID = 'DLC2ArmorMaterialNordicHeavy')) then begin
+				addPerkCondition(recipeCraft, getRecordByFormID('000CB414')); // Advanced Armors
+				Break;
+
+			end else if (currentKeywordEDID = 'ArmorMaterialDwarven') then begin
+				addPerkCondition(recipeCraft, getRecordByFormID('000CB40E')); // Dwarven Smithing
+				Break;
+
+			end else if (currentKeywordEDID = 'ArmorMaterialEbony') or (currentKeywordEDID = 'DLC2ArmorMaterialStalhrimHeavy') then begin
+				addPerkCondition(recipeCraft, getRecordByFormID('000CB412')); // Ebony Smithing
+				Break;
+
+			end else if (currentKeywordEDID = 'ArmorMaterialDaedric') then begin
+				addPerkCondition(recipeCraft, getRecordByFormID('000CB413')); // Daedric Smithing
+				Break;
+
+			end else if (currentKeywordEDID = 'ArmorMaterialOrcish') then begin
+				addPerkCondition(recipeCraft, getRecordByFormID('000CB410')); // Orcish Smithing
+				Break;
+
+			end else if (currentKeywordEDID = 'ArmorMaterialGlass') then begin
+				addPerkCondition(recipeCraft, getRecordByFormID('000CB411')); // Glass Smithing
+				Break;
+
+			end else if (currentKeywordEDID = 'ArmorMaterialDragonscale') or (currentKeywordEDID = 'ArmorMaterialDragonplate') then begin
+				addPerkCondition(recipeCraft, getRecordByFormID('00052190')); // Dragon Armor
+				Break;
+
+			end else if (currentKeywordEDID = 'ArmorMaterialElven') or (currentKeywordEDID = 'DLC2ArmorMaterialChitinLight') then begin
+				addPerkCondition(recipeCraft, getRecordByFormID('000CB40F')); // Elven Smithing
+				Break;
+			end;
+		end;
+		
+		// Cleanup and Validation
+		removeInvalidEntries(recipeCraft);
+		
+		if GetElementEditValues(recipeCraft, 'COCT') = '' then begin
+			warn('No item requirements specified for: ' + Name(recipeCraft));
+		end;
+
+		Result := recipeCraft;
+		Exit;
 	end;
 	
 	{--- WEAPON LOGIC ---}
@@ -1935,6 +2152,7 @@ begin
 		end;
 		{ If Armor is ony for Female actor }
 		addFemaleCondition(recipeCraft);
+		AddManualCondition(recipeCraft, GlobalCraftingManual);
 		
 		{ Loop keywords to assign Perks }
 		for i := 0 to ElementCount(tmpKeywordsCollection) - 1 do begin
