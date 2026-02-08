@@ -42,8 +42,9 @@ const
 	ADVANCED_ENCHANTMENT_PROTECTION = True;
 	FOREARMS_SLOT_ALWAYS_ENABLED = False; // Forearms will be always considered as "Armor Gauntlets".
 	FOREARMS_DEBUFF_MULTIPLIER = 2.5; // forearms Armor Rating debuff.  Set to 1 to disable.
+	CRAFTING_MANUAL_PRICE_MULTIPLIER = 50; // Book value = REQUIRED_SMITHING_SKILL * CRAFTING_MANUAL_PRICE_MULTIPLIER
 
-	sScriptVersion = '1.0.1';
+	sScriptVersion = '1.1.1';
 	sRepoUrl = 'https://github.com/OleksandrMoskaliuk/SSEEidtArmorTools';	
 
 var
@@ -139,13 +140,14 @@ begin
 			AddMessage('Initialization: Working with ' + GlobalFileName);
 		end;
 		
+		GlobalOutfitMaterial := GetOutfitMaterial(GlobalFILE);
+		AddMessage('SMART MATERIAL DETECTION  = ' + GlobalOutfitMaterial);
+		
 		GlobalCraftingManual := CopyBookAsNewRecord(GlobalFILE, '0001AFCF', GlobalFileName + ' Book');
 		
 		// Counts how many times each ArmorMaterial keyword appears in your outfit file and
 		// then pick the one that appears most frequently.
-		GlobalOutfitMaterial := GetOutfitMaterial(GlobalFILE);
 		
-		AddMessage('SMART MATERIAL DETECTION  = ' + GlobalOutfitMaterial);
 		
 		MakeCraftableV2(GlobalCraftingManual);
 		// Scan for Hands once per file 
@@ -595,10 +597,8 @@ var
 	i: Integer;
 	rec: IInterface;
 begin
-	if (GlobalDoOnce = true) then Exit;
-	
+
 	if FOREARMS_SLOT_ALWAYS_ENABLED then begin
-		GlobalDoOnce := True;
 		GlobalHasHands  := False;
 		AddMessage('ARMOR -FOREARMS- WIL BE CONSIDERED AS -ARMOR GAUNTLETS-');
 		Exit;
@@ -616,7 +616,6 @@ begin
 					GlobalHasHands  := False;
 					AddMessage('FOUND -HAIR- and -CIRCLET- SLOT IN ONE ARMOR PIECE !!!');
 					AddMessage('ARMOR -FOREARMS- WIL BE CONSIDERED AS -ARMOR GAUNTLETS-');
-					GlobalDoOnce := True;
 					Exit;
 				end;	
 			end;
@@ -631,7 +630,6 @@ begin
 					GlobalHasHands  := True;
 					AddMessage('FOUND -HANDS- SLOT IN CURRENT OUTFIT !!!');
 					AddMessage('ARMOR -FOREARMS- WIL BE CONSIDERED AS -DECORATION-');
-					GlobalDoOnce := True;
 					Exit;
 				end;
 			end;
@@ -1679,7 +1677,7 @@ function CopyBookAsNewRecord(destFile: IInterface; sourceFormID: string; newEdit
 var
 	sourceBook, newBook: IInterface;
 	mgefGroup: IInterface;
-	m_BookName, m_BookDesc: string;
+	m_BookName, m_BookDesc, m_ArmorMaterial: string;
 begin
 	Result := nil;
 	
@@ -1698,29 +1696,30 @@ begin
 	{ 3. Copy as NEW Record }
 	{ Parameter 3: True = asNew (This generates a NEW FormID in your ESP) }
 	{ Parameter 4: True = copyValues (Copies all text/data from the source) }
+	m_ArmorMaterial := StringReplace(GlobalOutfitMaterial, 'ArmorMaterial', '', [rfReplaceAll, rfIgnoreCase]);
 	newBook := wbCopyElementToFile(sourceBook, destFile, True, True);
 	
 	if Assigned(newBook) then begin
 		{ 4. Set the internal EditorID (Technical Name) }
 		SetElementEditValues(newBook, 'EDID', newEditorID);
 		
-		m_BookName := newEditorID + ' Lv ' + IntToStr(GlobalSmithingReq);
+		m_BookName := newEditorID + ' ' + m_ArmorMaterial + ' Lv ' + IntToStr(GlobalSmithingReq);
 		{ 5. Set the Display Name (Name seen by Player) }
 		SetElementEditValues(newBook, 'FULL', m_BookName);
-		SetElementEditValues(newBook, 'DATA\Weight', '0.1');
-		SetElementEditValues(newBook, 'DATA\Item Value', IntToStr(GlobalSmithingReq * 8));
+		SetElementEditValues(newBook, 'DATA\Weight', '0.01');
+		SetElementEditValues(newBook, 'DATA\Value', IntToStr(GlobalSmithingReq * CRAFTING_MANUAL_PRICE_MULTIPLIER));
 		
 		{ 6. Set Skill to NONE (Prevents accidental skill ups) }
 		{ In the DATA sub-record, 255 represents 'None' }
 		SetElementEditValues(newBook, 'DATA\Skill', 'None'); 
 		
 		{ This text will explain the mechanic to the player }
-		m_BookDesc := 'A technical guide for crafting ' + GlobalFileName + ' outfit. ' + #13#10 + #13#10 +
+		m_BookDesc := 'A technical guide for crafting ' + GlobalFileName + ' ' + m_ArmorMaterial + ' outfit. ' + #13#10 + #13#10 +
 		              'Keep this manual in your inventory to enable its recipes at the forge.';
 		
 		SetElementEditValues(newBook, 'DESC', m_BookDesc);
 		
-		AddMessage('Successfully created new book: ' + m_BookName + ' [' + newEditorID + ']');
+		AddMessage('Successfully created new book: ' + m_BookName);
 		Result := newBook;
 	end;
 end;
@@ -1899,7 +1898,7 @@ begin
 		// Materials
 		addItemV2(recipeItems, GetMaterial('Leather01'), 1);
 		addItemV2(recipeItems, GetMaterial('LeatherStrips'), 1);
-		addItemV2(recipeItems, GetMaterial('Gold001'), GlobalSmithingReq * 10);
+		addItemV2(recipeItems, GetMaterial('Gold001'), GlobalSmithingReq * CRAFTING_MANUAL_PRICE_MULTIPLIER);
 		
 		{ Loop keywords to assign Perks }
 		for i := 0 to ElementCount(tmpKeywordsCollection) - 1 do begin
