@@ -36,7 +36,7 @@ const
 	{========================================================}
 	{ GLOBAL VARS CONFIGURATION                              }
 	{========================================================}
-	REQUIRED_SMITHING_SKILL = 30;
+	REQUIRED_SMITHING_SKILL = 35;
 	FOR_FEMALE_ONLY = True;
 	BACKPACK_SLOT_ENCHANTABLE = False;
 	ADVANCED_ENCHANTMENT_PROTECTION = True;
@@ -130,33 +130,33 @@ begin
 	m_recordSignature := Signature(selectedRecord);
 	GlobalProcessedRecords := GlobalProcessedRecords + 1;
 	
-	{Initialization}
-	if not GlobalDoOnce then begin // Do Once
-		GlobalFILE := GetFile(selectedRecord);
-		
-		if GlobalFileName = '' then begin
-			GlobalFileName := GetFileName(GlobalFILE);
-			GlobalFileName := ChangeFileExt(GlobalFileName, '');
-			AddMessage('Initialization: Working with ' + GlobalFileName);
-		end;
-		
-		GlobalOutfitMaterial := GetOutfitMaterial(GlobalFILE);
-		AddMessage('SMART MATERIAL DETECTION  = ' + GlobalOutfitMaterial);
-		
-		GlobalCraftingManual := CopyBookAsNewRecord(GlobalFILE, '0001AFCF', GlobalFileName + ' Book');
-		
-		// Counts how many times each ArmorMaterial keyword appears in your outfit file and
-		// then pick the one that appears most frequently.
-		
-		
-		MakeCraftableV2(GlobalCraftingManual);
-		// Scan for Hands once per file 
-		OutfitHasHands(m_currentFile);	
-		GlobalDoOnce := true;
-	end;
-	
 	{ 1. Filter: Armor (ARMO) }
 	if m_recordSignature = 'ARMO' then begin
+		
+		{Initialization}
+		if not GlobalDoOnce then begin // Do Once
+			GlobalFILE := GetFile(selectedRecord);
+			
+			if GlobalFileName = '' then begin
+				GlobalFileName := GetFileName(GlobalFILE);
+				GlobalFileName := ChangeFileExt(GlobalFileName, '');
+				AddMessage('Initialization: Working with ' + GlobalFileName);
+			end;
+			
+			GlobalOutfitMaterial := GetOutfitMaterial(GlobalFILE);
+			AddMessage('SMART MATERIAL DETECTION  = ' + GlobalOutfitMaterial);
+			
+			GlobalCraftingManual := CopyBookAsNewRecord(GlobalFILE, '0001AFCF', GlobalFileName + ' Book');
+			
+			// Counts how many times each ArmorMaterial keyword appears in your outfit file and
+			// then pick the one that appears most frequently.
+			
+			
+			MakeCraftableV2(GlobalCraftingManual);
+			// Scan for Hands once per file 
+			OutfitHasHands(m_currentFile);	
+			GlobalDoOnce := true;
+		end;
 		
 		if ADVANCED_ENCHANTMENT_PROTECTION then begin		
 			if not Assigned(m_DummyEnch) then begin
