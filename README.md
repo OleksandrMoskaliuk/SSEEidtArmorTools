@@ -74,4 +74,4 @@ ClarityForge automatically generates a **Unique Crafting Manual** for every outf
 
 * **One Material Rule:** Each record **MUST** have exactly **ONE** `ArmorMaterial` or `WeaponMaterial` keyword.
 
-* **One BOD2 (First Person Flag) Rule:** Each record **MUST** have exactly **ONE** `BOD2 (First Person Flags)` .
+* **One BOD2 (First Person Flag) Rule:** Each record **MUST** have exactly **ONE** `BOD2 (First Person Flag)` .
