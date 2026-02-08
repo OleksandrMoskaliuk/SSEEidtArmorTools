@@ -36,12 +36,12 @@ const
 	{========================================================}
 	{ GLOBAL VARS CONFIGURATION                              }
 	{========================================================}
-	REQUIRED_SMITHING_SKILL = 66;
+	REQUIRED_SMITHING_SKILL = 100;
 	FOR_FEMALE_ONLY = True;
 	BACKPACK_SLOT_ENCHANTABLE = False;
 	ADVANCED_ENCHANTMENT_PROTECTION = True;
 	FOREARMS_SLOT_ALWAYS_ENABLED = False; // Forearms will be always considered as "Armor Gauntlets".
-	FOREARMS_DEBUFF_MULTIPLIER = 2.5; // forearms Armor Rating debuff.  Set to 1 to disable.
+	FOREARMS_DEBUFF_MULTIPLIER = 2.5; // Forearms Armor Rating debuff.  Set to 1 to disable.
 	CRAFTING_MANUAL_PRICE_MULTIPLIER = 50; // Book value = REQUIRED_SMITHING_SKILL * CRAFTING_MANUAL_PRICE_MULTIPLIER
 
 	sScriptVersion = '1.1.1';

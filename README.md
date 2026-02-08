@@ -19,8 +19,8 @@ ClarityForge automatically generates a **Unique Crafting Manual** for every outf
 
 * **Forge Protection:** All armor recipes are hidden by default to prevent menu clutter.
 * **Unlock Requirement:** To see and craft the outfit, the player **must** have the generated manual in their inventory.
-* **Manual Stats:** Weight is set to **0.1** and Value to **50 Gold**. It is classified as a non-skill book (reading it provides no free levels).
-* **Dynamic Naming:** The book is named based on the mod filename and the detected material (e.g., `[COCO] Chaos Sorcerer Scaled Lv 25`).
+* **Manual Stats:** Weight is set to **0.01** and ** Book Price = REQUIRED_SMITHING_SKILL * CRAFTING_MANUAL_PRICE_MULTIPLIER **.
+* **Dynamic Naming:** The book is named based on the mod filename detected material and smithing skill requirements (e.g., `[COCO] Chaos Sorcerer Scaled Lv 25`).
 
 ---
 
