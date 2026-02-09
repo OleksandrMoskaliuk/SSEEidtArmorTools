@@ -40,7 +40,7 @@ const
 	FOR_FEMALE_ONLY = True;
 	BACKPACK_SLOT_ENCHANTABLE = False;
 	ADVANCED_ENCHANTMENT_PROTECTION = True;
-	FOREARMS_SLOT_ALWAYS_ENABLED = False; // Forearms will be always considered as "Armor Gauntlets".
+	FOREARMS_SLOT_ALWAYS_ENCHANTABLE = True; // If True Forearms will be always enchantable.
 	FOREARMS_DEBUFF_MULTIPLIER = 2.5; // Forearms Armor Rating debuff.  Set to 1 to disable.
 	CRAFTING_MANUAL_PRICE_MULTIPLIER = 50; // Book value = REQUIRED_SMITHING_SKILL * CRAFTING_MANUAL_PRICE_MULTIPLIER
 
@@ -372,6 +372,8 @@ var
 begin
 	if not IsVisualSlot(GetFirstPersonFlags(e)) then Exit;
 	
+	if (FOREARMS_SLOT_ALWAYS_ENCHANTABLE and GetFirstPersonFlags(e) = 'Forearms') then Exit;
+	
 	visualNote := 'Visual Slot: This item is for appearance only. It provides no protection and cannot be enchanted.';
 	
 	{ 1. Add MagicDisallowEnchanting safely }
@@ -593,12 +595,6 @@ var
 	i: Integer;
 	rec: IInterface;
 begin
-
-	if FOREARMS_SLOT_ALWAYS_ENABLED then begin
-		GlobalHasHands  := False;
-		AddMessage('ARMOR -FOREARMS- WIL BE CONSIDERED AS -ARMOR GAUNTLETS-');
-		Exit;
-	end;
 	
 	{ Logic: Check for Merged Headwear (Hair + Circlet) }
 	{ If an outfit merges Hair [31] and Circlet [42] into one item, the player loses an enchantment slot. }
@@ -618,19 +614,19 @@ begin
 		end;
 	end;
 	
-	if (FOREARMS_SLOT_ALWAYS_ENABLED = False) then begin // Check if outfit has "Hands" slot.
-		for i := 0 to Pred(RecordCount(file)) do begin
-			rec := RecordByIndex(file, i);
-			if Signature(rec) = 'ARMO' then begin
-				if Pos('Hands', GetFirstPersonFlags(rec)) > 0 then begin
-					GlobalHasHands  := True;
-					AddMessage('FOUND -HANDS- SLOT IN CURRENT OUTFIT !!!');
-					AddMessage('ARMOR -FOREARMS- WIL BE CONSIDERED AS -DECORATION-');
-					Exit;
-				end;
+	// Check if outfit has "Hands" slot.
+	for i := 0 to Pred(RecordCount(file)) do begin
+		rec := RecordByIndex(file, i);
+		if Signature(rec) = 'ARMO' then begin
+			if Pos('Hands', GetFirstPersonFlags(rec)) > 0 then begin
+				GlobalHasHands  := True;
+				AddMessage('FOUND -HANDS- SLOT IN CURRENT OUTFIT !!!');
+				AddMessage('ARMOR -FOREARMS- WIL BE CONSIDERED AS -DECORATION-');
+				Exit;
 			end;
 		end;
 	end;
+	
 end;
 {========================================================}
 { GET VANILLA WEAPON DAMAGE                              }
