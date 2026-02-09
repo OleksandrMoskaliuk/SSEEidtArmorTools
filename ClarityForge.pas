@@ -372,7 +372,7 @@ var
 begin
 	if not IsVisualSlot(GetFirstPersonFlags(e)) then Exit;
 	
-	if (FOREARMS_SLOT_ALWAYS_ENCHANTABLE and GetFirstPersonFlags(e) = 'Forearms') then Exit;
+	if (FOREARMS_SLOT_ALWAYS_ENCHANTABLE and Pos(GetFirstPersonFlags(e),'Forearms ') > 0) then Exit;
 	
 	visualNote := 'Visual Slot: This item is for appearance only. It provides no protection and cannot be enchanted.';
 	
