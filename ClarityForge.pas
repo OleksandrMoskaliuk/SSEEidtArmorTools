@@ -36,7 +36,7 @@ const
 	{========================================================}
 	{ GLOBAL VARS CONFIGURATION                              }
 	{========================================================}
-	REQUIRED_SMITHING_SKILL = 100;
+	REQUIRED_SMITHING_SKILL = 88;
 	FOR_FEMALE_ONLY = True;
 	BACKPACK_SLOT_ENCHANTABLE = False;
 	ADVANCED_ENCHANTMENT_PROTECTION = True;
@@ -61,7 +61,6 @@ var
 	GlobalFileName: string;
 	GlobalCraftingManual: IInterface;
 	GlobalOutfitMaterial: string;
-	GlobalFILE: IInterface;
 
 
 {========================================================}
@@ -135,24 +134,23 @@ begin
 		
 		{ 1.1 Initialization}
 		if not GlobalDoOnce then begin // Do Once
-			GlobalFILE := GetFile(selectedRecord);
-			
+		
 			if GlobalFileName = '' then begin
-				GlobalFileName := GetFileName(GlobalFILE);
+				GlobalFileName := GetFileName(GetFile(selectedRecord));
 				GlobalFileName := ChangeFileExt(GlobalFileName, '');
 				AddMessage('Initialization: Working with ' + GlobalFileName);
 			end;
 			
 			// Counts how many times each ArmorMaterial keyword appears in your outfit file and
 			// then pick the one that appears most frequently.
-			GlobalOutfitMaterial := GetOutfitMaterial(GlobalFILE);
+			GlobalOutfitMaterial := GetOutfitMaterial(GetFile(selectedRecord));
 			AddMessage('SMART MATERIAL DETECTION  = ' + GlobalOutfitMaterial);
 			
-			GlobalCraftingManual := CopyBookAsNewRecord(GlobalFILE, '0001AFCF', GlobalFileName + ' Book');
+			GlobalCraftingManual := CopyBookAsNewRecord(GetFile(selectedRecord), '0001AFCF', GlobalFileName + ' Book');
 			
 			MakeCraftableV2(GlobalCraftingManual);
 			// Scan for Hands once per file 
-			OutfitHasHands(m_currentFile);	
+			OutfitHasHands(GetFile(selectedRecord));	
 			GlobalDoOnce := true;
 		end;
 		
