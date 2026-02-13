@@ -1738,6 +1738,29 @@ begin
 	SetElementEditValues(cond, 'CTDA\Run On', 'Subject');
 end;
 
+{ Creates a condition to hide the recipe if the player already owns the manual }
+procedure AddMissingManualCondition(recipe: IInterface; manual: IInterface);
+var
+	conditions, cond: IInterface;
+begin
+	if not Assigned(manual) then Exit;
+
+	conditions := ElementByPath(recipe, 'Conditions');
+	if not Assigned(conditions) then
+		conditions := Add(recipe, 'Conditions', True);
+
+	{ Create new condition entry }
+	cond := ElementAssign(conditions, HighInteger, nil, False);
+	
+	{ GetItemCount(Manual) == 0 }
+	SetElementEditValues(cond, 'CTDA\Type', '10000000'); { Equal to }
+	SetElementEditValues(cond, 'CTDA\Comparison Value', '0.000000');
+	SetElementEditValues(cond, 'CTDA\Function', 'GetItemCount');
+	SetNativeValue(ElementByPath(cond, 'CTDA\Inventory Object'), FixedFormID(manual));
+	SetElementEditValues(cond, 'CTDA\Run On', 'Subject');
+end;
+
+
 // adds item record reference to the list
 function addItemV2(list: IInterface; item: IInterface; amount: integer): IInterface;
 var
@@ -1889,6 +1912,7 @@ begin
 		SetElementEditValues(recipeCraft, 'BNAM', GetEditValue(getRecordByFormID(ARMOR_CRAFTING_WORKBENCH_FORM_ID)));
 		
 		addFemaleCondition(recipeCraft);
+		AddMissingManualCondition(recipeCraft, GlobalCraftingManual);
 		// Materials
 		addItemV2(recipeItems, GetMaterial('Leather01'), 1);
 		addItemV2(recipeItems, GetMaterial('LeatherStrips'), 1);
