@@ -146,7 +146,7 @@ begin
 			GlobalOutfitMaterial := GetOutfitMaterial(GetFile(selectedRecord));
 			AddMessage('SMART MATERIAL DETECTION  = ' + GlobalOutfitMaterial);
 			
-			GlobalCraftingManual := CopyBookAsNewRecord(GetFile(selectedRecord), '0001AFCF', GlobalFileName + ' Book');
+			GlobalCraftingManual := CopyBookAsNewRecord(GetFile(selectedRecord), '0001AFCF', (GlobalFileName + ' ' +  StringReplace(GlobalOutfitMaterial, 'ArmorMaterial', '', [rfReplaceAll, rfIgnoreCase]) + ' Book'));
 			
 			MakeCraftableV2(GlobalCraftingManual);
 			// Scan for Hands once per file 
