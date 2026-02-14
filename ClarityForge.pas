@@ -316,24 +316,48 @@ begin
 	
 end;
 
-procedure fRemoveForearmsFirstPersonCombinedFlag(armorRecord: IInterface);
+procedure fRemoveCombinedFlags(armorRecord: IInterface);
 var
 	bipedFlagsElement: IInterface;
 	bipedFlags: Cardinal;
+	modified: Boolean;
 begin
 	bipedFlagsElement := ElementByPath(armorRecord, 'BOD2');
 	if not Assigned(bipedFlagsElement) then Exit;
 
 	bipedFlags := GetElementNativeValues(bipedFlagsElement, 'First Person Flags');
+	modified := False;
 
-	{ Check if both Body (Bit 2 / $4) and Forearms (Bit 3 / $10) are set }
-	if ((bipedFlags and $00000004) <> 0) and ((bipedFlags and $00000010) <> 0) then begin
-		AddMessage('Stripping combined Forearms flag from: ' + Name(armorRecord));
+	{ Check if it is a Body piece (Slot 32 / $4) }
+	if (bipedFlags and $00000004) <> 0 then begin
 		
-		{ Use NOT and AND to flip bit $10 (Forearms) to 0 }
-		bipedFlags := bipedFlags and (not $00000010);
-		
-		{ Save the modified flags back to the record }
+		{ Remove Forearms (Slot 34 / $10) }
+		if (bipedFlags and $00000010) <> 0 then begin
+			bipedFlags := bipedFlags and (not $00000010);
+			modified := True;
+		end;
+
+		{ Remove Amulet (Slot 35 / $20) }
+		if (bipedFlags and $00000020) <> 0 then begin
+			bipedFlags := bipedFlags and (not $00000020);
+			modified := True;
+		end;
+
+		{ Remove Ring (Slot 36 / $40) }
+		if (bipedFlags and $00000040) <> 0 then begin
+			bipedFlags := bipedFlags and (not $00000040);
+			modified := True;
+		end;
+	end;
+
+	{ If Feet (Slot 37 / $80) is present, remove Calves (Slot 38 / $100) }
+	if ((bipedFlags and $00000080) <> 0) and ((bipedFlags and $00000100) <> 0) then begin
+		bipedFlags := bipedFlags and (not $00000100);
+		modified := True;
+	end;
+
+	if modified then begin
+		AddMessage('Stripped conflicting accessory/sub-slots from: ' + Name(armorRecord));
 		SetElementNativeValues(bipedFlagsElement, 'First Person Flags', bipedFlags);
 	end;
 end;
