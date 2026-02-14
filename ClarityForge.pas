@@ -1745,7 +1745,7 @@ begin
 		{ 4. Set the internal EditorID (Technical Name) }
 		SetElementEditValues(newBook, 'EDID', newEditorID);
 		
-		m_BookName := newEditorID + ' ' + m_ArmorMaterial + ' Lv ' + IntToStr(GlobalSmithingReq);
+		m_BookName := newEditorID + ' Lv ' + IntToStr(GlobalSmithingReq);
 		{ 5. Set the Display Name (Name seen by Player) }
 		SetElementEditValues(newBook, 'FULL', m_BookName);
 		SetElementEditValues(newBook, 'DATA\Weight', '0.01');
