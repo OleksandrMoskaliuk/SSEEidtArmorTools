@@ -36,7 +36,7 @@ const
 	{========================================================}
 	{ GLOBAL VARS CONFIGURATION                              }
 	{========================================================}
-	REQUIRED_SMITHING_SKILL = 50;
+	REQUIRED_SMITHING_SKILL = 5;
 	FOR_FEMALE_ONLY = True;
 	BACKPACK_SLOT_ENCHANTABLE = False;
 	ADVANCED_ENCHANTMENT_PROTECTION = True;
@@ -44,7 +44,7 @@ const
 	FOREARMS_DEBUFF_MULTIPLIER = 2.5; // Forearms Armor Rating debuff.  Set to 1 to disable.
 	CRAFTING_MANUAL_PRICE_MULTIPLIER = 50; // Book value = REQUIRED_SMITHING_SKILL * CRAFTING_MANUAL_PRICE_MULTIPLIER
 
-	sScriptVersion = '1.1.3';
+	sScriptVersion = '1.1.4';
 	sRepoUrl = 'https://github.com/OleksandrMoskaliuk/SSEEidtArmorTools';	
 
 var
@@ -163,7 +163,7 @@ begin
 		
 		// In Skyrim, if a modder leaves slot 34 (Forearms) active on a Cuirass (slot 32),
 		// the game engine treats it as "occupying" the forearm slot, which causes those annoying conflicts with dedicated gauntlets or bracers.
-		fRemoveForearmsFirstPersonCombinedFlag(selectedRecord);
+		fRemoveCombinedFlags(selectedRecord);
 		
 		m_Slots := GetFirstPersonFlags(selectedRecord);
 		
