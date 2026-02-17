@@ -36,14 +36,14 @@ const
 	{========================================================}
 	{ GLOBAL VARS CONFIGURATION                              }
 	{========================================================}
-	REQUIRED_SMITHING_SKILL = 5;
+	REQUIRED_SMITHING_SKILL = 100;
 	FOR_FEMALE_ONLY = True;
 	BACKPACK_SLOT_ENCHANTABLE = False;
 	ADVANCED_ENCHANTMENT_PROTECTION = True;
 	FOREARMS_SLOT_ALWAYS_ENCHANTABLE = True; // If True Forearms will be always enchantable.
 	FOREARMS_DEBUFF_MULTIPLIER = 2.5; // Forearms Armor Rating debuff.  Set to 1 to disable.
 	CRAFTING_MANUAL_PRICE_MULTIPLIER = 50; // Book value = REQUIRED_SMITHING_SKILL * CRAFTING_MANUAL_PRICE_MULTIPLIER
-
+	CRAFTING_MANUAL_SIMPLE_MATERIAL_DETECTION = True; // Only first selected ARMO record matter. Useful If needed to create several Crafting Manual with different material in one esp file.
 	sScriptVersion = '1.1.4';
 	sRepoUrl = 'https://github.com/OleksandrMoskaliuk/SSEEidtArmorTools';	
 
@@ -146,7 +146,11 @@ begin
 			GlobalOutfitMaterial := GetOutfitMaterial(GetFile(selectedRecord));
 			AddMessage('SMART MATERIAL DETECTION  = ' + GlobalOutfitMaterial);
 			
-			GlobalCraftingManual := CopyBookAsNewRecord(GetFile(selectedRecord), '0001AFCF', (GlobalFileName + ' ' +  StringReplace(GlobalOutfitMaterial, 'ArmorMaterial', '', [rfReplaceAll, rfIgnoreCase]) + ' Book'));
+			if CRAFTING_MANUAL_SIMPLE_MATERIAL_DETECTION then begin
+				GlobalOutfitMaterial := GetArmorMaterialSimplified(selectedRecord);
+			end;
+			
+			GlobalCraftingManual := CopyBookAsNewRecord(GetFile(selectedRecord), '0001AFCF', (GlobalFileName + ' ' +  StringReplace(GlobalOutfitMaterial, 'ArmorMaterial', '', [rfReplaceAll, rfIgnoreCase]) + ' Book'));			
 			
 			MakeCraftableV2(GlobalCraftingManual);
 			// Scan for Hands once per file 
@@ -1921,6 +1925,35 @@ begin
 
 	finally
 		counts.Free;
+	end;
+end;
+
+function GetArmorMaterialSimplified(e: IInterface): string;
+var
+	j: Integer;
+	kwda, kw: IInterface;
+	edid: string;
+begin
+	Result := '';
+	
+	{ 1. Ensure the record is valid }
+	if not Assigned(e) then Exit;
+
+	{ 2. Access the Keywords (KWDA) array }
+	kwda := ElementByPath(e, 'KWDA');
+	if not Assigned(kwda) then Exit;
+
+	{ 3. Loop through keywords of this specific piece }
+	for j := 0 to Pred(ElementCount(kwda)) do begin
+		{ LinksTo follows the reference to the actual Keyword record }
+		kw := LinksTo(ElementByIndex(kwda, j));
+		edid := GetElementEditValues(kw, 'EDID');
+
+		{ 4. Return the first keyword that matches 'ArmorMaterial' }
+		if Pos('ArmorMaterial', edid) > 0 then begin
+			Result := edid;
+			Exit; { Return immediately once found }
+		end;
 	end;
 end;
 {========================================================}
