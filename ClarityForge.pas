@@ -36,7 +36,7 @@ const
 	{========================================================}
 	{ GLOBAL VARS CONFIGURATION                              }
 	{========================================================}
-	REQUIRED_SMITHING_SKILL = 100;
+	REQUIRED_SMITHING_SKILL = 5;
 	FOR_FEMALE_ONLY = True;
 	BACKPACK_SLOT_ENCHANTABLE = False;
 	ADVANCED_ENCHANTMENT_PROTECTION = True;
@@ -150,7 +150,7 @@ begin
 				GlobalOutfitMaterial := GetArmorMaterialSimplified(selectedRecord);
 			end;
 			
-			GlobalCraftingManual := CopyBookAsNewRecord(GetFile(selectedRecord), '0001AFCF', (GlobalFileName + ' ' +  StringReplace(GlobalOutfitMaterial, 'ArmorMaterial', '', [rfReplaceAll, rfIgnoreCase]) + ' Book'));			
+			GlobalCraftingManual := CopyBookAsNewRecord(GetFile(selectedRecord), '0001AFCF', (GlobalFileName + ' ' +  StringReplace(GlobalOutfitMaterial, 'ArmorMaterial', '', [rfReplaceAll, rfIgnoreCase]) + ' Lv ' + IntToStr(REQUIRED_SMITHING_SKILL) + ' Book'));			
 			
 			MakeCraftableV2(GlobalCraftingManual);
 			// Scan for Hands once per file 
@@ -1773,7 +1773,7 @@ begin
 		{ 4. Set the internal EditorID (Technical Name) }
 		SetElementEditValues(newBook, 'EDID', newEditorID);
 		
-		m_BookName := newEditorID + ' Lv ' + IntToStr(GlobalSmithingReq);
+		m_BookName := newEditorID;
 		{ 5. Set the Display Name (Name seen by Player) }
 		SetElementEditValues(newBook, 'FULL', m_BookName);
 		SetElementEditValues(newBook, 'DATA\Weight', '0.01');
