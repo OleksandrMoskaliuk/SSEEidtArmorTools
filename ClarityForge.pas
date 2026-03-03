@@ -36,14 +36,17 @@ const
 	{========================================================}
 	{ GLOBAL VARS CONFIGURATION                              }
 	{========================================================}
-	REQUIRED_SMITHING_SKILL = 5;
+	PLAYER_LEVEL_REQUIREMENT = 1;
+	REQUIRED_SMITHING_SKILL = 1;
 	FOR_FEMALE_ONLY = True;
-	BACKPACK_SLOT_ENCHANTABLE = False;
+	BACKPACK_SLOT_ENCHANTABLE = True;
 	ADVANCED_ENCHANTMENT_PROTECTION = True;
 	FOREARMS_SLOT_ALWAYS_ENCHANTABLE = True; // If True Forearms will be always enchantable.
 	FOREARMS_DEBUFF_MULTIPLIER = 2.5; // Forearms Armor Rating debuff.  Set to 1 to disable.
 	CRAFTING_MANUAL_PRICE_MULTIPLIER = 50; // Book value = REQUIRED_SMITHING_SKILL * CRAFTING_MANUAL_PRICE_MULTIPLIER
 	CRAFTING_MANUAL_SIMPLE_MATERIAL_DETECTION = True; // Only first selected ARMO record matter. Useful If needed to create several Crafting Manual with different material in one esp file.
+	VISUAL_SLOT_WEIGHT = 0.1;
+	PERK_REQUIREMENT = False;
 	sScriptVersion = '1.1.4';
 	sRepoUrl = 'https://github.com/OleksandrMoskaliuk/SSEEidtArmorTools';	
 
@@ -61,7 +64,8 @@ var
 	GlobalFileName: string;
 	GlobalCraftingManual: IInterface;
 	GlobalOutfitMaterial: string;
-
+	GlobalVarFileName: string;
+	GlobalPatchFile: IInterface;
 
 {========================================================}
 { INITIALIZE                                             }
@@ -97,13 +101,10 @@ begin
 	{ Logging Configuration }
 	AddMessage('--- ARMOR CONFIGURATOR STARTED ---');
 	AddMessage('SMITHING REQUIREMENT = ' + IntToStr(GlobalSmithingReq));
-
-	{ Validation Logic }
-	if (GlobalSmithingReq < 0) or (GlobalSmithingReq > 100) then begin
-		AddMessage('ERROR: Smithing value must be between 0 and 100.');
-		Result := 1;
-		Exit;
-	end;  
+	
+	// Creating Patch file
+	GlobalVarFileName := 'ClarityForge_Patch4.esp';
+	
 end;
 {========================================================}
 { PROCESS "Runs for every record selected in xEdit"      }
@@ -124,108 +125,120 @@ var
 	m_WeaponWeight: Double; // Weights should be Double/Float
 	//Enchant for ENCHANTMENT_PROTECTION
 	m_DummyEnch: IInterface;
-	
 begin
 	m_recordSignature := Signature(selectedRecord);
 	GlobalProcessedRecords := GlobalProcessedRecords + 1;
+	GlobalPatchFile := fAddNewFile(GlobalVarFileName, true);
+	
+	// Exit if initialization failed
+	if not Assigned(GlobalPatchFile) then begin
+		Result := 1;
+		Exit;
+	end;
+	
+	
+	//fAddMaster(selectedRecord);
+	
+	fFunctionCopyArmorToNewFile(selectedRecord, GlobalPatchFile, 'o');
 	
 	{ 1. Filter: Armor (ARMO) }
-	if m_recordSignature = 'ARMO' then begin
+	{ if m_recordSignature = 'ARMO' then begin }
 		
-		{ 1.1 Initialization}
-		if not GlobalDoOnce then begin // Do Once
+		{ 1.1 Initialization }
+		{ if not GlobalDoOnce then begin // Do Once }
 		
-			if GlobalFileName = '' then begin
-				GlobalFileName := GetFileName(GetFile(selectedRecord));
-				GlobalFileName := ChangeFileExt(GlobalFileName, '');
-				AddMessage('Initialization: Working with ' + GlobalFileName);
-			end;
+			{ if GlobalFileName = '' then begin }
+				{ GlobalFileName := GetFileName(GetFile(selectedRecord)); }
+				{ GlobalFileName := ChangeFileExt(GlobalFileName, ''); }
+				{ AddMessage('Initialization: Working with ' + GlobalFileName); }
+			{ end; }
 			
-			// Counts how many times each ArmorMaterial keyword appears in your outfit file and
-			// then pick the one that appears most frequently.
-			GlobalOutfitMaterial := GetOutfitMaterial(GetFile(selectedRecord));
-			AddMessage('SMART MATERIAL DETECTION  = ' + GlobalOutfitMaterial);
+			{ // Counts how many times each ArmorMaterial keyword appears in your outfit file and }
+			{ // then pick the one that appears most frequently. }
+			{ GlobalOutfitMaterial := GetOutfitMaterial(GetFile(selectedRecord)); }
+			{ AddMessage('SMART MATERIAL DETECTION  = ' + GlobalOutfitMaterial); }
 			
-			if CRAFTING_MANUAL_SIMPLE_MATERIAL_DETECTION then begin
-				GlobalOutfitMaterial := GetArmorMaterialSimplified(selectedRecord);
-			end;
+			{ if CRAFTING_MANUAL_SIMPLE_MATERIAL_DETECTION then begin }
+				{ GlobalOutfitMaterial := GetArmorMaterialSimplified(selectedRecord); }
+			{ end; }
 			
-			GlobalCraftingManual := CopyBookAsNewRecord(GetFile(selectedRecord), '0001AFCF', (GlobalFileName + ' ' +  StringReplace(GlobalOutfitMaterial, 'ArmorMaterial', '', [rfReplaceAll, rfIgnoreCase]) + ' Lv ' + IntToStr(REQUIRED_SMITHING_SKILL) + ' Book'));			
+			{ GlobalCraftingManual := CopyBookAsNewRecord(GetFile(selectedRecord), '0001AFCF', (GlobalFileName + ' ' +  StringReplace(GlobalOutfitMaterial, 'ArmorMaterial', '', [rfReplaceAll, rfIgnoreCase]) + ' Lv ' + IntToStr(REQUIRED_SMITHING_SKILL) + ' Book'));			 }
 			
-			MakeCraftableV2(GlobalCraftingManual);
-			// Scan for Hands once per file 
-			OutfitHasHands(GetFile(selectedRecord));	
-			GlobalDoOnce := true;
-		end;
+			{ MakeCraftableV2(GlobalCraftingManual); }
+			{ // Scan for Hands once per file  }
+			{ OutfitHasHands(GetFile(selectedRecord));	 }
+			{ GlobalDoOnce := true; }
+		{ end; }
 		
-		if ADVANCED_ENCHANTMENT_PROTECTION then begin		
-			if not Assigned(m_DummyEnch) then begin
-				m_currentFile := GetFile(selectedRecord);
-				m_DummyEnch := CreateDummyEnchantment(m_currentFile);
-			end;
-		end;
+		{ if ADVANCED_ENCHANTMENT_PROTECTION then begin		 }
+			{ if not Assigned(m_DummyEnch) then begin }
+				{ m_currentFile := GetFile(selectedRecord); }
+				{ m_DummyEnch := CreateDummyEnchantment(m_currentFile); }
+			{ end; }
+		{ end; }
 		
-		// In Skyrim, if a modder leaves slot 34 (Forearms) active on a Cuirass (slot 32),
-		// the game engine treats it as "occupying" the forearm slot, which causes those annoying conflicts with dedicated gauntlets or bracers.
-		fRemoveCombinedFlags(selectedRecord);
+		{ // In Skyrim, if a modder leaves slot 34 (Forearms) active on a Cuirass (slot 32), }
+		{ // the game engine treats it as "occupying" the forearm slot, which causes those annoying conflicts with dedicated gauntlets or bracers. }
+		{ fRemoveCombinedFlags(selectedRecord); }
 		
-		m_Slots := GetFirstPersonFlags(selectedRecord);
+		{ m_Slots := GetFirstPersonFlags(selectedRecord); }
 		
 		{ 1.2 Classification & Cleanup }
-		AddVitalKeywords(selectedRecord, m_Slots);
+		{ AddVitalKeywords(selectedRecord, m_Slots); }
 		
 		{ 1.3 Material Logic: Heavy/Light/Clothing }
-		SetArmorType(selectedRecord);
+		{ SetArmorType(selectedRecord); }
 		
 		{ 1.4 Stat Balancing }
-		m_ArmorRating := GetVanillaAR(selectedRecord, m_Slots);  
-		SetElementEditValues(selectedRecord, 'DNAM - Armor Rating', FloatToStr(m_ArmorRating));
+		{ m_ArmorRating := GetVanillaAR(selectedRecord, m_Slots);   }
+		{ SetElementEditValues(selectedRecord, 'DNAM - Armor Rating', FloatToStr(m_ArmorRating)); }
 		
-		m_ArmorWeight := GetVanillaAWeight(selectedRecord, m_Slots); 
-		SetElementEditValues(selectedRecord, 'DATA\Weight', FloatToStr(m_ArmorWeight));
+		{ m_ArmorWeight := GetVanillaAWeight(selectedRecord, m_Slots);  }
+		{ SetElementEditValues(selectedRecord, 'DATA\Weight', FloatToStr(m_ArmorWeight)); }
 		
-		m_ArmorPrice := Round(GetVanillaAPrice(selectedRecord, m_Slots)); 
-		SetElementEditValues(selectedRecord, 'DATA\Value', IntToStr(m_ArmorPrice));
+		{ m_ArmorPrice := Round(GetVanillaAPrice(selectedRecord, m_Slots));  }
+		{ SetElementEditValues(selectedRecord, 'DATA\Value', IntToStr(m_ArmorPrice)); }
 		
 		{ 1.5 Finalization }
-		fAddEnchProtection(selectedRecord, m_DummyEnch);
+		{ fAddEnchProtection(selectedRecord, m_DummyEnch); }
 		
 		{ 1.6 Crafting }
-		MakeCraftableV2(selectedRecord);
+		{ MakeCraftableV2(selectedRecord); }
 		
 		{ 1.7 Tempering: Block Clothing and Visual Slots }
-		if (not IsVisualSlot(m_Slots)) and (not HasKeyword(selectedRecord, 'ArmorClothing')) then begin
-			makeTemperable(selectedRecord);
-		end;
-	end;
+		{ if (not IsVisualSlot(m_Slots)) and (not HasKeyword(selectedRecord, 'ArmorClothing')) then begin }
+			{ makeTemperable(selectedRecord); }
+		{ end; }
+	{ end; }
 	
 	{ 2. Filter: Weapon (WEAP) }
-	if m_recordSignature = 'WEAP' then begin
+	{ if m_recordSignature = 'WEAP' then begin }
 	
-		if not GlobalDoOnce then begin
-		AddMessage(Name(selectedRecord) + ' DAMAGE BONUS FROM SMITHING SKILL + ' + FloatToStr(GlobalArmorBonus));
-			GlobalDoOnce := true;
-		end;
+		{ if not GlobalDoOnce then begin }
+		{ AddMessage(Name(selectedRecord) + ' DAMAGE BONUS FROM SMITHING SKILL + ' + FloatToStr(GlobalArmorBonus)); }
+			{ GlobalDoOnce := true; }
+		{ end; }
 
 		{ Standardize Weapon Keywords (VendorItemWeapon, etc.) }
-		AddVitalKeywords(selectedRecord, '');
+		{ AddVitalKeywords(selectedRecord, ''); }
 		
-		m_WeaponDamage := GetVanillaWDamage(selectedRecord);
-		SetElementEditValues(selectedRecord, 'DATA\Damage', IntToStr(m_WeaponDamage));
-		//AddMessage(Name(selectedRecord) + ' TOTAL DAMAGE = ' + FloatToStr(GetVanillaWDamage(selectedRecord)));
+		{ m_WeaponDamage := GetVanillaWDamage(selectedRecord); }
+		{ SetElementEditValues(selectedRecord, 'DATA\Damage', IntToStr(m_WeaponDamage)); }
+		{ //AddMessage(Name(selectedRecord) + ' TOTAL DAMAGE = ' + FloatToStr(GetVanillaWDamage(selectedRecord))); }
 		
-		m_WeaponPrice := GetVanillaWPrice(selectedRecord);
-		SetElementEditValues(selectedRecord, 'DATA\Value', IntToStr(m_WeaponPrice));
+		{ m_WeaponPrice := GetVanillaWPrice(selectedRecord); }
+		{ SetElementEditValues(selectedRecord, 'DATA\Value', IntToStr(m_WeaponPrice)); }
 
-		m_WeaponWeight := GetVanillaWWeight(selectedRecord);
-		SetElementEditValues(selectedRecord, 'DATA\Weight', FloatToStr(m_WeaponWeight));
+		{ m_WeaponWeight := GetVanillaWWeight(selectedRecord); }
+		{ SetElementEditValues(selectedRecord, 'DATA\Weight', FloatToStr(m_WeaponWeight)); }
 			
-		MakeCraftableV2(selectedRecord);
-		makeTemperable(selectedRecord);	
-	end;
+		{ MakeCraftableV2(selectedRecord); }
+		{ makeTemperable(selectedRecord);	 }
+	{ end; }
 	
 	Result := 0;
 end;
+
 {========================================================}
 { CREATE DUMMY ENCHANTMENT                               }
 {========================================================}
@@ -1226,7 +1239,7 @@ function GetVanillaAWeight(e: IInterface; Slots: string): Float;
 var
 	m_WeightReduceHeavy: Float;
 begin
-	Result := 1.0;
+	Result := VISUAL_SLOT_WEIGHT;
 	m_WeightReduceHeavy := 9; 
 	if HasKeyword(e, 'ArmorClothing') then Exit;
 
@@ -2025,49 +2038,51 @@ begin
 		addItemV2(recipeItems, GetMaterial('LeatherStrips'), 1);
 		addItemV2(recipeItems, GetMaterial('Gold001'), GlobalSmithingReq * CRAFTING_MANUAL_PRICE_MULTIPLIER);
 		
-		{ Loop keywords to assign Perks }
-		for i := 0 to ElementCount(tmpKeywordsCollection) - 1 do begin
-			currentKeywordEDID := GlobalOutfitMaterial;
-			
-			{ Requiem: Leather and Steel both require Steel Smithing perk }
-			if ((currentKeywordEDID = 'ArmorMaterialSteel') or (currentKeywordEDID = 'ArmorMaterialLeather') or
-				(currentKeywordEDID = 'DLC2ArmorMaterialBonemoldLight') or (currentKeywordEDID = 'ArmorMaterialImperialHeavy') or 
-				(currentKeywordEDID = 'ArmorMaterialStormcloak') or (currentKeywordEDID = 'DLC1ArmorMaterialDawnguard')) then begin
-				addPerkCondition(recipeCraft, getRecordByFormID('000CB40D')); // Steel Smithing
-				Break;
+		if (PERK_REQUIREMENT) then begin
+			{ Loop keywords to assign Perks }
+			for i := 0 to ElementCount(tmpKeywordsCollection) - 1 do begin
+				currentKeywordEDID := GlobalOutfitMaterial;
+				
+				{ Requiem: Leather and Steel both require Steel Smithing perk }
+				if ((currentKeywordEDID = 'ArmorMaterialSteel') or (currentKeywordEDID = 'ArmorMaterialLeather') or
+					(currentKeywordEDID = 'DLC2ArmorMaterialBonemoldLight') or (currentKeywordEDID = 'ArmorMaterialImperialHeavy') or 
+					(currentKeywordEDID = 'ArmorMaterialStormcloak') or (currentKeywordEDID = 'DLC1ArmorMaterialDawnguard')) then begin
+					addPerkCondition(recipeCraft, getRecordByFormID('000CB40D')); // Steel Smithing
+					Break;
 
-			end else if ((currentKeywordEDID = 'ArmorMaterialScaled') or (currentKeywordEDID = 'ArmorMaterialSteelPlate') or 
-				(currentKeywordEDID = 'DLC2ArmorMaterialNordicHeavy')) then begin
-				addPerkCondition(recipeCraft, getRecordByFormID('000CB414')); // Advanced Armors
-				Break;
+				end else if ((currentKeywordEDID = 'ArmorMaterialScaled') or (currentKeywordEDID = 'ArmorMaterialSteelPlate') or 
+					(currentKeywordEDID = 'DLC2ArmorMaterialNordicHeavy')) then begin
+					addPerkCondition(recipeCraft, getRecordByFormID('000CB414')); // Advanced Armors
+					Break;
 
-			end else if (currentKeywordEDID = 'ArmorMaterialDwarven') then begin
-				addPerkCondition(recipeCraft, getRecordByFormID('000CB40E')); // Dwarven Smithing
-				Break;
+				end else if (currentKeywordEDID = 'ArmorMaterialDwarven') then begin
+					addPerkCondition(recipeCraft, getRecordByFormID('000CB40E')); // Dwarven Smithing
+					Break;
 
-			end else if (currentKeywordEDID = 'ArmorMaterialEbony') or (currentKeywordEDID = 'DLC2ArmorMaterialStalhrimHeavy') then begin
-				addPerkCondition(recipeCraft, getRecordByFormID('000CB412')); // Ebony Smithing
-				Break;
+				end else if (currentKeywordEDID = 'ArmorMaterialEbony') or (currentKeywordEDID = 'DLC2ArmorMaterialStalhrimHeavy') then begin
+					addPerkCondition(recipeCraft, getRecordByFormID('000CB412')); // Ebony Smithing
+					Break;
 
-			end else if (currentKeywordEDID = 'ArmorMaterialDaedric') then begin
-				addPerkCondition(recipeCraft, getRecordByFormID('000CB413')); // Daedric Smithing
-				Break;
+				end else if (currentKeywordEDID = 'ArmorMaterialDaedric') then begin
+					addPerkCondition(recipeCraft, getRecordByFormID('000CB413')); // Daedric Smithing
+					Break;
 
-			end else if (currentKeywordEDID = 'ArmorMaterialOrcish') then begin
-				addPerkCondition(recipeCraft, getRecordByFormID('000CB410')); // Orcish Smithing
-				Break;
+				end else if (currentKeywordEDID = 'ArmorMaterialOrcish') then begin
+					addPerkCondition(recipeCraft, getRecordByFormID('000CB410')); // Orcish Smithing
+					Break;
 
-			end else if (currentKeywordEDID = 'ArmorMaterialGlass') then begin
-				addPerkCondition(recipeCraft, getRecordByFormID('000CB411')); // Glass Smithing
-				Break;
+				end else if (currentKeywordEDID = 'ArmorMaterialGlass') then begin
+					addPerkCondition(recipeCraft, getRecordByFormID('000CB411')); // Glass Smithing
+					Break;
 
-			end else if (currentKeywordEDID = 'ArmorMaterialDragonscale') or (currentKeywordEDID = 'ArmorMaterialDragonplate') then begin
-				addPerkCondition(recipeCraft, getRecordByFormID('00052190')); // Dragon Armor
-				Break;
+				end else if (currentKeywordEDID = 'ArmorMaterialDragonscale') or (currentKeywordEDID = 'ArmorMaterialDragonplate') then begin
+					addPerkCondition(recipeCraft, getRecordByFormID('00052190')); // Dragon Armor
+					Break;
 
-			end else if (currentKeywordEDID = 'ArmorMaterialElven') or (currentKeywordEDID = 'DLC2ArmorMaterialChitinLight') then begin
-				addPerkCondition(recipeCraft, getRecordByFormID('000CB40F')); // Elven Smithing
-				Break;
+				end else if (currentKeywordEDID = 'ArmorMaterialElven') or (currentKeywordEDID = 'DLC2ArmorMaterialChitinLight') then begin
+					addPerkCondition(recipeCraft, getRecordByFormID('000CB40F')); // Elven Smithing
+					Break;
+				end;
 			end;
 		end;
 		
@@ -2086,38 +2101,40 @@ begin
 	if (itemSignature = 'WEAP') then begin
 		SetElementEditValues(recipeCraft, 'EDID', 'RecipeWeapon' + GetElementEditValues(itemRecord, 'EDID'));
 		SetElementEditValues(recipeCraft, 'BNAM', GetEditValue(getRecordByFormID(WEAPON_CRAFTING_WORKBENCH_FORM_ID)));
-
-		for i := 0 to ElementCount(tmpKeywordsCollection) - 1 do begin
-			currentKeywordEDID := GetElementEditValues(LinksTo(ElementByIndex(tmpKeywordsCollection, i)), 'EDID');
-			
-			if ((currentKeywordEDID = 'WeapMaterialSteel') or (currentKeywordEDID = 'WeapMaterialImperial') or 
-				(currentKeywordEDID = 'WeapMaterialDraugr') or (currentKeywordEDID = 'WeapMaterialDraugrHoned')) then begin
-				addPerkCondition(recipeCraft, getRecordByFormID('000CB40D')); // Steel Smithing
-				Break;
-			end else if (currentKeywordEDID = 'WeapMaterialElven') then begin
-				addPerkCondition(recipeCraft, getRecordByFormID('000CB40F')); // Elven Smithing
-				Break;
-			end else if (currentKeywordEDID = 'DLC2WeaponMaterialNordic') then begin
-				addPerkCondition(recipeCraft, getRecordByFormID('000CB414')); // Advanced Armors
-				Break;
-			end else if (currentKeywordEDID = 'WeapMaterialDwarven') then begin
-				addPerkCondition(recipeCraft, getRecordByFormID('000CB40E')); // Dwarven Smithing
-				Break;
-			end else if (currentKeywordEDID = 'WeapMaterialEbony') then begin
-				addPerkCondition(recipeCraft, getRecordByFormID('000CB412')); // Ebony Smithing
-				Break;
-			end else if (currentKeywordEDID = 'WeapMaterialDaedric') then begin
-				addPerkCondition(recipeCraft, getRecordByFormID('000CB413')); // Daedric Smithing
-				Break;
-			end else if ((currentKeywordEDID = 'WeapMaterialOrcish') or (currentKeywordEDID = 'DLC2WeaponMaterialStalhrim')) then begin
-				addPerkCondition(recipeCraft, getRecordByFormID('000CB410')); // Orcish Smithing
-				Break;
-			end else if (currentKeywordEDID = 'WeapMaterialGlass') then begin
-				addPerkCondition(recipeCraft, getRecordByFormID('000CB411')); // Glass Smithing
-				Break;
-			end else if (currentKeywordEDID = 'DLC1WeapMaterialDragonbone') then begin
-				addPerkCondition(recipeCraft, getRecordByFormID('00052190')); // Dragon Armor
-				Break;
+		
+		if (PERK_REQUIREMENT) then begin
+			for i := 0 to ElementCount(tmpKeywordsCollection) - 1 do begin
+				currentKeywordEDID := GetElementEditValues(LinksTo(ElementByIndex(tmpKeywordsCollection, i)), 'EDID');
+				
+				if ((currentKeywordEDID = 'WeapMaterialSteel') or (currentKeywordEDID = 'WeapMaterialImperial') or 
+					(currentKeywordEDID = 'WeapMaterialDraugr') or (currentKeywordEDID = 'WeapMaterialDraugrHoned')) then begin
+					addPerkCondition(recipeCraft, getRecordByFormID('000CB40D')); // Steel Smithing
+					Break;
+				end else if (currentKeywordEDID = 'WeapMaterialElven') then begin
+					addPerkCondition(recipeCraft, getRecordByFormID('000CB40F')); // Elven Smithing
+					Break;
+				end else if (currentKeywordEDID = 'DLC2WeaponMaterialNordic') then begin
+					addPerkCondition(recipeCraft, getRecordByFormID('000CB414')); // Advanced Armors
+					Break;
+				end else if (currentKeywordEDID = 'WeapMaterialDwarven') then begin
+					addPerkCondition(recipeCraft, getRecordByFormID('000CB40E')); // Dwarven Smithing
+					Break;
+				end else if (currentKeywordEDID = 'WeapMaterialEbony') then begin
+					addPerkCondition(recipeCraft, getRecordByFormID('000CB412')); // Ebony Smithing
+					Break;
+				end else if (currentKeywordEDID = 'WeapMaterialDaedric') then begin
+					addPerkCondition(recipeCraft, getRecordByFormID('000CB413')); // Daedric Smithing
+					Break;
+				end else if ((currentKeywordEDID = 'WeapMaterialOrcish') or (currentKeywordEDID = 'DLC2WeaponMaterialStalhrim')) then begin
+					addPerkCondition(recipeCraft, getRecordByFormID('000CB410')); // Orcish Smithing
+					Break;
+				end else if (currentKeywordEDID = 'WeapMaterialGlass') then begin
+					addPerkCondition(recipeCraft, getRecordByFormID('000CB411')); // Glass Smithing
+					Break;
+				end else if (currentKeywordEDID = 'DLC1WeapMaterialDragonbone') then begin
+					addPerkCondition(recipeCraft, getRecordByFormID('00052190')); // Dragon Armor
+					Break;
+				end;
 			end;
 		end;
 		
@@ -2278,49 +2295,51 @@ begin
 		addFemaleCondition(recipeCraft);
 		AddManualCondition(recipeCraft, GlobalCraftingManual);
 		
-		{ Loop keywords to assign Perks }
-		for i := 0 to ElementCount(tmpKeywordsCollection) - 1 do begin
-			currentKeywordEDID := GetElementEditValues(LinksTo(ElementByIndex(tmpKeywordsCollection, i)), 'EDID');
+		if (PERK_REQUIREMENT) then begin
+			{ Loop keywords to assign Perks }
+			for i := 0 to ElementCount(tmpKeywordsCollection) - 1 do begin
+				currentKeywordEDID := GetElementEditValues(LinksTo(ElementByIndex(tmpKeywordsCollection, i)), 'EDID');
 
-			{ Requiem: Leather and Steel both require Steel Smithing perk }
-			if ((currentKeywordEDID = 'ArmorMaterialSteel') or (currentKeywordEDID = 'ArmorMaterialLeather') or
-				(currentKeywordEDID = 'DLC2ArmorMaterialBonemoldLight') or (currentKeywordEDID = 'ArmorMaterialImperialHeavy') or 
-				(currentKeywordEDID = 'ArmorMaterialStormcloak') or (currentKeywordEDID = 'DLC1ArmorMaterialDawnguard')) then begin
-				addPerkCondition(recipeCraft, getRecordByFormID('000CB40D')); // Steel Smithing
-				Break;
+				{ Requiem: Leather and Steel both require Steel Smithing perk }
+				if ((currentKeywordEDID = 'ArmorMaterialSteel') or (currentKeywordEDID = 'ArmorMaterialLeather') or
+					(currentKeywordEDID = 'DLC2ArmorMaterialBonemoldLight') or (currentKeywordEDID = 'ArmorMaterialImperialHeavy') or 
+					(currentKeywordEDID = 'ArmorMaterialStormcloak') or (currentKeywordEDID = 'DLC1ArmorMaterialDawnguard')) then begin
+					addPerkCondition(recipeCraft, getRecordByFormID('000CB40D')); // Steel Smithing
+					Break;
 
-			end else if ((currentKeywordEDID = 'ArmorMaterialScaled') or (currentKeywordEDID = 'ArmorMaterialSteelPlate') or 
-				(currentKeywordEDID = 'DLC2ArmorMaterialNordicHeavy')) then begin
-				addPerkCondition(recipeCraft, getRecordByFormID('000CB414')); // Advanced Armors
-				Break;
+				end else if ((currentKeywordEDID = 'ArmorMaterialScaled') or (currentKeywordEDID = 'ArmorMaterialSteelPlate') or 
+					(currentKeywordEDID = 'DLC2ArmorMaterialNordicHeavy')) then begin
+					addPerkCondition(recipeCraft, getRecordByFormID('000CB414')); // Advanced Armors
+					Break;
 
-			end else if (currentKeywordEDID = 'ArmorMaterialDwarven') then begin
-				addPerkCondition(recipeCraft, getRecordByFormID('000CB40E')); // Dwarven Smithing
-				Break;
+				end else if (currentKeywordEDID = 'ArmorMaterialDwarven') then begin
+					addPerkCondition(recipeCraft, getRecordByFormID('000CB40E')); // Dwarven Smithing
+					Break;
 
-			end else if (currentKeywordEDID = 'ArmorMaterialEbony') or (currentKeywordEDID = 'DLC2ArmorMaterialStalhrimHeavy') then begin
-				addPerkCondition(recipeCraft, getRecordByFormID('000CB412')); // Ebony Smithing
-				Break;
+				end else if (currentKeywordEDID = 'ArmorMaterialEbony') or (currentKeywordEDID = 'DLC2ArmorMaterialStalhrimHeavy') then begin
+					addPerkCondition(recipeCraft, getRecordByFormID('000CB412')); // Ebony Smithing
+					Break;
 
-			end else if (currentKeywordEDID = 'ArmorMaterialDaedric') then begin
-				addPerkCondition(recipeCraft, getRecordByFormID('000CB413')); // Daedric Smithing
-				Break;
+				end else if (currentKeywordEDID = 'ArmorMaterialDaedric') then begin
+					addPerkCondition(recipeCraft, getRecordByFormID('000CB413')); // Daedric Smithing
+					Break;
 
-			end else if (currentKeywordEDID = 'ArmorMaterialOrcish') then begin
-				addPerkCondition(recipeCraft, getRecordByFormID('000CB410')); // Orcish Smithing
-				Break;
+				end else if (currentKeywordEDID = 'ArmorMaterialOrcish') then begin
+					addPerkCondition(recipeCraft, getRecordByFormID('000CB410')); // Orcish Smithing
+					Break;
 
-			end else if (currentKeywordEDID = 'ArmorMaterialGlass') then begin
-				addPerkCondition(recipeCraft, getRecordByFormID('000CB411')); // Glass Smithing
-				Break;
+				end else if (currentKeywordEDID = 'ArmorMaterialGlass') then begin
+					addPerkCondition(recipeCraft, getRecordByFormID('000CB411')); // Glass Smithing
+					Break;
 
-			end else if (currentKeywordEDID = 'ArmorMaterialDragonscale') or (currentKeywordEDID = 'ArmorMaterialDragonplate') then begin
-				addPerkCondition(recipeCraft, getRecordByFormID('00052190')); // Dragon Armor
-				Break;
+				end else if (currentKeywordEDID = 'ArmorMaterialDragonscale') or (currentKeywordEDID = 'ArmorMaterialDragonplate') then begin
+					addPerkCondition(recipeCraft, getRecordByFormID('00052190')); // Dragon Armor
+					Break;
 
-			end else if (currentKeywordEDID = 'ArmorMaterialElven') or (currentKeywordEDID = 'DLC2ArmorMaterialChitinLight') then begin
-				addPerkCondition(recipeCraft, getRecordByFormID('000CB40F')); // Elven Smithing
-				Break;
+				end else if (currentKeywordEDID = 'ArmorMaterialElven') or (currentKeywordEDID = 'DLC2ArmorMaterialChitinLight') then begin
+					addPerkCondition(recipeCraft, getRecordByFormID('000CB40F')); // Elven Smithing
+					Break;
+				end;
 			end;
 		end;
 		
@@ -2731,6 +2750,199 @@ begin
 
 	Result := recipeCraft;
 end;
+
+function fAddNewFile(aFileName: string; aIsESL: boolean): IInterface;
+var
+	m_functionFile: IInterface;
+begin
+	Result := nil;
+
+	// Check 1: Empty String
+	if Trim(aFileName) = '' then begin
+		AddMessage('Error: Filename is empty.');
+		Exit;
+	end;
+
+	// Check 2: Protected Names (Don't try to 'create' Skyrim.esm)
+	if SameText(aFileName, 'Skyrim.esm') or SameText(aFileName, 'Update.esm') then begin
+		AddMessage('Error: Cannot use protected master names.');
+		Exit;
+	end;
+
+	// Check 3: Get existing file handle or create new one
+	m_functionFile := FileByName(aFileName);
+	if not Assigned(m_functionFile) then
+		m_functionFile := AddNewFileName(aFileName, aIsESL);
+
+	// Check 4: Final Validation
+	if Assigned(m_functionFile) then begin
+		AddMessage('Success: ' + aFileName + ' initialized.');
+		Result := m_functionFile;
+	end else begin
+		AddMessage('Critical: Failed to create ' + aFileName);
+	end;
+end;
+
+{ function fAddMaster(selectedRecord: IInterface): boolean; }
+{ var }
+	{ m_functionSourceFile, m_functionFileHeader, m_functionMasterList, m_functionEntry: IInterface; }
+	{ m_functionMasterName: string; }
+	{ m_i: integer; }
+	{ m_functionAlreadyExists: boolean; }
+	{ m_functionTargetMaster: string; }
+{ begin }
+	{ Result := false; }
+	{ if not Assigned(GlobalPatchFile) or not Assigned(selectedRecord) then Exit; }
+
+	{ m_functionSourceFile := GetFile(selectedRecord); }
+	{ m_functionMasterName := GetFileName(m_functionSourceFile); }
+	
+	{ m_functionFileHeader := ElementBySignature(GlobalPatchFile, 'TES4'); }
+	{ m_functionMasterList := ElementByPath(m_functionFileHeader, 'Master Files'); }
+	
+	{ if not Assigned(m_functionMasterList) then }
+		{ m_functionMasterList := Add(m_functionFileHeader, 'Master Files', true); }
+
+	{ // --- Internal Logic: Always ensure Skyrim.esm is handled first --- }
+	{ m_functionTargetMaster := 'Skyrim.esm'; }
+	
+	{ // Loop twice: First for Skyrim.esm, then for the selectedRecord's master }
+	{ while (m_functionTargetMaster <> '') do begin }
+		{ m_functionAlreadyExists := false; }
+		
+		{ for m_i := 0 to ElementCount(m_functionMasterList) - 1 do begin }
+			{ if SameText(GetElementEditValues(ElementByIndex(m_functionMasterList, m_i), 'MAST'), m_functionTargetMaster) then begin }
+				{ m_functionAlreadyExists := true; }
+				{ Break; }
+			{ end; }
+		{ end; }
+
+		{ if not m_functionAlreadyExists and not SameText(m_functionTargetMaster, GetFileName(GlobalPatchFile)) then begin }
+			{ if (ElementCount(m_functionMasterList) > 0) and (GetElementEditValues(ElementByIndex(m_functionMasterList, 0), 'MAST') = '') then }
+				{ m_functionEntry := ElementByIndex(m_functionMasterList, 0) }
+			{ else }
+				{ m_functionEntry := Add(m_functionMasterList, 'Master File', true); }
+				
+			{ SetElementEditValues(m_functionEntry, 'MAST', m_functionTargetMaster); }
+		{ end; }
+
+		{ // Move from Skyrim.esm to the record's master, then exit loop }
+		{ if m_functionTargetMaster = 'Skyrim.esm' then }
+			{ m_functionTargetMaster := m_functionMasterName }
+		{ else }
+			{ m_functionTargetMaster := '';  }
+	{ end; }
+	
+	{ Result := true; }
+{ end; }
+
+{ function fFunctionAddMaster(SourceFile, TargetFile: IInterface): boolean; }
+{ begin }
+	{ if not Equals(SourceFile, TargetFile) then }
+		{ AddMasterIfMissing(TargetFile, GetFileName(SourceFile)); }
+	{ Result := True; }
+{ end; }
+
+{ function fFunctionSyncKeywords(SourceRecord, TargetRecord: IInterface): integer; }
+{ var }
+	{ SourceKeywords, TargetKeywords, CurrentKW: IInterface; }
+	{ i: integer; }
+{ begin }
+	{ SourceKeywords := ElementBySignature(SourceRecord, 'KWDA'); }
+	{ if not Assigned(SourceKeywords) then Exit; }
+	
+	{ // Ensure the target has a Keyword array to write to }
+	{ TargetKeywords := Add(TargetRecord, 'KWDA', True); }
+	
+	{ for i := 0 to ElementCount(SourceKeywords) - 1 do }
+	{ begin }
+		{ CurrentKW := ElementByIndex(SourceKeywords, i); }
+		{ // Add a new slot in the target array and set its value to the source's keyword FormID }
+		{ ElementAssign(TargetKeywords, HighInteger, CurrentKW, False); }
+	{ end; }
+{ end; }
+
+{ procedure fFunctionAddSkyrimMaster(TargetFile: IInterface); }
+{ begin }
+	{ if not HasMaster(TargetFile, 'Skyrim.esm') then }
+	{ begin }
+		{ AddMessage('Adding Skyrim.esm as master to ' + GetFileName(TargetFile)); }
+		{ AddMasterIfMissing(TargetFile, 'Skyrim.esm'); }
+	{ end; }
+{ end; }
+
+{ // Standard master addition for the specific source record's file }
+{ procedure fFunctionAddSourceMaster(SourceRecord, TargetFile: IInterface); }
+{ var }
+	{ SourceFile: IInterface; }
+{ begin }
+	{ SourceFile := GetFile(SourceRecord); }
+	{ if not Equals(SourceFile, TargetFile) then }
+		{ AddMasterIfMissing(TargetFile, GetFileName(SourceFile)); }
+{ end; }
+
+{ function fFunctionCopyArmorAsNew(SourceRecord: IInterface; TargetFile: IInterface): IInterface; }
+{ begin }
+	{ // 1. Ensure Skyrim.esm is a master for Keywords/Base data }
+	{ fFunctionAddSkyrimMaster(TargetFile); }
+	
+	{ // 2. Ensure the record's own origin file is a master }
+	{ fFunctionAddSourceMaster(SourceRecord, TargetFile); }
+	
+	{ // 3. Perform the copy as New }
+	{ Result := wbCopyElementToFile(SourceRecord, TargetFile, True, True); }
+	
+	{ if Assigned(Result) then }
+		{ AddMessage('Successfully copied ' + EditorID(Result)) }
+	{ else }
+		{ AddMessage('Failed to copy ' + EditorID(SourceRecord)); }
+{ end; }
+
+
+function fFunctionCopyArmorToNewFile(SourceRecord: IInterface; TargetFile: IInterface; prefix: string): IInterface;
+var
+	NewEditorID: string;
+	SourceFile: IInterface;
+	ExistingRecord: IInterface;
+begin
+	Result := nil;
+	
+	// 1. Prepare the new EditorID with the 'CF_' prefix
+	NewEditorID := 'CF_' + prefix + '_' + EditorID(SourceRecord);
+	
+	// 2. Check if a record with this EditorID already exists in the Target File
+	ExistingRecord := MainRecordByEditorID(GroupBySignature(TargetFile, 'ARMO'), NewEditorID);
+	if Assigned(ExistingRecord) then
+	begin
+		AddMessage('Skipping: ' + NewEditorID + ' already exists in ' + GetFileName(TargetFile));
+		Exit;
+	end;
+
+	// 3. Ensure necessary Masters are assigned to the Target File
+	SourceFile := GetFile(SourceRecord);
+	
+	// Add Skyrim.esm for Keywords/Base data
+	AddMasterIfMissing(TargetFile, 'Skyrim.esm');
+	
+	// Add the Source record's file if it's different from the target
+	if not Equals(SourceFile, TargetFile) then
+		AddMasterIfMissing(TargetFile, GetFileName(SourceFile));
+
+	// 4. Perform the "Copy as New"
+	// wbCopyElementToFile(Source, Target, AsNew: True, DeepCopy: True)
+	Result := wbCopyElementToFile(SourceRecord, TargetFile, True, True);
+	
+	if Assigned(Result) then
+	begin
+		// 5. Apply the prefix to the new record's EditorID
+		SetElementEditValues(Result, 'EDID', NewEditorID);
+		AddMessage('Created: ' + NewEditorID);
+	end
+	else
+		AddMessage('Error: Failed to copy ' + EditorID(SourceRecord));
+end;
+
+
 {========================================================}
 { END                                                    }
 {========================================================}
