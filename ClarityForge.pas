@@ -26,7 +26,7 @@ Example: "NordicPlate_CF_Eb80.esp"
 MATERIAL CODES:
 - Light: Lr (Leather), Sd (Scaled), En (Elven), Gs (Glass), Ds (Dragonscale)
 - Heavy: In (Iron), Sl (Steel), Dn (Dwarven), Se (SteelPlate), Oh (Orcish), 
-         Eb (Ebony), Dc (Daedric), Dp (Dragonplate)
+         Ey (Ebony), Dc (Daedric), Dp (Dragonplate)
 
 REQUIREMENT SCALING:
 - Smithing Req: Defined by filename (e.g., 80).
@@ -226,7 +226,7 @@ begin
 	// 6. Validate against the defined Material List
 	bIsValidMaterial := (sMat = 'Lr') or (sMat = 'Sd') or (sMat = 'En') or (sMat = 'Gs') or (sMat = 'Ds') or // Light
 	                    (sMat = 'In') or (sMat = 'Sl') or (sMat = 'Dn') or (sMat = 'Se') or (sMat = 'Oh') or // Heavy
-	                    (sMat = 'Eb') or (sMat = 'Dc') or (sMat = 'Dp');                                    // Heavy
+	                    (sMat = 'Ey') or (sMat = 'Dc') or (sMat = 'Dp');                                    // Heavy
 
 	if bIsValidMaterial then begin
 		
@@ -440,7 +440,7 @@ begin
 	// Dn - Dwrven
 	// Se - Steel Plate
 	// Oh - Orcish
-	// Eb - Ebony
+	// Ey - Ebony
 	// Dc - Daedric
 	// Dp - Dragonplate
 	
@@ -457,7 +457,7 @@ begin
 	else if (m_sMatCode = 'Dn') then GlobalOutfitMaterial := 'ArmorMaterialDwarven'
 	else if (m_sMatCode = 'Se') then GlobalOutfitMaterial := 'ArmorMaterialSteelPlate'
 	else if (m_sMatCode = 'Oh') then GlobalOutfitMaterial := 'ArmorMaterialOrcish'
-	else if (m_sMatCode = 'Eb') then GlobalOutfitMaterial := 'ArmorMaterialEbony'
+	else if (m_sMatCode = 'Ey') then GlobalOutfitMaterial := 'ArmorMaterialEbony'
 	else if (m_sMatCode = 'Dc') then GlobalOutfitMaterial := 'ArmorMaterialDaedric'
 	else if (m_sMatCode = 'Dp') then GlobalOutfitMaterial := 'ArmorMaterialDragonplate'
 	
