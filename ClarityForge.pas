@@ -135,59 +135,18 @@ begin
 	for i := 0 to FileCount - 1 do begin
 		f := FileByIndex(i);
 		sFileName := GetFileName(f);
-
+		AddMessage('Initialization: Working with ' + sFileName);
 		if fIsClarityForgeApplicable(sFileName) then begin
 			AddMessage('>>> Valid File Found: ' + sFileName);
 			fAssignGlobalMaterial(GlobalMaterialCode);
 			
 			// GlobalFileName should hold cleaned name here
 			// Call the processor for this specific file 'f'
+			fNullifyOriginalRecipes(f, GlobalPatchFile);
 			fProcessArmorRecords(f);
 			fProcessWeaponRecords(f);
 		end;
 	end;
-end;
-
-
-{========================================================}
-{ PROCESS "Runs for every record selected in xEdit"      }
-{========================================================}
-function _Process(selectedRecord: IInterface): integer; // Disabled
-var
-	// Utility
-	m_recordSignature: string;
-	m_currentFile: IwbFile;
-
-	
-begin
-	m_recordSignature := Signature(selectedRecord);
-	GlobalProcessedRecords := GlobalProcessedRecords + 1;
-	
-	{ //1. Filter: Armor (ARMO) }
-	{ if m_recordSignature = 'ARMO' then begin }
-		
-		// 1.1 Initialization
-		if not GlobalDoOnce then begin // Do Once
-		
-			if GlobalFileName = '' then begin
-				GlobalFileName := GetFileName(GetFile(selectedRecord));
-				GlobalFileName := ChangeFileExt(GlobalFileName, '');
-				AddMessage('Initialization: Working with ' + GlobalFileName);
-			end;
-			
-			
-			// Scan for Hands once per file 
-			OutfitHasHands(GetFile(selectedRecord));	
-			GlobalDoOnce := true;
-		end;
-
-		{ fMakeArmorTiers(selectedRecord);		 }
-	{ end; }
-	
-	
-	
-	
-	Result := 0;
 end;
 
 {========================================================}
@@ -418,6 +377,45 @@ begin
 		end;
 	end else begin
 		AddMessage('   -> No WEAP records found in this file.');
+	end;
+end;
+
+{========================================================}
+{            NULLIFY CLUTTER CRAFTING RECIPES            }
+{========================================================}
+procedure fNullifyOriginalRecipes(m_fSource: IInterface; m_fPatch: IInterface);
+var
+	GroupCOBJ, CurrentRecipe, OverriddenRecipe: IInterface;
+	i: Integer;
+	sResultItem: string;
+begin
+	// 1. Locate the COBJ group in the source file
+	GroupCOBJ := GroupBySignature(m_fSource, 'COBJ');
+
+	if Assigned(GroupCOBJ) then begin
+		AddMessage('   -> Checking ' + IntToStr(ElementCount(GroupCOBJ)) + ' recipes for nullification...');
+
+		for i := 0 to ElementCount(GroupCOBJ) - 1 do begin
+			CurrentRecipe := ElementByIndex(GroupCOBJ, i);
+			
+			// Optional: Only nullify if the recipe creates an ARMO or WEAP
+			// This prevents nullifying recipes for items you might want to keep (like ingots)
+			sResultItem := GetElementEditValues(CurrentRecipe, 'CNAM');
+			
+			// 2. Override the recipe into our patch file
+			OverriddenRecipe := wbCopyElementToFile(CurrentRecipe, m_fPatch, False, True);
+			
+			if Assigned(OverriddenRecipe) then begin
+				// 3. Clear existing conditions to start fresh
+				RemoveElement(OverriddenRecipe, 'Conditions');
+				
+				// 4. Add an impossible condition (Player Level >= 999999)
+				// This effectively hides the recipe from the forge entirely
+				fAddPlayerLevelCondition(OverriddenRecipe, 999999);
+				
+				AddMessage('      [Nullified] ' + EditorID(OverriddenRecipe));
+			end;
+		end;
 	end;
 end;
 
