@@ -37,13 +37,12 @@ const
 	{ GLOBAL VARS CONFIGURATION                              }
 	{========================================================}
 	PLAYER_LEVEL_REQUIREMENT = 1;
-	REQUIRED_SMITHING_SKILL = 1;
 	FOR_FEMALE_ONLY = True;
 	BACKPACK_SLOT_ENCHANTABLE = True;
 	ADVANCED_ENCHANTMENT_PROTECTION = True;
 	FOREARMS_SLOT_ALWAYS_ENCHANTABLE = True; // If True Forearms will be always enchantable.
 	FOREARMS_DEBUFF_MULTIPLIER = 2.5; // Forearms Armor Rating debuff.  Set to 1 to disable.
-	CRAFTING_MANUAL_PRICE_MULTIPLIER = 50; // Book value = REQUIRED_SMITHING_SKILL * CRAFTING_MANUAL_PRICE_MULTIPLIER
+	CRAFTING_MANUAL_PRICE_MULTIPLIER = 50; // Book value = GlobalSmithingReq * CRAFTING_MANUAL_PRICE_MULTIPLIER
 	CRAFTING_MANUAL_SIMPLE_MATERIAL_DETECTION = True; // Only first selected ARMO record matter. Useful If needed to create several Crafting Manual with different material in one esp file.
 	VISUAL_SLOT_WEIGHT = 0.1;
 	PERK_REQUIREMENT = False;
@@ -66,6 +65,7 @@ var
 	GlobalOutfitMaterial: string;
 	GlobalVarFileName: string;
 	GlobalPatchFile: IInterface;
+	GlobalMaterialCode: string;
 
 {========================================================}
 { INITIALIZE                                             }
@@ -80,7 +80,7 @@ begin
 	Result := 0;
 
 	{ Set Global Values }
-	GlobalSmithingReq := REQUIRED_SMITHING_SKILL ;
+	GlobalSmithingReq := 5; // Smithing Skill Level 0 - 100;
 	GlobalArmorBonus := GlobalSmithingReq / 15.0; // Too much ArmorRating will cause Requiem script to fail
 	GlobalFileName := '';
 	GlobalOutfitMaterial := '';
@@ -103,31 +103,8 @@ begin
 	AddMessage('SMITHING REQUIREMENT = ' + IntToStr(GlobalSmithingReq));
 	
 	// Creating Patch file
-	GlobalVarFileName := 'ClarityForge_Patch4.esp';
+	GlobalVarFileName := 'ClarityForge_Patch.esp';
 	
-end;
-{========================================================}
-{ PROCESS "Runs for every record selected in xEdit"      }
-{========================================================}
-function Process(selectedRecord: IInterface): integer;
-var
-	// Utility
-	m_recordSignature: string;
-	m_Slots: string;
-	m_currentFile: IwbFile;
-	// Armors
-	m_ArmorRating: Float;
-	m_ArmorPrice: Integer;
-	m_ArmorWeight: Float;
-	// Weapons
-	m_WeaponDamage: integer;
-	m_WeaponPrice: Integer;
-	m_WeaponWeight: Double; // Weights should be Double/Float
-	//Enchant for ENCHANTMENT_PROTECTION
-	m_DummyEnch: IInterface;
-begin
-	m_recordSignature := Signature(selectedRecord);
-	GlobalProcessedRecords := GlobalProcessedRecords + 1;
 	GlobalPatchFile := fAddNewFile(GlobalVarFileName, true);
 	
 	// Exit if initialization failed
@@ -136,15 +113,51 @@ begin
 		Exit;
 	end;
 	
+	ScanFiles();
 	
-	//fAddMaster(selectedRecord);
+end;
+
+procedure ScanFiles;
+var
+	i: Integer;
+	f: IInterface;
+	sFileName: string;
+begin
+	for i := 0 to FileCount - 1 do begin
+		f := FileByIndex(i);
+		sFileName := GetFileName(f);
+
+		if fIsClarityForgeApplicable(sFileName) then begin
+			AddMessage('>>> Valid File Found: ' + sFileName);
+			
+			// Call the processor for this specific file 'f'
+			fProcessArmorRecords(f);
+		end;
+	end;
+end;
+
+
+{========================================================}
+{ PROCESS "Runs for every record selected in xEdit"      }
+{========================================================}
+function _Process(selectedRecord: IInterface): integer;
+var
+	// Utility
+	m_recordSignature: string;
+	m_currentFile: IwbFile;
+	// Weapons
+	m_WeaponDamage: integer;
+	m_WeaponPrice: Integer;
+	m_WeaponWeight: Double; // Weights should be Double/Float
 	
-	fFunctionCopyArmorToNewFile(selectedRecord, GlobalPatchFile, 'o');
+begin
+	m_recordSignature := Signature(selectedRecord);
+	GlobalProcessedRecords := GlobalProcessedRecords + 1;
 	
-	{ 1. Filter: Armor (ARMO) }
+	{ //1. Filter: Armor (ARMO) }
 	{ if m_recordSignature = 'ARMO' then begin }
 		
-		{ 1.1 Initialization }
+		{ // 1.1 Initialization }
 		{ if not GlobalDoOnce then begin // Do Once }
 		
 			{ if GlobalFileName = '' then begin }
@@ -153,65 +166,26 @@ begin
 				{ AddMessage('Initialization: Working with ' + GlobalFileName); }
 			{ end; }
 			
-			{ // Counts how many times each ArmorMaterial keyword appears in your outfit file and }
-			{ // then pick the one that appears most frequently. }
-			{ GlobalOutfitMaterial := GetOutfitMaterial(GetFile(selectedRecord)); }
-			{ AddMessage('SMART MATERIAL DETECTION  = ' + GlobalOutfitMaterial); }
-			
 			{ if CRAFTING_MANUAL_SIMPLE_MATERIAL_DETECTION then begin }
 				{ GlobalOutfitMaterial := GetArmorMaterialSimplified(selectedRecord); }
+				{ AddMessage('SIMPLE MATERIAL DETECTION  = ' + GlobalOutfitMaterial); }
+			{ end else begin }
+				{ // Counts how many times each ArmorMaterial keyword appears in your outfit file and }
+				{ // then pick the one that appears most frequently. }
+				{ GlobalOutfitMaterial := GetOutfitMaterial(GetFile(selectedRecord)); }
+				{ AddMessage('SMART MATERIAL DETECTION  = ' + GlobalOutfitMaterial); }
 			{ end; }
 			
-			{ GlobalCraftingManual := CopyBookAsNewRecord(GetFile(selectedRecord), '0001AFCF', (GlobalFileName + ' ' +  StringReplace(GlobalOutfitMaterial, 'ArmorMaterial', '', [rfReplaceAll, rfIgnoreCase]) + ' Lv ' + IntToStr(REQUIRED_SMITHING_SKILL) + ' Book'));			 }
-			
-			{ MakeCraftableV2(GlobalCraftingManual); }
 			{ // Scan for Hands once per file  }
 			{ OutfitHasHands(GetFile(selectedRecord));	 }
 			{ GlobalDoOnce := true; }
 		{ end; }
-		
-		{ if ADVANCED_ENCHANTMENT_PROTECTION then begin		 }
-			{ if not Assigned(m_DummyEnch) then begin }
-				{ m_currentFile := GetFile(selectedRecord); }
-				{ m_DummyEnch := CreateDummyEnchantment(m_currentFile); }
-			{ end; }
-		{ end; }
-		
-		{ // In Skyrim, if a modder leaves slot 34 (Forearms) active on a Cuirass (slot 32), }
-		{ // the game engine treats it as "occupying" the forearm slot, which causes those annoying conflicts with dedicated gauntlets or bracers. }
-		{ fRemoveCombinedFlags(selectedRecord); }
-		
-		{ m_Slots := GetFirstPersonFlags(selectedRecord); }
-		
-		{ 1.2 Classification & Cleanup }
-		{ AddVitalKeywords(selectedRecord, m_Slots); }
-		
-		{ 1.3 Material Logic: Heavy/Light/Clothing }
-		{ SetArmorType(selectedRecord); }
-		
-		{ 1.4 Stat Balancing }
-		{ m_ArmorRating := GetVanillaAR(selectedRecord, m_Slots);   }
-		{ SetElementEditValues(selectedRecord, 'DNAM - Armor Rating', FloatToStr(m_ArmorRating)); }
-		
-		{ m_ArmorWeight := GetVanillaAWeight(selectedRecord, m_Slots);  }
-		{ SetElementEditValues(selectedRecord, 'DATA\Weight', FloatToStr(m_ArmorWeight)); }
-		
-		{ m_ArmorPrice := Round(GetVanillaAPrice(selectedRecord, m_Slots));  }
-		{ SetElementEditValues(selectedRecord, 'DATA\Value', IntToStr(m_ArmorPrice)); }
-		
-		{ 1.5 Finalization }
-		{ fAddEnchProtection(selectedRecord, m_DummyEnch); }
-		
-		{ 1.6 Crafting }
-		{ MakeCraftableV2(selectedRecord); }
-		
-		{ 1.7 Tempering: Block Clothing and Visual Slots }
-		{ if (not IsVisualSlot(m_Slots)) and (not HasKeyword(selectedRecord, 'ArmorClothing')) then begin }
-			{ makeTemperable(selectedRecord); }
-		{ end; }
+
+		{ fMakeArmorTiers(selectedRecord);		 }
 	{ end; }
 	
-	{ 2. Filter: Weapon (WEAP) }
+	
+	// 2. Filter: Weapon (WEAP)
 	{ if m_recordSignature = 'WEAP' then begin }
 	
 		{ if not GlobalDoOnce then begin }
@@ -237,6 +211,130 @@ begin
 	{ end; }
 	
 	Result := 0;
+end;
+
+procedure fMakeArmorTiers(selectedRecord: IInterface);
+var
+	NewRecord: IInterface;
+	iStart, iEnd, iStep, iCurrent: Integer;
+	sPrefix: string;
+	m_Slots: string;
+	// Check duplicates for tempering recipes
+	currentKeywordEDID: string;
+	recipeCraft: IInterface;
+	// Armors
+	m_ArmorRating: Float;
+	m_ArmorPrice: Integer;
+	m_ArmorWeight: Float;
+	//Enchant for ENCHANTMENT_PROTECTION
+	m_DummyEnch: IInterface;
+begin
+	if not Assigned(GlobalPatchFile) then Exit;
+	
+	if ADVANCED_ENCHANTMENT_PROTECTION then begin		
+		if not Assigned(m_DummyEnch) then begin
+			m_DummyEnch := CreateDummyEnchantment(GlobalPatchFile);
+		end;
+	end;	
+	
+	iStart := -1; 
+	iEnd := -1;
+	iStep := 5;
+	AddMessage('Leather');
+	// --- Tier 1: Low (4 iterations: 5, 10, 15, 20) ---
+	if HasKeyword(selectedRecord, 'ArmorMaterialLeather') or 
+	   HasKeyword(selectedRecord, 'ArmorMaterialIron') or 
+	   HasKeyword(selectedRecord, 'ArmorMaterialSteel') then 
+	begin 
+		
+		iStart := 5; iEnd := 20; 
+	end
+	
+	// --- Tier 2: Mid (5 iterations: 25, 30, 35, 40, 45) ---
+	else if HasKeyword(selectedRecord, 'ArmorMaterialScaled') or 
+			HasKeyword(selectedRecord, 'ArmorMaterialDwarven') or 
+			HasKeyword(selectedRecord, 'ArmorMaterialElven') or 
+			HasKeyword(selectedRecord, 'ArmorMaterialOrcish') or 
+			HasKeyword(selectedRecord, 'ArmorMaterialSteelPlate') then 
+	begin 
+		iStart := 25; iEnd := 45; 
+	end
+
+	// --- Tier 3: High (4 iterations: 75, 80, 85, 90) ---
+	else if HasKeyword(selectedRecord, 'ArmorMaterialEbony') or 
+			HasKeyword(selectedRecord, 'ArmorMaterialGlass') then 
+	begin 
+		iStart := 75; iEnd := 90; 
+	end
+
+	// --- Tier 4: Endgame (2 iterations: 95, 100) ---
+	else if HasKeyword(selectedRecord, 'ArmorMaterialDragonscale') or 
+			HasKeyword(selectedRecord, 'ArmorMaterialDragonplate') or 
+			HasKeyword(selectedRecord, 'ArmorMaterialDaedric') then 
+	begin 
+		iStart := 95; iEnd := 100; 
+	end;
+
+	// --- Processing Loop ---
+	if iStart <> -1 then
+	begin
+		iCurrent := iStart;
+		while iCurrent <= iEnd do
+		begin
+			GlobalSmithingReq := iCurrent;
+			sPrefix := 'T' + IntToStr(GlobalSmithingReq) + ' ' + StringReplace(GlobalOutfitMaterial, 'ArmorMaterial', '', [rfReplaceAll, rfIgnoreCase]);
+			
+			NewRecord := fFunctionCopyArmorToNewFile(selectedRecord, GlobalPatchFile, (sPrefix + '_'));
+			
+			if Assigned(NewRecord) then
+			begin
+				AddMessage('Generated: ' + sPrefix + EditorID(NewRecord));
+				
+				GlobalCraftingManual := CopyBookAsNewRecord(GlobalPatchFile, '0001AFCF', (GlobalFileName + ' ' +  StringReplace(GlobalOutfitMaterial, 'ArmorMaterial', '', [rfReplaceAll, rfIgnoreCase]) + ' Lv ' + IntToStr(GlobalSmithingReq) + ' Book'));
+				MakeCraftableV2(GlobalCraftingManual);
+				
+				// In Skyrim, if a modder leaves slot 34 (Forearms) active on a Cuirass (slot 32),
+				// the game engine treats it as "occupying" the forearm slot, which causes those annoying conflicts with dedicated gauntlets or bracers.
+				fRemoveCombinedFlags(NewRecord);
+				
+				m_Slots := GetFirstPersonFlags(NewRecord);
+				
+				// 1.2 Classification & Cleanup
+				AddVitalKeywords(NewRecord, m_Slots);
+				
+				// 1.3 Material Logic: Heavy/Light/Clothing
+				SetArmorType(NewRecord);
+				
+				// 1.4 Stat Balancing
+				m_ArmorRating := GetVanillaAR(NewRecord, m_Slots);  
+				SetElementEditValues(NewRecord, 'DNAM - Armor Rating', FloatToStr(m_ArmorRating));
+				
+				m_ArmorWeight := GetVanillaAWeight(NewRecord, m_Slots); 
+				SetElementEditValues(NewRecord, 'DATA\Weight', FloatToStr(m_ArmorWeight));
+				
+				m_ArmorPrice := Round(GetVanillaAPrice(NewRecord, m_Slots)); 
+				SetElementEditValues(NewRecord, 'DATA\Value', IntToStr(m_ArmorPrice));
+				
+				// 1.5 Finalization
+				fAddEnchProtection(NewRecord, m_DummyEnch);
+				
+				// 1.6 Crafting
+				MakeCraftableV2(NewRecord);
+				
+				// 1.7 Tempering: Block Clothing and Visual Slots
+				if (not IsVisualSlot(m_Slots)) and (not HasKeyword(NewRecord, 'ArmorClothing')) then begin
+					currentKeywordEDID := 'TemperArmor' + GetElementEditValues(NewRecord, 'EDID');
+					recipeCraft := MainRecordByEditorID(GroupBySignature(GlobalPatchFile, 'COBJ'), currentKeywordEDID);
+					// If not found, skip temper creation
+					if not Assigned(recipeCraft) then begin
+						makeTemperable(NewRecord);
+					end;
+				end;
+				
+			end;
+			iCurrent := iCurrent + iStep;
+		end;
+	end;
 end;
 
 {========================================================}
@@ -280,6 +378,99 @@ begin
 	Result := ench;
 end;
 
+{========================================================}
+{ CLARITY FORGE FILE DETECTION                           }
+{========================================================}
+function fIsClarityForgeApplicable(m_sFileName: string): Boolean;
+var
+	sBase, sSuffix, sMat: string;
+	p, iTempLevel: Integer;
+	bIsValidMaterial: Boolean;
+begin
+	Result := False;
+
+	// 1. Isolate the name without extension
+	sBase := ChangeFileExt(m_sFileName, '');
+
+	// 2. Find the "CF_" tag
+	p := Pos('CF_', sBase);
+	if p = 0 then Exit;
+
+	// 3. Extract the tag and everything after it
+	sSuffix := Copy(sBase, p, Length(sBase));
+
+	// 4. Safety Check: Prefix(3) + Material(2) + Level(at least 1) = Min 6 chars
+	// Example: 'CF_Lr5' is 6 characters.
+	if Length(sSuffix) < 6 then Exit;
+
+	// 5. Extract the Material Code (Characters 4 and 5)
+	sMat := Copy(sSuffix, 4, 2); 
+
+	// 6. Validate against the defined Material List
+	// LIGHT ARMOURS
+	// Lr - Leather
+	// Sd - Scaled
+	// En - Elven
+	// Gs - Glass
+	// Ds - Dragonscale
+	// HEAVY ARMOURS
+	// In - Iron
+	// Sl - Steal
+	// Dn - Dwrven
+	// Se - Steel Plate
+	// Oh - Orcish
+	// Eb - Ebony
+	// Dc - Daedric
+	// Dp - Dragonplate
+	bIsValidMaterial := (sMat = 'Lr') or (sMat = 'Sd') or (sMat = 'En') or (sMat = 'Gs') or (sMat = 'Ds') or // Light
+	                    (sMat = 'In') or (sMat = 'Sl') or (sMat = 'Dn') or (sMat = 'Se') or (sMat = 'Oh') or // Heavy
+	                    (sMat = 'Eb') or (sMat = 'Dc') or (sMat = 'Dp');                                    // Heavy
+
+	if bIsValidMaterial then begin
+		
+		// 7. Parse the Level (Starting at Position 6)
+		iTempLevel := StrToIntDef(Copy(sSuffix, 6, Length(sSuffix)), -1);
+
+		// 8. Final validation and Global assignment
+		if (iTempLevel >= 5) and (iTempLevel <= 100) then begin
+			GlobalMaterialCode := sMat;
+			GlobalSmithingReq  := iTempLevel;
+			Result := True;
+		end;
+	end;
+end;
+
+{========================================================}
+{              PROCESS ARMOR RECORDS IN FILE             }
+{========================================================}
+procedure fProcessArmorRecords(m_f: IInterface);
+var
+	GroupARMO, CurrentRecord: IInterface;
+	i: Integer;
+begin
+	// 1. Locate the ARMO (Armor) category in this specific file
+	GroupARMO := GroupBySignature(m_f, 'ARMO');
+
+	if Assigned(GroupARMO) then begin
+		AddMessage('   -> Scanning ' + IntToStr(ElementCount(GroupARMO)) + ' Armor records...');
+
+		// 2. Loop through every individual record in the group
+		for i := 0 to ElementCount(GroupARMO) - 1 do begin
+			CurrentRecord := ElementByIndex(GroupARMO, i);
+			GlobalProcessedRecords := GlobalProcessedRecords + 1;
+			
+			// 3. Logic starts here
+			// At this point, you have 'CurrentRecord' (the armor), 
+			// 'GlobalMaterialCode' (e.g., Eb), and 'GlobalSmithingReq' (e.g., 80)
+			
+			AddMessage('      Processing: ' + EditorID(CurrentRecord));
+			
+			// Example: fUpdateArmorStats(CurrentRecord);
+		end;
+	end else begin
+		AddMessage('   -> No ARMO records found in this file.');
+	end;
+end;
 
 {========================================================}
 { SLOT LOGIC                                             }
@@ -2009,30 +2200,45 @@ var
 begin
 	itemSignature := Signature(itemRecord);
 
-	{ 1. Create the base COBJ record }
-	recipeCraft := createRecipe(itemRecord);
-	if not Assigned(recipeCraft) then Exit;
-
-	{ 2. Initialize Required Items list }
-	Add(recipeCraft, 'items', True);
-	recipeItems := ElementByPath(recipeCraft, 'items');
-	
-	{ 3. Process Material Keywords for Perk requirements }
-	tmpKeywordsCollection := ElementBySignature(itemRecord, 'KWDA');
-	
-	{ 4. Add your global skill requirement condition (e.g. Smithing 25) }
-	if GlobalSmithingReq > 0 then begin
-		addSkillCondition(recipeCraft, GlobalSmithingReq);
-	end;
-	
 	{--- CRAFING MANUAL ---}
 	if (itemSignature = 'BOOK') then begin
+		
+		{ 1. Construct the target EditorID }
+		currentKeywordEDID := 'RecipeCraftingManual' + GetElementEditValues(itemRecord, 'EDID');
+		
+		{ 2. Search for the existing recipe in the Patch File }
+		{ GroupBySignature ensures we are only looking inside 'COBJ' records }
+		recipeCraft := MainRecordByEditorID(GroupBySignature(GlobalPatchFile, 'COBJ'), currentKeywordEDID);
+		
+		{ 3. If found, skip creation and just return the existing record }
+		if Assigned(recipeCraft) then begin
+			AddMessage('Record exists, skipping creation: ' + currentKeywordEDID);
+			Result := recipeCraft;
+			Exit;
+		end;
+		
+		{ 4. Create the base COBJ record }
+		recipeCraft := createRecipe(itemRecord);
+		if not Assigned(recipeCraft) then Exit;
+
+		{ 5. Initialize Required Items list }
+		Add(recipeCraft, 'items', True);
+		recipeItems := ElementByPath(recipeCraft, 'items');
+		
+		{ 6. Process Material Keywords for Perk requirements }
+		tmpKeywordsCollection := ElementBySignature(itemRecord, 'KWDA');
+		
+		{ 7. Add your global skill requirement condition (e.g. Smithing 25) }
+		if GlobalSmithingReq > 0 then begin
+			addSkillCondition(recipeCraft, GlobalSmithingReq);
+		end;
 		
 		SetElementEditValues(recipeCraft, 'EDID', 'RecipeCraftingManual' + GetElementEditValues(itemRecord, 'EDID'));
 		SetElementEditValues(recipeCraft, 'BNAM', GetEditValue(getRecordByFormID(ARMOR_CRAFTING_WORKBENCH_FORM_ID)));
 		
 		addFemaleCondition(recipeCraft);
 		AddMissingManualCondition(recipeCraft, GlobalCraftingManual);
+		
 		// Materials
 		addItemV2(recipeItems, GetMaterial('Leather01'), 1);
 		addItemV2(recipeItems, GetMaterial('LeatherStrips'), 1);
@@ -2099,6 +2305,23 @@ begin
 	
 	{--- WEAPON LOGIC ---}
 	if (itemSignature = 'WEAP') then begin
+		
+		{ 1. Create the base COBJ record }
+		recipeCraft := createRecipe(itemRecord);
+		if not Assigned(recipeCraft) then Exit;
+
+		{ 2. Initialize Required Items list }
+		Add(recipeCraft, 'items', True);
+		recipeItems := ElementByPath(recipeCraft, 'items');
+		
+		{ 3. Process Material Keywords for Perk requirements }
+		tmpKeywordsCollection := ElementBySignature(itemRecord, 'KWDA');
+		
+		{ 4. Add your global skill requirement condition (e.g. Smithing 25) }
+		if GlobalSmithingReq > 0 then begin
+			addSkillCondition(recipeCraft, GlobalSmithingReq);
+		end;
+		
 		SetElementEditValues(recipeCraft, 'EDID', 'RecipeWeapon' + GetElementEditValues(itemRecord, 'EDID'));
 		SetElementEditValues(recipeCraft, 'BNAM', GetEditValue(getRecordByFormID(WEAPON_CRAFTING_WORKBENCH_FORM_ID)));
 		
@@ -2282,7 +2505,43 @@ begin
 	
 	{ --- ARMOR LOGIC --- }
 	if (itemSignature = 'ARMO') then begin
-	
+		
+		if IsVisualSlot(GetFirstPersonFlags(itemRecord))then begin
+			currentKeywordEDID := 'RecipeVisulaSlot' + GetElementEditValues(itemRecord, 'EDID');
+			recipeCraft := MainRecordByEditorID(GroupBySignature(GlobalPatchFile, 'COBJ'), currentKeywordEDID);
+			// If found, skip creation and just return the existing record
+			if Assigned(recipeCraft) then begin
+				AddMessage('Record exists, skipping creation: ' + currentKeywordEDID);
+				Result := recipeCraft;
+				Exit;
+			end;
+		end else begin
+			currentKeywordEDID := 'RecipeArmor' + GetElementEditValues(itemRecord, 'EDID');
+			recipeCraft := MainRecordByEditorID(GroupBySignature(GlobalPatchFile, 'COBJ'), currentKeywordEDID);
+			// If found, skip creation and just return the existing record
+			if Assigned(recipeCraft) then begin
+				AddMessage('Record exists, skipping creation: ' + currentKeywordEDID);
+				Result := recipeCraft;
+				Exit;
+			end;
+		end;
+		
+		{ 1. Create the base COBJ record }
+		recipeCraft := createRecipe(itemRecord);
+		if not Assigned(recipeCraft) then Exit;
+
+		{ 2. Initialize Required Items list }
+		Add(recipeCraft, 'items', True);
+		recipeItems := ElementByPath(recipeCraft, 'items');
+		
+		{ 3. Process Material Keywords for Perk requirements }
+		tmpKeywordsCollection := ElementBySignature(itemRecord, 'KWDA');
+		
+		{ 4. Add your global skill requirement condition (e.g. Smithing 25) }
+		if GlobalSmithingReq > 0 then begin
+			addSkillCondition(recipeCraft, GlobalSmithingReq);
+		end;
+		
 		{ Set Recipe Identity  For Visual Slot Only}
 		if IsVisualSlot(GetFirstPersonFlags(itemRecord))then begin
 			SetElementEditValues(recipeCraft, 'EDID', 'RecipeVisulaSlot' + GetElementEditValues(itemRecord, 'EDID'));
@@ -2783,163 +3042,53 @@ begin
 	end;
 end;
 
-{ function fAddMaster(selectedRecord: IInterface): boolean; }
-{ var }
-	{ m_functionSourceFile, m_functionFileHeader, m_functionMasterList, m_functionEntry: IInterface; }
-	{ m_functionMasterName: string; }
-	{ m_i: integer; }
-	{ m_functionAlreadyExists: boolean; }
-	{ m_functionTargetMaster: string; }
-{ begin }
-	{ Result := false; }
-	{ if not Assigned(GlobalPatchFile) or not Assigned(selectedRecord) then Exit; }
-
-	{ m_functionSourceFile := GetFile(selectedRecord); }
-	{ m_functionMasterName := GetFileName(m_functionSourceFile); }
-	
-	{ m_functionFileHeader := ElementBySignature(GlobalPatchFile, 'TES4'); }
-	{ m_functionMasterList := ElementByPath(m_functionFileHeader, 'Master Files'); }
-	
-	{ if not Assigned(m_functionMasterList) then }
-		{ m_functionMasterList := Add(m_functionFileHeader, 'Master Files', true); }
-
-	{ // --- Internal Logic: Always ensure Skyrim.esm is handled first --- }
-	{ m_functionTargetMaster := 'Skyrim.esm'; }
-	
-	{ // Loop twice: First for Skyrim.esm, then for the selectedRecord's master }
-	{ while (m_functionTargetMaster <> '') do begin }
-		{ m_functionAlreadyExists := false; }
-		
-		{ for m_i := 0 to ElementCount(m_functionMasterList) - 1 do begin }
-			{ if SameText(GetElementEditValues(ElementByIndex(m_functionMasterList, m_i), 'MAST'), m_functionTargetMaster) then begin }
-				{ m_functionAlreadyExists := true; }
-				{ Break; }
-			{ end; }
-		{ end; }
-
-		{ if not m_functionAlreadyExists and not SameText(m_functionTargetMaster, GetFileName(GlobalPatchFile)) then begin }
-			{ if (ElementCount(m_functionMasterList) > 0) and (GetElementEditValues(ElementByIndex(m_functionMasterList, 0), 'MAST') = '') then }
-				{ m_functionEntry := ElementByIndex(m_functionMasterList, 0) }
-			{ else }
-				{ m_functionEntry := Add(m_functionMasterList, 'Master File', true); }
-				
-			{ SetElementEditValues(m_functionEntry, 'MAST', m_functionTargetMaster); }
-		{ end; }
-
-		{ // Move from Skyrim.esm to the record's master, then exit loop }
-		{ if m_functionTargetMaster = 'Skyrim.esm' then }
-			{ m_functionTargetMaster := m_functionMasterName }
-		{ else }
-			{ m_functionTargetMaster := '';  }
-	{ end; }
-	
-	{ Result := true; }
-{ end; }
-
-{ function fFunctionAddMaster(SourceFile, TargetFile: IInterface): boolean; }
-{ begin }
-	{ if not Equals(SourceFile, TargetFile) then }
-		{ AddMasterIfMissing(TargetFile, GetFileName(SourceFile)); }
-	{ Result := True; }
-{ end; }
-
-{ function fFunctionSyncKeywords(SourceRecord, TargetRecord: IInterface): integer; }
-{ var }
-	{ SourceKeywords, TargetKeywords, CurrentKW: IInterface; }
-	{ i: integer; }
-{ begin }
-	{ SourceKeywords := ElementBySignature(SourceRecord, 'KWDA'); }
-	{ if not Assigned(SourceKeywords) then Exit; }
-	
-	{ // Ensure the target has a Keyword array to write to }
-	{ TargetKeywords := Add(TargetRecord, 'KWDA', True); }
-	
-	{ for i := 0 to ElementCount(SourceKeywords) - 1 do }
-	{ begin }
-		{ CurrentKW := ElementByIndex(SourceKeywords, i); }
-		{ // Add a new slot in the target array and set its value to the source's keyword FormID }
-		{ ElementAssign(TargetKeywords, HighInteger, CurrentKW, False); }
-	{ end; }
-{ end; }
-
-{ procedure fFunctionAddSkyrimMaster(TargetFile: IInterface); }
-{ begin }
-	{ if not HasMaster(TargetFile, 'Skyrim.esm') then }
-	{ begin }
-		{ AddMessage('Adding Skyrim.esm as master to ' + GetFileName(TargetFile)); }
-		{ AddMasterIfMissing(TargetFile, 'Skyrim.esm'); }
-	{ end; }
-{ end; }
-
-{ // Standard master addition for the specific source record's file }
-{ procedure fFunctionAddSourceMaster(SourceRecord, TargetFile: IInterface); }
-{ var }
-	{ SourceFile: IInterface; }
-{ begin }
-	{ SourceFile := GetFile(SourceRecord); }
-	{ if not Equals(SourceFile, TargetFile) then }
-		{ AddMasterIfMissing(TargetFile, GetFileName(SourceFile)); }
-{ end; }
-
-{ function fFunctionCopyArmorAsNew(SourceRecord: IInterface; TargetFile: IInterface): IInterface; }
-{ begin }
-	{ // 1. Ensure Skyrim.esm is a master for Keywords/Base data }
-	{ fFunctionAddSkyrimMaster(TargetFile); }
-	
-	{ // 2. Ensure the record's own origin file is a master }
-	{ fFunctionAddSourceMaster(SourceRecord, TargetFile); }
-	
-	{ // 3. Perform the copy as New }
-	{ Result := wbCopyElementToFile(SourceRecord, TargetFile, True, True); }
-	
-	{ if Assigned(Result) then }
-		{ AddMessage('Successfully copied ' + EditorID(Result)) }
-	{ else }
-		{ AddMessage('Failed to copy ' + EditorID(SourceRecord)); }
-{ end; }
-
-
-function fFunctionCopyArmorToNewFile(SourceRecord: IInterface; TargetFile: IInterface; prefix: string): IInterface;
+function fFunctionCopyArmorToNewFile(SourceRecord: IInterface; TargetFile: IInterface; sPrefix: string): IInterface;
 var
-	NewEditorID: string;
+	NewEditorID, NewName, CurrentName: string;
 	SourceFile: IInterface;
 	ExistingRecord: IInterface;
 begin
 	Result := nil;
 	
-	// 1. Prepare the new EditorID with the 'CF_' prefix
-	NewEditorID := 'CF_' + prefix + '_' + EditorID(SourceRecord);
+	// 1. Prepare the new EditorID
+	NewEditorID := sPrefix + EditorID(SourceRecord);
 	
-	// 2. Check if a record with this EditorID already exists in the Target File
+	// 2. Duplicate Check
 	ExistingRecord := MainRecordByEditorID(GroupBySignature(TargetFile, 'ARMO'), NewEditorID);
 	if Assigned(ExistingRecord) then
 	begin
-		AddMessage('Skipping: ' + NewEditorID + ' already exists in ' + GetFileName(TargetFile));
+		AddMessage('Skipping: ' + NewEditorID + ' already exists.');
 		Exit;
 	end;
 
-	// 3. Ensure necessary Masters are assigned to the Target File
+	// 3. Master Handling
 	SourceFile := GetFile(SourceRecord);
-	
-	// Add Skyrim.esm for Keywords/Base data
 	AddMasterIfMissing(TargetFile, 'Skyrim.esm');
-	
-	// Add the Source record's file if it's different from the target
 	if not Equals(SourceFile, TargetFile) then
 		AddMasterIfMissing(TargetFile, GetFileName(SourceFile));
 
-	// 4. Perform the "Copy as New"
-	// wbCopyElementToFile(Source, Target, AsNew: True, DeepCopy: True)
+	// 4. Copy as New
 	Result := wbCopyElementToFile(SourceRecord, TargetFile, True, True);
 	
 	if Assigned(Result) then
 	begin
-		// 5. Apply the prefix to the new record's EditorID
+		// 5. Update EditorID
 		SetElementEditValues(Result, 'EDID', NewEditorID);
-		AddMessage('Created: ' + NewEditorID);
-	end
-	else
-		AddMessage('Error: Failed to copy ' + EditorID(SourceRecord));
+		
+		// 6. Update Display Name (FULL) with Brackets
+		// Example: [T20] Iron Armor
+		CurrentName := GetElementEditValues(SourceRecord, 'FULL');
+		if CurrentName = '' then CurrentName := EditorID(SourceRecord);
+		
+		NewName := '[' + sPrefix + '] ' + CurrentName;
+		// Clean up the prefix for the display name (remove the CF_ and trailing underscores)
+		StringReplace(NewName, 'CF_', '', [rfReplaceAll]);
+		StringReplace(NewName, '_', '', [rfReplaceAll]);
+		
+		SetElementEditValues(Result, 'FULL', NewName);
+		
+		AddMessage('Created: ' + NewEditorID + ' (' + NewName + ')');
+	end;
 end;
 
 
