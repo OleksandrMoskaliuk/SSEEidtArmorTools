@@ -36,14 +36,12 @@ const
 	{========================================================}
 	{ GLOBAL VARS CONFIGURATION                              }
 	{========================================================}
-	PLAYER_LEVEL_REQUIREMENT = 1;
 	FOR_FEMALE_ONLY = True;
 	BACKPACK_SLOT_ENCHANTABLE = True;
 	ADVANCED_ENCHANTMENT_PROTECTION = True;
 	FOREARMS_SLOT_ALWAYS_ENCHANTABLE = True; // If True Forearms will be always enchantable.
 	FOREARMS_DEBUFF_MULTIPLIER = 2.5; // Forearms Armor Rating debuff.  Set to 1 to disable.
 	CRAFTING_MANUAL_PRICE_MULTIPLIER = 50; // Book value = GlobalSmithingReq * CRAFTING_MANUAL_PRICE_MULTIPLIER
-	CRAFTING_MANUAL_SIMPLE_MATERIAL_DETECTION = True; // Only first selected ARMO record matter. Useful If needed to create several Crafting Manual with different material in one esp file.
 	VISUAL_SLOT_WEIGHT = 0.1;
 	PERK_REQUIREMENT = False;
 	sScriptVersion = '1.1.4';
@@ -51,8 +49,9 @@ const
 
 var
 	GlobalSmithingReq: Integer;
+	GlobalPlayerLevelReq: Integer;
 	GlobalArmorBonus: Float;
-	GlobalHasHands: Boolean;
+	GlobalDisableForearmsARBonus: Boolean;
 	GlobalDoOnce: Boolean;
 	GlobalProcessedRecords: Integer;
 	GlobalForearmsDebuffMultiplier: Float;
@@ -81,6 +80,7 @@ begin
 
 	{ Set Global Values }
 	GlobalSmithingReq := 5; // Smithing Skill Level 0 - 100;
+	GlobalPlayerLevelReq := (GlobalSmithingReq + 20) / 2.0;
 	GlobalArmorBonus := GlobalSmithingReq / 15.0; // Too much ArmorRating will cause Requiem script to fail
 	GlobalFileName := '';
 	GlobalOutfitMaterial := '';
@@ -94,9 +94,9 @@ begin
 	GlobalForearmsDebuffMultiplier := FOREARMS_DEBUFF_MULTIPLIER;
 	
 	{ Reset Tracking Booleans }
-	GlobalHasHands := False;
 	GlobalDoOnce := False;
 	GlobalProcessedRecords := 0;
+	GlobalDisableForearmsARBonus := False; // Always Enabled
 	
 	{ Logging Configuration }
 	AddMessage('--- ARMOR CONFIGURATOR STARTED ---');
@@ -129,9 +129,12 @@ begin
 
 		if fIsClarityForgeApplicable(sFileName) then begin
 			AddMessage('>>> Valid File Found: ' + sFileName);
+			fAssignGlobalMaterial(GlobalMaterialCode);
 			
+			// GlobalFileName should hold cleaned name here
 			// Call the processor for this specific file 'f'
 			fProcessArmorRecords(f);
+			fProcessWeaponRecords(f);
 		end;
 	end;
 end;
@@ -140,15 +143,12 @@ end;
 {========================================================}
 { PROCESS "Runs for every record selected in xEdit"      }
 {========================================================}
-function _Process(selectedRecord: IInterface): integer;
+function _Process(selectedRecord: IInterface): integer; // Disabled
 var
 	// Utility
 	m_recordSignature: string;
 	m_currentFile: IwbFile;
-	// Weapons
-	m_WeaponDamage: integer;
-	m_WeaponPrice: Integer;
-	m_WeaponWeight: Double; // Weights should be Double/Float
+
 	
 begin
 	m_recordSignature := Signature(selectedRecord);
@@ -157,184 +157,28 @@ begin
 	{ //1. Filter: Armor (ARMO) }
 	{ if m_recordSignature = 'ARMO' then begin }
 		
-		{ // 1.1 Initialization }
-		{ if not GlobalDoOnce then begin // Do Once }
+		// 1.1 Initialization
+		if not GlobalDoOnce then begin // Do Once
 		
-			{ if GlobalFileName = '' then begin }
-				{ GlobalFileName := GetFileName(GetFile(selectedRecord)); }
-				{ GlobalFileName := ChangeFileExt(GlobalFileName, ''); }
-				{ AddMessage('Initialization: Working with ' + GlobalFileName); }
-			{ end; }
+			if GlobalFileName = '' then begin
+				GlobalFileName := GetFileName(GetFile(selectedRecord));
+				GlobalFileName := ChangeFileExt(GlobalFileName, '');
+				AddMessage('Initialization: Working with ' + GlobalFileName);
+			end;
 			
-			{ if CRAFTING_MANUAL_SIMPLE_MATERIAL_DETECTION then begin }
-				{ GlobalOutfitMaterial := GetArmorMaterialSimplified(selectedRecord); }
-				{ AddMessage('SIMPLE MATERIAL DETECTION  = ' + GlobalOutfitMaterial); }
-			{ end else begin }
-				{ // Counts how many times each ArmorMaterial keyword appears in your outfit file and }
-				{ // then pick the one that appears most frequently. }
-				{ GlobalOutfitMaterial := GetOutfitMaterial(GetFile(selectedRecord)); }
-				{ AddMessage('SMART MATERIAL DETECTION  = ' + GlobalOutfitMaterial); }
-			{ end; }
 			
-			{ // Scan for Hands once per file  }
-			{ OutfitHasHands(GetFile(selectedRecord));	 }
-			{ GlobalDoOnce := true; }
-		{ end; }
+			// Scan for Hands once per file 
+			OutfitHasHands(GetFile(selectedRecord));	
+			GlobalDoOnce := true;
+		end;
 
 		{ fMakeArmorTiers(selectedRecord);		 }
 	{ end; }
 	
 	
-	// 2. Filter: Weapon (WEAP)
-	{ if m_recordSignature = 'WEAP' then begin }
 	
-		{ if not GlobalDoOnce then begin }
-		{ AddMessage(Name(selectedRecord) + ' DAMAGE BONUS FROM SMITHING SKILL + ' + FloatToStr(GlobalArmorBonus)); }
-			{ GlobalDoOnce := true; }
-		{ end; }
-
-		{ Standardize Weapon Keywords (VendorItemWeapon, etc.) }
-		{ AddVitalKeywords(selectedRecord, ''); }
-		
-		{ m_WeaponDamage := GetVanillaWDamage(selectedRecord); }
-		{ SetElementEditValues(selectedRecord, 'DATA\Damage', IntToStr(m_WeaponDamage)); }
-		{ //AddMessage(Name(selectedRecord) + ' TOTAL DAMAGE = ' + FloatToStr(GetVanillaWDamage(selectedRecord))); }
-		
-		{ m_WeaponPrice := GetVanillaWPrice(selectedRecord); }
-		{ SetElementEditValues(selectedRecord, 'DATA\Value', IntToStr(m_WeaponPrice)); }
-
-		{ m_WeaponWeight := GetVanillaWWeight(selectedRecord); }
-		{ SetElementEditValues(selectedRecord, 'DATA\Weight', FloatToStr(m_WeaponWeight)); }
-			
-		{ MakeCraftableV2(selectedRecord); }
-		{ makeTemperable(selectedRecord);	 }
-	{ end; }
 	
 	Result := 0;
-end;
-
-procedure fMakeArmorTiers(selectedRecord: IInterface);
-var
-	NewRecord: IInterface;
-	iStart, iEnd, iStep, iCurrent: Integer;
-	sPrefix: string;
-	m_Slots: string;
-	// Check duplicates for tempering recipes
-	currentKeywordEDID: string;
-	recipeCraft: IInterface;
-	// Armors
-	m_ArmorRating: Float;
-	m_ArmorPrice: Integer;
-	m_ArmorWeight: Float;
-	//Enchant for ENCHANTMENT_PROTECTION
-	m_DummyEnch: IInterface;
-begin
-	if not Assigned(GlobalPatchFile) then Exit;
-	
-	if ADVANCED_ENCHANTMENT_PROTECTION then begin		
-		if not Assigned(m_DummyEnch) then begin
-			m_DummyEnch := CreateDummyEnchantment(GlobalPatchFile);
-		end;
-	end;	
-	
-	iStart := -1; 
-	iEnd := -1;
-	iStep := 5;
-	AddMessage('Leather');
-	// --- Tier 1: Low (4 iterations: 5, 10, 15, 20) ---
-	if HasKeyword(selectedRecord, 'ArmorMaterialLeather') or 
-	   HasKeyword(selectedRecord, 'ArmorMaterialIron') or 
-	   HasKeyword(selectedRecord, 'ArmorMaterialSteel') then 
-	begin 
-		
-		iStart := 5; iEnd := 20; 
-	end
-	
-	// --- Tier 2: Mid (5 iterations: 25, 30, 35, 40, 45) ---
-	else if HasKeyword(selectedRecord, 'ArmorMaterialScaled') or 
-			HasKeyword(selectedRecord, 'ArmorMaterialDwarven') or 
-			HasKeyword(selectedRecord, 'ArmorMaterialElven') or 
-			HasKeyword(selectedRecord, 'ArmorMaterialOrcish') or 
-			HasKeyword(selectedRecord, 'ArmorMaterialSteelPlate') then 
-	begin 
-		iStart := 25; iEnd := 45; 
-	end
-
-	// --- Tier 3: High (4 iterations: 75, 80, 85, 90) ---
-	else if HasKeyword(selectedRecord, 'ArmorMaterialEbony') or 
-			HasKeyword(selectedRecord, 'ArmorMaterialGlass') then 
-	begin 
-		iStart := 75; iEnd := 90; 
-	end
-
-	// --- Tier 4: Endgame (2 iterations: 95, 100) ---
-	else if HasKeyword(selectedRecord, 'ArmorMaterialDragonscale') or 
-			HasKeyword(selectedRecord, 'ArmorMaterialDragonplate') or 
-			HasKeyword(selectedRecord, 'ArmorMaterialDaedric') then 
-	begin 
-		iStart := 95; iEnd := 100; 
-	end;
-
-	// --- Processing Loop ---
-	if iStart <> -1 then
-	begin
-		iCurrent := iStart;
-		while iCurrent <= iEnd do
-		begin
-			GlobalSmithingReq := iCurrent;
-			sPrefix := 'T' + IntToStr(GlobalSmithingReq) + ' ' + StringReplace(GlobalOutfitMaterial, 'ArmorMaterial', '', [rfReplaceAll, rfIgnoreCase]);
-			
-			NewRecord := fFunctionCopyArmorToNewFile(selectedRecord, GlobalPatchFile, (sPrefix + '_'));
-			
-			if Assigned(NewRecord) then
-			begin
-				AddMessage('Generated: ' + sPrefix + EditorID(NewRecord));
-				
-				GlobalCraftingManual := CopyBookAsNewRecord(GlobalPatchFile, '0001AFCF', (GlobalFileName + ' ' +  StringReplace(GlobalOutfitMaterial, 'ArmorMaterial', '', [rfReplaceAll, rfIgnoreCase]) + ' Lv ' + IntToStr(GlobalSmithingReq) + ' Book'));
-				MakeCraftableV2(GlobalCraftingManual);
-				
-				// In Skyrim, if a modder leaves slot 34 (Forearms) active on a Cuirass (slot 32),
-				// the game engine treats it as "occupying" the forearm slot, which causes those annoying conflicts with dedicated gauntlets or bracers.
-				fRemoveCombinedFlags(NewRecord);
-				
-				m_Slots := GetFirstPersonFlags(NewRecord);
-				
-				// 1.2 Classification & Cleanup
-				AddVitalKeywords(NewRecord, m_Slots);
-				
-				// 1.3 Material Logic: Heavy/Light/Clothing
-				SetArmorType(NewRecord);
-				
-				// 1.4 Stat Balancing
-				m_ArmorRating := GetVanillaAR(NewRecord, m_Slots);  
-				SetElementEditValues(NewRecord, 'DNAM - Armor Rating', FloatToStr(m_ArmorRating));
-				
-				m_ArmorWeight := GetVanillaAWeight(NewRecord, m_Slots); 
-				SetElementEditValues(NewRecord, 'DATA\Weight', FloatToStr(m_ArmorWeight));
-				
-				m_ArmorPrice := Round(GetVanillaAPrice(NewRecord, m_Slots)); 
-				SetElementEditValues(NewRecord, 'DATA\Value', IntToStr(m_ArmorPrice));
-				
-				// 1.5 Finalization
-				fAddEnchProtection(NewRecord, m_DummyEnch);
-				
-				// 1.6 Crafting
-				MakeCraftableV2(NewRecord);
-				
-				// 1.7 Tempering: Block Clothing and Visual Slots
-				if (not IsVisualSlot(m_Slots)) and (not HasKeyword(NewRecord, 'ArmorClothing')) then begin
-					currentKeywordEDID := 'TemperArmor' + GetElementEditValues(NewRecord, 'EDID');
-					recipeCraft := MainRecordByEditorID(GroupBySignature(GlobalPatchFile, 'COBJ'), currentKeywordEDID);
-					// If not found, skip temper creation
-					if not Assigned(recipeCraft) then begin
-						makeTemperable(NewRecord);
-					end;
-				end;
-				
-			end;
-			iCurrent := iCurrent + iStep;
-		end;
-	end;
 end;
 
 {========================================================}
@@ -395,6 +239,11 @@ begin
 	// 2. Find the "CF_" tag
 	p := Pos('CF_', sBase);
 	if p = 0 then Exit;
+	
+	// Extract and Clean GlobalFileName (e.g., "MyArmor_CF_Eb80" -> "MyArmor")
+	GlobalFileName := Copy(sBase, 1, p - 1);
+	if (Length(GlobalFileName) > 0) and (GlobalFileName[Length(GlobalFileName)] = '_') then
+		GlobalFileName := Copy(GlobalFileName, 1, Length(GlobalFileName) - 1);
 
 	// 3. Extract the tag and everything after it
 	sSuffix := Copy(sBase, p, Length(sBase));
@@ -407,21 +256,6 @@ begin
 	sMat := Copy(sSuffix, 4, 2); 
 
 	// 6. Validate against the defined Material List
-	// LIGHT ARMOURS
-	// Lr - Leather
-	// Sd - Scaled
-	// En - Elven
-	// Gs - Glass
-	// Ds - Dragonscale
-	// HEAVY ARMOURS
-	// In - Iron
-	// Sl - Steal
-	// Dn - Dwrven
-	// Se - Steel Plate
-	// Oh - Orcish
-	// Eb - Ebony
-	// Dc - Daedric
-	// Dp - Dragonplate
 	bIsValidMaterial := (sMat = 'Lr') or (sMat = 'Sd') or (sMat = 'En') or (sMat = 'Gs') or (sMat = 'Ds') or // Light
 	                    (sMat = 'In') or (sMat = 'Sl') or (sMat = 'Dn') or (sMat = 'Se') or (sMat = 'Oh') or // Heavy
 	                    (sMat = 'Eb') or (sMat = 'Dc') or (sMat = 'Dp');                                    // Heavy
@@ -447,29 +281,186 @@ procedure fProcessArmorRecords(m_f: IInterface);
 var
 	GroupARMO, CurrentRecord: IInterface;
 	i: Integer;
+	m_NewRecord: IInterface;
+	m_Slots: string;
+	//Enchant for ENCHANTMENT_PROTECTION
+	m_DummyEnch: IInterface;
+	// Check duplicates for tempering recipes
+	currentKeywordEDID: string;
+	recipeCraft: IInterface;
+	// Armors
+	m_ArmorRating: Float;
+	m_ArmorPrice: Integer;
+	m_ArmorWeight: Float;
 begin
 	// 1. Locate the ARMO (Armor) category in this specific file
 	GroupARMO := GroupBySignature(m_f, 'ARMO');
 
 	if Assigned(GroupARMO) then begin
 		AddMessage('   -> Scanning ' + IntToStr(ElementCount(GroupARMO)) + ' Armor records...');
+		
+		GlobalCraftingManual := CopyBookAsNewRecord(GlobalPatchFile, '0001AFCF', (GlobalFileName + ' ' +  StringReplace(GlobalOutfitMaterial, 'ArmorMaterial', '', [rfReplaceAll, rfIgnoreCase]) + ' Lv ' + IntToStr(GlobalSmithingReq) + ' Book'));
+		MakeCraftableV2(GlobalCraftingManual);
+		
+			
+		if not Assigned(m_DummyEnch) then begin
+			m_DummyEnch := CreateDummyEnchantment(GlobalPatchFile);
+		end;
 
+		
 		// 2. Loop through every individual record in the group
 		for i := 0 to ElementCount(GroupARMO) - 1 do begin
 			CurrentRecord := ElementByIndex(GroupARMO, i);
 			GlobalProcessedRecords := GlobalProcessedRecords + 1;
-			
-			// 3. Logic starts here
-			// At this point, you have 'CurrentRecord' (the armor), 
-			// 'GlobalMaterialCode' (e.g., Eb), and 'GlobalSmithingReq' (e.g., 80)
-			
 			AddMessage('      Processing: ' + EditorID(CurrentRecord));
 			
-			// Example: fUpdateArmorStats(CurrentRecord);
+			m_NewRecord := fFunctionCopyArmorToNewFile(CurrentRecord, GlobalPatchFile, (StringReplace(GlobalOutfitMaterial, 'ArmorMaterial', '', [rfReplaceAll, rfIgnoreCase]) + ' Lv ' + IntToStr(GlobalSmithingReq) + ' '));
+			
+			// In Skyrim, if a modder leaves slot 34 (Forearms) active on a Cuirass (slot 32),
+			// the game engine treats it as "occupying" the forearm slot, which causes those annoying conflicts with dedicated gauntlets or bracers.
+			fRemoveCombinedFlags(m_NewRecord);
+			
+			m_Slots := GetFirstPersonFlags(m_NewRecord);
+			
+			// 1.2 Classification & Cleanup
+			AddVitalKeywords(m_NewRecord, m_Slots);
+			
+			// 1.3 Material Logic: Heavy/Light/Clothing
+			SetArmorType(m_NewRecord);
+			
+			// 1.4 Stat Balancing
+			m_ArmorRating := GetVanillaAR(m_NewRecord, m_Slots);  
+			SetElementEditValues(m_NewRecord, 'DNAM - Armor Rating', FloatToStr(m_ArmorRating));
+			
+			m_ArmorWeight := GetVanillaAWeight(m_NewRecord, m_Slots); 
+			SetElementEditValues(m_NewRecord, 'DATA\Weight', FloatToStr(m_ArmorWeight));
+			
+			m_ArmorPrice := Round(GetVanillaAPrice(m_NewRecord, m_Slots)); 
+			SetElementEditValues(m_NewRecord, 'DATA\Value', IntToStr(m_ArmorPrice));
+			
+			// 1.5 Finalization
+			fAddEnchProtection(m_NewRecord, m_DummyEnch);
+			
+			// 1.6 Crafting
+			MakeCraftableV2(m_NewRecord);
+			
+			// 1.7 Tempering: Block Clothing and Visual Slots
+			if (not IsVisualSlot(m_Slots)) and (not HasKeyword(m_NewRecord, 'ArmorClothing')) then begin
+				currentKeywordEDID := 'TemperArmor' + GetElementEditValues(m_NewRecord, 'EDID');
+				recipeCraft := MainRecordByEditorID(GroupBySignature(GlobalPatchFile, 'COBJ'), currentKeywordEDID);
+				// If not found, skip temper creation
+				if not Assigned(recipeCraft) then begin
+					makeTemperable(m_NewRecord);
+				end;
+			end;
+			
 		end;
+		
 	end else begin
 		AddMessage('   -> No ARMO records found in this file.');
 	end;
+end;
+
+{========================================================}
+{             PROCESS WEAPON RECORDS IN FILE             }
+{========================================================}
+procedure fProcessWeaponRecords(m_f: IInterface);
+var
+	GroupWEAP, CurrentRecord: IInterface;
+	i: Integer;
+	m_NewRecord: IInterface;
+	// Weapons
+	m_WeaponDamage: integer;
+	m_WeaponPrice: Integer;
+	m_WeaponWeight: Double; // Weights should be Double/Float
+begin
+	// 1. Locate the WEAP (Weapon) category in this specific file
+	GroupWEAP := GroupBySignature(m_f, 'WEAP');
+
+	if Assigned(GroupWEAP) then begin
+		AddMessage('   -> Scanning ' + IntToStr(ElementCount(GroupWEAP)) + ' Weapon records...');
+
+		// 2. Loop through every individual record in the group
+		for i := 0 to ElementCount(GroupWEAP) - 1 do begin
+			CurrentRecord := ElementByIndex(GroupWEAP, i);
+
+			// 3. Logic Application
+			// Here we call the same AddVitalKeywords or specific weapon balancing
+			AddMessage('      Processing Weapon: ' + EditorID(CurrentRecord));
+			
+			m_NewRecord := fFunctionCopyArmorToNewFile(CurrentRecord, GlobalPatchFile, ('Weapon Lv ' + IntToStr(GlobalSmithingReq) + ' '));
+
+			//Standardize Weapon Keywords (VendorItemWeapon, etc.)
+			AddVitalKeywords(m_NewRecord, '');
+			
+			m_WeaponDamage := GetVanillaWDamage(m_NewRecord);
+			SetElementEditValues(m_NewRecord, 'DATA\Damage', IntToStr(m_WeaponDamage));
+			//AddMessage(Name(selectedRecord) + ' TOTAL DAMAGE = ' + FloatToStr(GetVanillaWDamage(selectedRecord)));
+			
+			m_WeaponPrice := GetVanillaWPrice(m_NewRecord);
+			SetElementEditValues(m_NewRecord, 'DATA\Value', IntToStr(m_WeaponPrice));
+
+			m_WeaponWeight := GetVanillaWWeight(m_NewRecord);
+			SetElementEditValues(m_NewRecord, 'DATA\Weight', FloatToStr(m_WeaponWeight));
+				
+			MakeCraftableV2(m_NewRecord);
+			makeTemperable(m_NewRecord);	
+				
+		end;
+	end else begin
+		AddMessage('   -> No WEAP records found in this file.');
+	end;
+end;
+
+{========================================================}
+{              ASSIGN GLOBAL OUTFIT MATERIAL             }
+{========================================================}
+function fAssignGlobalMaterial(m_sMatCode: string): Boolean;
+begin
+	Result := True;
+	GlobalOutfitMaterial := '';
+	
+	// LIGHT ARMOURS
+	// Lr - Leather
+	// Sd - Scaled
+	// En - Elven
+	// Gs - Glass
+	// Ds - Dragonscale
+	// HEAVY ARMOURS
+	// In - Iron
+	// Sl - Steal
+	// Dn - Dwrven
+	// Se - Steel Plate
+	// Oh - Orcish
+	// Eb - Ebony
+	// Dc - Daedric
+	// Dp - Dragonplate
+	
+	// LIGHT ARMORS
+	if (m_sMatCode = 'Lr') then GlobalOutfitMaterial := 'ArmorMaterialLeather'
+	else if (m_sMatCode = 'Sd') then GlobalOutfitMaterial := 'ArmorMaterialScaled'
+	else if (m_sMatCode = 'En') then GlobalOutfitMaterial := 'ArmorMaterialElven'
+	else if (m_sMatCode = 'Gs') then GlobalOutfitMaterial := 'ArmorMaterialGlass'
+	else if (m_sMatCode = 'Ds') then GlobalOutfitMaterial := 'ArmorMaterialDragonscale'
+
+	// HEAVY ARMORS
+	else if (m_sMatCode = 'In') then GlobalOutfitMaterial := 'ArmorMaterialIron'
+	else if (m_sMatCode = 'Sl') then GlobalOutfitMaterial := 'ArmorMaterialSteel'
+	else if (m_sMatCode = 'Dn') then GlobalOutfitMaterial := 'ArmorMaterialDwarven'
+	else if (m_sMatCode = 'Se') then GlobalOutfitMaterial := 'ArmorMaterialSteelPlate'
+	else if (m_sMatCode = 'Oh') then GlobalOutfitMaterial := 'ArmorMaterialOrcish'
+	else if (m_sMatCode = 'Eb') then GlobalOutfitMaterial := 'ArmorMaterialEbony'
+	else if (m_sMatCode = 'Dc') then GlobalOutfitMaterial := 'ArmorMaterialDaedric'
+	else if (m_sMatCode = 'Dp') then GlobalOutfitMaterial := 'ArmorMaterialDragonplate'
+	
+	// If no match was found, the code is invalid
+	else begin
+		Result := False;
+		AddMessage('   ERROR: Unknown Material Code: ' + m_sMatCode);
+	end;
+
+	if Result then
+		AddMessage('   Material Identified: ' + GlobalOutfitMaterial);
 end;
 
 {========================================================}
@@ -605,7 +596,7 @@ begin
 			or (slotName = 'Amulet')
 			or (slotName = 'Ring')
 			or (slotName = 'Ears')
-			or ((slotName = 'Forearms') and not GlobalHasHands)
+			or (slotName = 'Forearms')
 			then begin
 				hasGameplaySlot := True;
 				Break;				// one is enough
@@ -754,6 +745,28 @@ begin
 		removeKeyword(e, 'ArmorHeavy');
 		removeKeyword(e, 'ArmorLight');
 		removeKeyword(e, 'ArmorClothing');
+		
+		{ --- MATERIAL CLEANUP & INJECTION --- }
+		{ Remove all potential vanilla material keywords }
+		removeKeyword(e, 'ArmorMaterialLeather');
+		removeKeyword(e, 'ArmorMaterialScaled');
+		removeKeyword(e, 'ArmorMaterialElven');
+		removeKeyword(e, 'ArmorMaterialGlass');
+		removeKeyword(e, 'ArmorMaterialDragonscale');
+		removeKeyword(e, 'ArmorMaterialIron');
+		removeKeyword(e, 'ArmorMaterialSteel');
+		removeKeyword(e, 'ArmorMaterialDwarven');
+		removeKeyword(e, 'ArmorMaterialSteelPlate');
+		removeKeyword(e, 'ArmorMaterialOrcish');
+		removeKeyword(e, 'ArmorMaterialEbony');
+		removeKeyword(e, 'ArmorMaterialDragonplate');
+		removeKeyword(e, 'ArmorMaterialDaedric');
+
+		{ Add the one true material defined by the file name }
+		if GlobalOutfitMaterial <> '' then begin
+			kw := GetKeywordByEditorID(GlobalOutfitMaterial);
+			if Assigned(kw) then addKeyword(e, kw);
+		end;
 
 		{ Accessory Logic }
 		isJewelry := (Pos('Ring ', Slots) > 0) or (Pos('Amulet ', Slots) > 0) or (Pos('Ears ', Slots) > 0);
@@ -802,7 +815,7 @@ begin
 		end;
 
 		{ HANDS / FOREARMS }
-		if (Pos('Hands ', Slots) > 0) or ((Pos('Forearms ', Slots) > 0) and (not GlobalHasHands)) then begin
+		if (Pos('Hands ', Slots) > 0) or ((Pos('Forearms ', Slots) > 0)) then begin
 			kw := GetKeywordByEditorID('ArmorGauntlets');
 			if Assigned(kw) then addKeyword(e, kw);
 			AddFistKeywords(e);
@@ -844,47 +857,7 @@ begin
 	if kwName <> '' then
 		addKeyword(e, GetKeywordByEditorID(kwName));
 end;
-{========================================================}
-{ CHECK IF ANY SELECTED ARMO RECORD HAS HANDS SLOT       }
-{========================================================}
-procedure OutfitHasHands(file: IwbFile);
-var
-	i: Integer;
-	rec: IInterface;
-begin
-	
-	{ Logic: Check for Merged Headwear (Hair + Circlet) }
-	{ If an outfit merges Hair [31] and Circlet [42] into one item, the player loses an enchantment slot. }
-	{ To maintain game balance, we "promote" the Forearms [34] to a playable/enchantable piece, }
-	{ even if the outfit already contains a standard Hands [33] slot. }
-	for i := 0 to Pred(RecordCount(file)) do begin
-		rec := RecordByIndex(file, i);
-		if Signature(rec) = 'ARMO' then begin
-			if Pos('Hair', GetFirstPersonFlags(rec)) > 0 then begin
-				if Pos('Circlet', GetFirstPersonFlags(rec)) > 0 then begin
-					GlobalHasHands  := False;
-					AddMessage('FOUND -HAIR- and -CIRCLET- SLOT IN ONE ARMOR PIECE !!!');
-					AddMessage('ARMOR -FOREARMS- WIL BE CONSIDERED AS -ARMOR GAUNTLETS-');
-					Exit;
-				end;	
-			end;
-		end;
-	end;
-	
-	// Check if outfit has "Hands" slot.
-	for i := 0 to Pred(RecordCount(file)) do begin
-		rec := RecordByIndex(file, i);
-		if Signature(rec) = 'ARMO' then begin
-			if Pos('Hands', GetFirstPersonFlags(rec)) > 0 then begin
-				GlobalHasHands  := True;
-				AddMessage('FOUND -HANDS- SLOT IN CURRENT OUTFIT !!!');
-				AddMessage('ARMOR -FOREARMS- WIL BE CONSIDERED AS -DECORATION-');
-				Exit;
-			end;
-		end;
-	end;
-	
-end;
+
 {========================================================}
 { GET VANILLA WEAPON DAMAGE                              }
 {========================================================}
@@ -1246,7 +1219,7 @@ begin
 		if HasKeyword(e, 'ArmorGauntlets') then begin Result := 10 + GlobalArmorBonus; Exit; end;
 		if HasKeyword(e, 'ArmorBoots') then begin Result := 10 + GlobalArmorBonus; Exit; end;
 		if Pos('Forearms ', Slots) > 0 then begin
-			if GlobalHasHands then Result := 0
+			if GlobalDisableForearmsARBonus then Result := 0
 			else Result := 10 / GlobalForearmsDebuffMultiplier + GlobalArmorBonus;
 			Exit;
 		end;
@@ -1260,7 +1233,7 @@ begin
 		if HasKeyword(e, 'ArmorGauntlets') then begin Result := 12 + GlobalArmorBonus; Exit; end;
 		if HasKeyword(e, 'ArmorBoots') then begin Result := 12 + GlobalArmorBonus; Exit; end;
 		if Pos('Forearms ', Slots) > 0 then begin
-			if GlobalHasHands then Result := 0
+			if GlobalDisableForearmsARBonus then Result := 0
 			else Result := 12 / GlobalForearmsDebuffMultiplier + GlobalArmorBonus;
 			Exit;
 		end;
@@ -1274,7 +1247,7 @@ begin
 		if HasKeyword(e, 'ArmorGauntlets') then begin Result := 13 + GlobalArmorBonus; Exit; end;
 		if HasKeyword(e, 'ArmorBoots') then begin Result := 13 + GlobalArmorBonus; Exit; end;
 		if Pos('Forearms ', Slots) > 0 then begin
-			if GlobalHasHands then Result := 0
+			if GlobalDisableForearmsARBonus then Result := 0
 			else Result := 13 / GlobalForearmsDebuffMultiplier + GlobalArmorBonus;
 			Exit;
 		end;
@@ -1288,7 +1261,7 @@ begin
 		if HasKeyword(e, 'ArmorGauntlets') then begin Result := 15 + GlobalArmorBonus; Exit; end;
 		if HasKeyword(e, 'ArmorBoots') then begin Result := 15 + GlobalArmorBonus; Exit; end;
 		if Pos('Forearms ', Slots) > 0 then begin
-			if GlobalHasHands then Result := 0
+			if GlobalDisableForearmsARBonus then Result := 0
 			else Result := 15 / GlobalForearmsDebuffMultiplier + GlobalArmorBonus;
 			Exit;
 		end;
@@ -1302,7 +1275,7 @@ begin
 		if HasKeyword(e, 'ArmorGauntlets') then begin Result := 14 + GlobalArmorBonus; Exit; end;
 		if HasKeyword(e, 'ArmorBoots') then begin Result := 14 + GlobalArmorBonus; Exit; end;
 		if Pos('Forearms ', Slots) > 0 then begin
-			if GlobalHasHands then Result := 0
+			if GlobalDisableForearmsARBonus then Result := 0
 			else Result := 14 / GlobalForearmsDebuffMultiplier + GlobalArmorBonus;
 			Exit;
 		end;
@@ -1316,7 +1289,7 @@ begin
 		if HasKeyword(e, 'ArmorGauntlets') then begin Result := 16 + GlobalArmorBonus; Exit; end;
 		if HasKeyword(e, 'ArmorBoots') then begin Result := 16 + GlobalArmorBonus; Exit; end;
 		if Pos('Forearms ', Slots) > 0 then begin
-			if GlobalHasHands then Result := 0
+			if GlobalDisableForearmsARBonus then Result := 0
 			else Result := 16 / GlobalForearmsDebuffMultiplier + GlobalArmorBonus;
 			Exit;
 		end;
@@ -1330,7 +1303,7 @@ begin
 		if HasKeyword(e, 'ArmorGauntlets') then begin Result := 18 + GlobalArmorBonus; Exit; end;
 		if HasKeyword(e, 'ArmorBoots') then begin Result := 18 + GlobalArmorBonus; Exit; end;
 		if Pos('Forearms ', Slots) > 0 then begin
-			if GlobalHasHands then Result := 0
+			if GlobalDisableForearmsARBonus then Result := 0
 			else Result := 18 / GlobalForearmsDebuffMultiplier + GlobalArmorBonus;
 			Exit;
 		end;
@@ -1344,7 +1317,7 @@ begin
 		if HasKeyword(e, 'ArmorGauntlets') then begin Result := 17 + GlobalArmorBonus; Exit; end;
 		if HasKeyword(e, 'ArmorBoots') then begin Result := 17 + GlobalArmorBonus; Exit; end;
 		if Pos('Forearms ', Slots) > 0 then begin
-			if GlobalHasHands then Result := 0
+			if GlobalDisableForearmsARBonus then Result := 0
 			else Result := 17 / GlobalForearmsDebuffMultiplier + GlobalArmorBonus;
 			Exit;
 		end;
@@ -1360,7 +1333,7 @@ begin
 		if HasKeyword(e, 'ArmorGauntlets') then begin Result := 7 + GlobalArmorBonus; Exit; end;
 		if HasKeyword(e, 'ArmorBoots') then begin Result := 7 + GlobalArmorBonus; Exit; end;
 		if Pos('Forearms ', Slots) > 0 then begin
-			if GlobalHasHands then Result := 0
+			if GlobalDisableForearmsARBonus then Result := 0
 			else Result := 7 / GlobalForearmsDebuffMultiplier + GlobalArmorBonus;
 			Exit;
 		end;
@@ -1374,7 +1347,7 @@ begin
 		if HasKeyword(e, 'ArmorGauntlets') then begin Result := 9 + GlobalArmorBonus; Exit; end;
 		if HasKeyword(e, 'ArmorBoots') then begin Result := 9 + GlobalArmorBonus; Exit; end;
 		if Pos('Forearms ', Slots) > 0 then begin
-			if GlobalHasHands then Result := 0
+			if GlobalDisableForearmsARBonus then Result := 0
 			else Result := 9 / GlobalForearmsDebuffMultiplier + GlobalArmorBonus;
 			Exit;
 		end;
@@ -1388,7 +1361,7 @@ begin
 		if HasKeyword(e, 'ArmorGauntlets') then begin Result := 8 + GlobalArmorBonus; Exit; end;
 		if HasKeyword(e, 'ArmorBoots') then begin Result := 8 + GlobalArmorBonus; Exit; end;
 		if Pos('Forearms ', Slots) > 0 then begin
-			if GlobalHasHands then Result := 0
+			if GlobalDisableForearmsARBonus then Result := 0
 			else Result := 8 / GlobalForearmsDebuffMultiplier + GlobalArmorBonus;
 			Exit;
 		end;
@@ -1402,7 +1375,7 @@ begin
 		if HasKeyword(e, 'ArmorGauntlets') then begin Result := 11 + GlobalArmorBonus; Exit; end;
 		if HasKeyword(e, 'ArmorBoots') then begin Result := 11 + GlobalArmorBonus; Exit; end;
 		if Pos('Forearms ', Slots) > 0 then begin
-			if GlobalHasHands then Result := 0
+			if GlobalDisableForearmsARBonus then Result := 0
 			else Result := 11 / GlobalForearmsDebuffMultiplier + GlobalArmorBonus;
 			Exit;
 		end;
@@ -1416,7 +1389,7 @@ begin
 		if HasKeyword(e, 'ArmorGauntlets') then begin Result := 12 + GlobalArmorBonus; Exit; end;
 		if HasKeyword(e, 'ArmorBoots') then begin Result := 12 + GlobalArmorBonus; Exit; end;
 		if Pos('Forearms ', Slots) > 0 then begin
-			if GlobalHasHands then Result := 0
+			if GlobalDisableForearmsARBonus then Result := 0
 			else Result := 12 / GlobalForearmsDebuffMultiplier + GlobalArmorBonus;
 			Exit;
 		end;
@@ -1442,7 +1415,7 @@ begin
 		if HasKeyword(e, 'ArmorGauntlets') then begin Result := 5; Exit; end;
 		if HasKeyword(e, 'ArmorBoots') then begin Result := 5; Exit; end;
 		if Pos('Forearms ', Slots) > 0 then begin
-			if GlobalHasHands then Result := 0 else Result := 5 / GlobalForearmsDebuffMultiplier;
+			if GlobalDisableForearmsARBonus then Result := 0 else Result := 5 / GlobalForearmsDebuffMultiplier;
 			Exit;
 		end;
 		Exit;
@@ -1455,7 +1428,7 @@ begin
 		if HasKeyword(e, 'ArmorGauntlets') then begin Result := 4; Exit; end;
 		if HasKeyword(e, 'ArmorBoots') then begin Result := 4; Exit; end;
 		if Pos('Forearms ', Slots) > 0 then begin
-			if GlobalHasHands then Result := 0 else Result := 4 / GlobalForearmsDebuffMultiplier;
+			if GlobalDisableForearmsARBonus then Result := 0 else Result := 4 / GlobalForearmsDebuffMultiplier;
 			Exit;
 		end;
 		Exit;
@@ -1468,7 +1441,7 @@ begin
 		if HasKeyword(e, 'ArmorGauntlets') then begin Result := 8; Exit; end;
 		if HasKeyword(e, 'ArmorBoots') then begin Result := 8; Exit; end;
 		if Pos('Forearms ', Slots) > 0 then begin
-			if GlobalHasHands then Result := 0 else Result := 8 / GlobalForearmsDebuffMultiplier;
+			if GlobalDisableForearmsARBonus then Result := 0 else Result := 8 / GlobalForearmsDebuffMultiplier;
 			Exit;
 		end;
 		Exit;
@@ -1481,7 +1454,7 @@ begin
 		if HasKeyword(e, 'ArmorGauntlets') then begin Result := 7; Exit; end;
 		if HasKeyword(e, 'ArmorBoots') then begin Result := 7; Exit; end;
 		if Pos('Forearms ', Slots) > 0 then begin
-			if GlobalHasHands then Result := 0 else Result := 7 / GlobalForearmsDebuffMultiplier;
+			if GlobalDisableForearmsARBonus then Result := 0 else Result := 7 / GlobalForearmsDebuffMultiplier;
 			Exit;
 		end;
 		Exit;
@@ -1494,7 +1467,7 @@ begin
 		if HasKeyword(e, 'ArmorGauntlets') then begin Result := 6; Exit; end;
 		if HasKeyword(e, 'ArmorBoots') then begin Result := 6; Exit; end;
 		if Pos('Forearms ', Slots) > 0 then begin
-			if GlobalHasHands then Result := 0 else Result := 6 / GlobalForearmsDebuffMultiplier;
+			if GlobalDisableForearmsARBonus then Result := 0 else Result := 6 / GlobalForearmsDebuffMultiplier;
 			Exit;
 		end;
 		Exit;
@@ -1507,7 +1480,7 @@ begin
 		if HasKeyword(e, 'ArmorGauntlets') then begin Result := 7; Exit; end;
 		if HasKeyword(e, 'ArmorBoots') then begin Result := 7; Exit; end;
 		if Pos('Forearms ', Slots) > 0 then begin
-			if GlobalHasHands then Result := 0 else Result := 7 / GlobalForearmsDebuffMultiplier;
+			if GlobalDisableForearmsARBonus then Result := 0 else Result := 7 / GlobalForearmsDebuffMultiplier;
 			Exit;
 		end;
 		Exit;
@@ -1520,7 +1493,7 @@ begin
 		if HasKeyword(e, 'ArmorGauntlets') then begin Result := 6; Exit; end;
 		if HasKeyword(e, 'ArmorBoots') then begin Result := 6; Exit; end;
 		if Pos('Forearms ', Slots) > 0 then begin
-			if GlobalHasHands then Result := 0 else Result := 6 / GlobalForearmsDebuffMultiplier;
+			if GlobalDisableForearmsARBonus then Result := 0 else Result := 6 / GlobalForearmsDebuffMultiplier;
 			Exit;
 		end;
 		Exit;
@@ -1533,7 +1506,7 @@ begin
 		if HasKeyword(e, 'ArmorGauntlets') then begin Result := 8; Exit; end;
 		if HasKeyword(e, 'ArmorBoots') then begin Result := 8; Exit; end;
 		if Pos('Forearms ', Slots) > 0 then begin
-			if GlobalHasHands then Result := 0 else Result := 8 / GlobalForearmsDebuffMultiplier;
+			if GlobalDisableForearmsARBonus then Result := 0 else Result := 8 / GlobalForearmsDebuffMultiplier;
 			Exit;
 		end;
 		Exit;
@@ -1547,7 +1520,7 @@ begin
 		if HasKeyword(e, 'ArmorGauntlets') then begin Result := 2; Exit; end;
 		if HasKeyword(e, 'ArmorBoots') then begin Result := 2; Exit; end;
 		if Pos('Forearms ', Slots) > 0 then begin
-			if GlobalHasHands then Result := 0 else Result := 2 / GlobalForearmsDebuffMultiplier;
+			if GlobalDisableForearmsARBonus then Result := 0 else Result := 2 / GlobalForearmsDebuffMultiplier;
 			Exit;
 		end;
 		Exit;
@@ -1560,7 +1533,7 @@ begin
 		if HasKeyword(e, 'ArmorGauntlets') then begin Result := 2; Exit; end;
 		if HasKeyword(e, 'ArmorBoots') then begin Result := 2; Exit; end;
 		if Pos('Forearms ', Slots) > 0 then begin
-			if GlobalHasHands then Result := 0 else Result := 2 / GlobalForearmsDebuffMultiplier;
+			if GlobalDisableForearmsARBonus then Result := 0 else Result := 2 / GlobalForearmsDebuffMultiplier;
 			Exit;
 		end;
 		Exit;
@@ -1573,7 +1546,7 @@ begin
 		if HasKeyword(e, 'ArmorGauntlets') then begin Result := 1; Exit; end;
 		if HasKeyword(e, 'ArmorBoots') then begin Result := 1; Exit; end;
 		if Pos('Forearms ', Slots) > 0 then begin
-			if GlobalHasHands then Result := 0 else Result := 1 / GlobalForearmsDebuffMultiplier;
+			if GlobalDisableForearmsARBonus then Result := 0 else Result := 1 / GlobalForearmsDebuffMultiplier;
 			Exit;
 		end;
 		Exit;
@@ -1586,7 +1559,7 @@ begin
 		if HasKeyword(e, 'ArmorGauntlets') then begin Result := 2; Exit; end; { Fixed from 11 to 2 }
 		if HasKeyword(e, 'ArmorBoots') then begin Result := 2; Exit; end;
 		if Pos('Forearms ', Slots) > 0 then begin
-			if GlobalHasHands then Result := 0 else Result := 2 / GlobalForearmsDebuffMultiplier;
+			if GlobalDisableForearmsARBonus then Result := 0 else Result := 2 / GlobalForearmsDebuffMultiplier;
 			Exit;
 		end;
 		Exit;
@@ -1599,7 +1572,7 @@ begin
 		if HasKeyword(e, 'ArmorGauntlets') then begin Result := 3; Exit; end;
 		if HasKeyword(e, 'ArmorBoots') then begin Result := 3; Exit; end;
 		if Pos('Forearms ', Slots) > 0 then begin
-			if GlobalHasHands then Result := 0 else Result := 3 / GlobalForearmsDebuffMultiplier;
+			if GlobalDisableForearmsARBonus then Result := 0 else Result := 3 / GlobalForearmsDebuffMultiplier;
 			Exit;
 		end;
 		Exit;
@@ -1623,7 +1596,7 @@ begin
 		if (Result = 0) and HasKeyword(e, 'ArmorGauntlets') then Result := 25;
 		if (Result = 0) and HasKeyword(e, 'ArmorBoots') then Result := 25;
 		if (Result = 0) and (Pos('Forearms ', Slots) > 0) then begin
-			if GlobalHasHands then Result := 0 else Result := 25;
+			if GlobalDisableForearmsARBonus then Result := 0 else Result := 25;
 		end;
 		
 		if Result > 0 then Result := Result + GlobalArmorPriceBonus;
@@ -1637,7 +1610,7 @@ begin
 		if (Result = 0) and HasKeyword(e, 'ArmorGauntlets') then Result := 55;
 		if (Result = 0) and HasKeyword(e, 'ArmorBoots') then Result := 55;
 		if (Result = 0) and (Pos('Forearms ', Slots) > 0) then begin
-			if GlobalHasHands then Result := 0 else Result := 55;
+			if GlobalDisableForearmsARBonus then Result := 0 else Result := 55;
 		end;
 
 		if Result > 0 then Result := Result + GlobalArmorPriceBonus;
@@ -1651,7 +1624,7 @@ begin
 		if (Result = 0) and HasKeyword(e, 'ArmorGauntlets') then Result := 85;
 		if (Result = 0) and HasKeyword(e, 'ArmorBoots') then Result := 85;
 		if (Result = 0) and (Pos('Forearms ', Slots) > 0) then begin
-			if GlobalHasHands then Result := 0 else Result := 85;
+			if GlobalDisableForearmsARBonus then Result := 0 else Result := 85;
 		end;
 
 		if Result > 0 then Result := Result + GlobalArmorPriceBonus;
@@ -1665,7 +1638,7 @@ begin
 		if (Result = 0) and HasKeyword(e, 'ArmorGauntlets') then Result := 200;
 		if (Result = 0) and HasKeyword(e, 'ArmorBoots') then Result := 200;
 		if (Result = 0) and (Pos('Forearms ', Slots) > 0) then begin
-			if GlobalHasHands then Result := 0 else Result := 200;
+			if GlobalDisableForearmsARBonus then Result := 0 else Result := 200;
 		end;
 
 		if Result > 0 then Result := Result + GlobalArmorPriceBonus;
@@ -1679,7 +1652,7 @@ begin
 		if (Result = 0) and HasKeyword(e, 'ArmorGauntlets') then Result := 125;
 		if (Result = 0) and HasKeyword(e, 'ArmorBoots') then Result := 125;
 		if (Result = 0) and (Pos('Forearms ', Slots) > 0) then begin
-			if GlobalHasHands then Result := 0 else Result := 125;
+			if GlobalDisableForearmsARBonus then Result := 0 else Result := 125;
 		end;
 
 		if Result > 0 then Result := Result + GlobalArmorPriceBonus;
@@ -1693,7 +1666,7 @@ begin
 		if (Result = 0) and HasKeyword(e, 'ArmorGauntlets') then Result := 275;
 		if (Result = 0) and HasKeyword(e, 'ArmorBoots') then Result := 275;
 		if (Result = 0) and (Pos('Forearms ', Slots) > 0) then begin
-			if GlobalHasHands then Result := 0 else Result := 275;
+			if GlobalDisableForearmsARBonus then Result := 0 else Result := 275;
 		end;
 
 		if Result > 0 then Result := Result + GlobalArmorPriceBonus;
@@ -1707,7 +1680,7 @@ begin
 		if (Result = 0) and HasKeyword(e, 'ArmorGauntlets') then Result := 625;
 		if (Result = 0) and HasKeyword(e, 'ArmorBoots') then Result := 625;
 		if (Result = 0) and (Pos('Forearms ', Slots) > 0) then begin
-			if GlobalHasHands then Result := 0 else Result := 625;
+			if GlobalDisableForearmsARBonus then Result := 0 else Result := 625;
 		end;
 
 		if Result > 0 then Result := Result + GlobalArmorPriceBonus;
@@ -1721,7 +1694,7 @@ begin
 		if (Result = 0) and HasKeyword(e, 'ArmorGauntlets') then Result := 425;
 		if (Result = 0) and HasKeyword(e, 'ArmorBoots') then Result := 425;
 		if (Result = 0) and (Pos('Forearms ', Slots) > 0) then begin
-			if GlobalHasHands then Result := 0 else Result := 425;
+			if GlobalDisableForearmsARBonus then Result := 0 else Result := 425;
 		end;
 
 		if Result > 0 then Result := Result + GlobalArmorPriceBonus;
@@ -1736,7 +1709,7 @@ begin
 		if (Result = 0) and HasKeyword(e, 'ArmorGauntlets') then Result := 25;
 		if (Result = 0) and HasKeyword(e, 'ArmorBoots') then Result := 25;
 		if (Result = 0) and (Pos('Forearms ', Slots) > 0) then begin
-			if GlobalHasHands then Result := 0 else Result := 25;
+			if GlobalDisableForearmsARBonus then Result := 0 else Result := 25;
 		end;
 
 		if Result > 0 then Result := Result + GlobalArmorPriceBonus;
@@ -1750,7 +1723,7 @@ begin
 		if (Result = 0) and HasKeyword(e, 'ArmorGauntlets') then Result := 70;
 		if (Result = 0) and HasKeyword(e, 'ArmorBoots') then Result := 70;
 		if (Result = 0) and (Pos('Forearms ', Slots) > 0) then begin
-			if GlobalHasHands then Result := 0 else Result := 70;
+			if GlobalDisableForearmsARBonus then Result := 0 else Result := 70;
 		end;
 
 		if Result > 0 then Result := Result + GlobalArmorPriceBonus;
@@ -1764,7 +1737,7 @@ begin
 		if (Result = 0) and HasKeyword(e, 'ArmorGauntlets') then Result := 45;
 		if (Result = 0) and HasKeyword(e, 'ArmorBoots') then Result := 45;
 		if (Result = 0) and (Pos('Forearms ', Slots) > 0) then begin
-			if GlobalHasHands then Result := 0 else Result := 45;
+			if GlobalDisableForearmsARBonus then Result := 0 else Result := 45;
 		end;
 
 		if Result > 0 then Result := Result + GlobalArmorPriceBonus;
@@ -1778,7 +1751,7 @@ begin
 		if (Result = 0) and HasKeyword(e, 'ArmorGauntlets') then Result := 190;
 		if (Result = 0) and HasKeyword(e, 'ArmorBoots') then Result := 190;
 		if (Result = 0) and (Pos('Forearms ', Slots) > 0) then begin
-			if GlobalHasHands then Result := 0 else Result := 190;
+			if GlobalDisableForearmsARBonus then Result := 0 else Result := 190;
 		end;
 
 		if Result > 0 then Result := Result + GlobalArmorPriceBonus;
@@ -1792,7 +1765,7 @@ begin
 		if (Result = 0) and HasKeyword(e, 'ArmorGauntlets') then Result := 300;
 		if (Result = 0) and HasKeyword(e, 'ArmorBoots') then Result := 300;
 		if (Result = 0) and (Pos('Forearms ', Slots) > 0) then begin
-			if GlobalHasHands then Result := 0 else Result := 300;
+			if GlobalDisableForearmsARBonus then Result := 0 else Result := 300;
 		end;
 
 		if Result > 0 then Result := Result + GlobalArmorPriceBonus;
@@ -1887,6 +1860,9 @@ begin
 	end;
 end;
 
+{========================================================}
+{            ADD SMITHING SKILL CONDITION                }
+{========================================================}
 procedure addSkillCondition(recipe: IInterface; skillLevel: Integer);
 var
 	conditions, cond: IInterface;
@@ -1916,6 +1892,42 @@ begin
 	
 	{ 5. Set the Parameter }
 	SetElementEditValues(cond, 'CTDA\Parameter #1', 'Smithing');
+end;
+
+{========================================================}
+{            ADD PLAYER LEVEL RECIPE CONDITION           }
+{========================================================}
+procedure fAddPlayerLevelCondition(m_recipe: IInterface; m_iLevel: Integer);
+var
+	conditions, cond: IInterface;
+begin
+	if m_iLevel <= 0 then Exit;
+
+	// 1. Get or create the Conditions list
+	conditions := ElementByPath(m_recipe, 'Conditions');
+	
+	if not Assigned(conditions) then begin
+		// Create the list and the first entry [0]
+		Add(m_recipe, 'Conditions', True);
+		conditions := ElementByPath(m_recipe, 'Conditions');
+		cond := ElementByIndex(conditions, 0);
+	end else begin
+		// Append a new condition to the existing list
+		cond := ElementAssign(conditions, HighInteger, nil, False);
+	end;
+
+	// 2. Set the Logic: Greater than or Equal to (GE)
+	// '11000000' = Comparison: GE / Flags: Run on Subject
+	SetElementEditValues(cond, 'CTDA\Type', '11000000'); 
+	
+	// 3. Set the Level Value
+	SetElementEditValues(cond, 'CTDA\Comparison Value', IntToStr(m_iLevel));
+	
+	// 4. Set the Function to GetLevel
+	SetElementEditValues(cond, 'CTDA\Function', 'GetLevel');
+	
+	// 5. Parameter #1 is not needed for GetLevel, so we ensure it is empty/null
+	SetElementEditValues(cond, 'CTDA\Parameter #1', '00 00 00 00');
 end;
 
 procedure addFemaleCondition(recipe: IInterface);
@@ -2079,87 +2091,7 @@ begin
 	
 	Result := newItem;
 end;
-{========================================================}
-{ SMART OUTFIT MATERIAL DETECTION                        }
-{========================================================}
-function GetOutfitMaterial(f: IInterface): string;
-var
-	i, j, maxCount: Integer;
-	rec, kwda, kw: IInterface;
-	edid: string;
-	counts: TStringList;
-	group: IInterface;
-begin
-	Result := '';
-	counts := TStringList.Create;
-	try
-		{ 1. Get the Armor (ARMO) group from the file }
-		group := GroupBySignature(f, 'ARMO');
-		if not Assigned(group) then Exit;
 
-		{ 2. Loop through all ARMO records in that group }
-		for i := 0 to Pred(ElementCount(group)) do begin
-			rec := ElementByIndex(group, i);
-			
-			{ 3. Access the raw Keywords (KWDA) array }
-			kwda := ElementByPath(rec, 'KWDA');
-			for j := 0 to Pred(ElementCount(kwda)) do begin
-				{ LinksTo gets the actual KYWD record from the reference }
-				kw := LinksTo(ElementByIndex(kwda, j));
-				edid := GetElementEditValues(kw, 'EDID');
-
-				{ 4. Count only keywords containing 'ArmorMaterial' }
-				if Pos('ArmorMaterial', edid) > 0 then begin
-					if counts.IndexOfName(edid) = -1 then
-						counts.Values[edid] := '1'
-					else
-						counts.Values[edid] := IntToStr(StrToInt(counts.Values[edid]) + 1);
-				end;
-			end;
-		end;
-
-		{ 5. Identify the winner }
-		maxCount := -1;
-		for i := 0 to Pred(counts.Count) do begin
-			if StrToInt(counts.ValueFromIndex[i]) > maxCount then begin
-				maxCount := StrToInt(counts.ValueFromIndex[i]);
-				Result := counts.Names[i];
-			end;
-		end;
-
-	finally
-		counts.Free;
-	end;
-end;
-
-function GetArmorMaterialSimplified(e: IInterface): string;
-var
-	j: Integer;
-	kwda, kw: IInterface;
-	edid: string;
-begin
-	Result := '';
-	
-	{ 1. Ensure the record is valid }
-	if not Assigned(e) then Exit;
-
-	{ 2. Access the Keywords (KWDA) array }
-	kwda := ElementByPath(e, 'KWDA');
-	if not Assigned(kwda) then Exit;
-
-	{ 3. Loop through keywords of this specific piece }
-	for j := 0 to Pred(ElementCount(kwda)) do begin
-		{ LinksTo follows the reference to the actual Keyword record }
-		kw := LinksTo(ElementByIndex(kwda, j));
-		edid := GetElementEditValues(kw, 'EDID');
-
-		{ 4. Return the first keyword that matches 'ArmorMaterial' }
-		if Pos('ArmorMaterial', edid) > 0 then begin
-			Result := edid;
-			Exit; { Return immediately once found }
-		end;
-	end;
-end;
 {========================================================}
 { ADD VANILLA ENCHANTMENT TO ARMOR                       }
 { EnchArmorFortifyCarry01 (0007A109)                     }
@@ -2229,15 +2161,15 @@ begin
 		tmpKeywordsCollection := ElementBySignature(itemRecord, 'KWDA');
 		
 		{ 7. Add your global skill requirement condition (e.g. Smithing 25) }
-		if GlobalSmithingReq > 0 then begin
-			addSkillCondition(recipeCraft, GlobalSmithingReq);
-		end;
+		addSkillCondition(recipeCraft, GlobalSmithingReq);
+		fAddPlayerLevelCondition(recipeCraft, GlobalPlayerLevelReq);
+		addFemaleCondition(recipeCraft);
+		AddMissingManualCondition(recipeCraft, GlobalCraftingManual);
+		
 		
 		SetElementEditValues(recipeCraft, 'EDID', 'RecipeCraftingManual' + GetElementEditValues(itemRecord, 'EDID'));
 		SetElementEditValues(recipeCraft, 'BNAM', GetEditValue(getRecordByFormID(ARMOR_CRAFTING_WORKBENCH_FORM_ID)));
 		
-		addFemaleCondition(recipeCraft);
-		AddMissingManualCondition(recipeCraft, GlobalCraftingManual);
 		
 		// Materials
 		addItemV2(recipeItems, GetMaterial('Leather01'), 1);
@@ -3010,35 +2942,39 @@ begin
 	Result := recipeCraft;
 end;
 
-function fAddNewFile(aFileName: string; aIsESL: boolean): IInterface;
+function fAddNewFile(m_sFileName: string; m_bIsESL: boolean): IInterface;
 var
-	m_functionFile: IInterface;
+	m_FileHandle: IInterface;
 begin
 	Result := nil;
 
 	// Check 1: Empty String
-	if Trim(aFileName) = '' then begin
+	if Trim(m_sFileName) = '' then begin
 		AddMessage('Error: Filename is empty.');
 		Exit;
 	end;
 
-	// Check 2: Protected Names (Don't try to 'create' Skyrim.esm)
-	if SameText(aFileName, 'Skyrim.esm') or SameText(aFileName, 'Update.esm') then begin
+	// Check 2: Protected Names
+	if SameText(m_sFileName, 'Skyrim.esm') or SameText(m_sFileName, 'Update.esm') then begin
 		AddMessage('Error: Cannot use protected master names.');
 		Exit;
 	end;
 
 	// Check 3: Get existing file handle or create new one
-	m_functionFile := FileByName(aFileName);
-	if not Assigned(m_functionFile) then
-		m_functionFile := AddNewFileName(aFileName, aIsESL);
+	m_FileHandle := FileByName(m_sFileName);
+	if not Assigned(m_FileHandle) then
+		m_FileHandle := AddNewFileName(m_sFileName, m_bIsESL);
 
-	// Check 4: Final Validation
-	if Assigned(m_functionFile) then begin
-		AddMessage('Success: ' + aFileName + ' initialized.');
-		Result := m_functionFile;
+	// Check 4: Final Validation and Master Assignment
+	if Assigned(m_FileHandle) then begin
+		// Add necessary base masters
+		AddMasterIfMissing(m_FileHandle, 'Skyrim.esm');
+		AddMasterIfMissing(m_FileHandle, 'Update.esm');
+		
+		AddMessage('Success: ' + m_sFileName + ' initialized with base masters.');
+		Result := m_FileHandle;
 	end else begin
-		AddMessage('Critical: Failed to create ' + aFileName);
+		AddMessage('Critical: Failed to create ' + m_sFileName);
 	end;
 end;
 
