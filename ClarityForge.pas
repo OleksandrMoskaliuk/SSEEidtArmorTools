@@ -24,7 +24,7 @@ Files must follow the pattern: [Name]_CF_[MaterialCode][SmithingLevel].esp
 Example: "NordicPlate_CF_Eb80.esp"
 
 MATERIAL CODES:
-- Light: Lr (Leather), Sd (Scaled), En (Elven), Gs (Glass), Ds (Dragonscale)
+- Light: Lr (Leather), Sd (Scaled), En (Elven), Gs (Glass), De (Dragonscale)
 - Heavy: In (Iron), Sl (Steel), Dn (Dwarven), Se (SteelPlate), Oh (Orcish), 
          Ey (Ebony), Dc (Daedric), Dp (Dragonplate)
 
@@ -197,47 +197,34 @@ function fIsClarityForgeApplicable(m_sFileName: string): Boolean;
 var
 	sBase, sSuffix, sMat: string;
 	p, iTempLevel: Integer;
-	bIsValidMaterial: Boolean;
 begin
 	Result := False;
 
-	// 1. Isolate the name without extension
 	sBase := ChangeFileExt(m_sFileName, '');
-
-	// 2. Find the "CF_" tag
 	p := Pos('CF_', sBase);
 	if p = 0 then Exit;
 	
-	// Extract and Clean GlobalFileName (e.g., "MyArmor_CF_Eb80" -> "MyArmor")
-	GlobalFileName := Copy(sBase, 1, p - 1);
+	// Clean GlobalFileName: Trim handles spaces, then check for trailing underscore
+	GlobalFileName := Trim(Copy(sBase, 1, p - 1));
 	if (Length(GlobalFileName) > 0) and (GlobalFileName[Length(GlobalFileName)] = '_') then
-		GlobalFileName := Copy(GlobalFileName, 1, Length(GlobalFileName) - 1);
+		GlobalFileName := Trim(Copy(GlobalFileName, 1, Length(GlobalFileName) - 1));
 
-	// 3. Extract the tag and everything after it
 	sSuffix := Copy(sBase, p, Length(sBase));
-
-	// 4. Safety Check: Prefix(3) + Material(2) + Level(at least 1) = Min 6 chars
-	// Example: 'CF_Lr5' is 6 characters.
 	if Length(sSuffix) < 6 then Exit;
 
-	// 5. Extract the Material Code (Characters 4 and 5)
 	sMat := Copy(sSuffix, 4, 2); 
 
-	// 6. Validate against the defined Material List
-	bIsValidMaterial := (sMat = 'Lr') or (sMat = 'Sd') or (sMat = 'En') or (sMat = 'Gs') or (sMat = 'Ds') or // Light
-	                    (sMat = 'In') or (sMat = 'Sl') or (sMat = 'Dn') or (sMat = 'Se') or (sMat = 'Oh') or // Heavy
-	                    (sMat = 'Ey') or (sMat = 'Dc') or (sMat = 'Dp');                                    // Heavy
-
-	if bIsValidMaterial then begin
-		
-		// 7. Parse the Level (Starting at Position 6)
+	// Validation and Assignment
+	if fAssignGlobalMaterial(sMat) then begin
 		iTempLevel := StrToIntDef(Copy(sSuffix, 6, Length(sSuffix)), -1);
 
-		// 8. Final validation and Global assignment
 		if (iTempLevel >= 5) and (iTempLevel <= 100) then begin
 			GlobalMaterialCode := sMat;
 			GlobalSmithingReq  := iTempLevel;
-			GlobalPlayerLevelReq := (GlobalSmithingReq + 20) / 2.0;
+			// Final calculation for Character Level
+			GlobalPlayerLevelReq := Round((GlobalSmithingReq + 20) / 2.0);
+			
+			AddMessage('   Detected: ' + GlobalFileName + ' [' + GlobalOutfitMaterial + ']');
 			Result := True;
 		end;
 	end;
@@ -433,7 +420,7 @@ begin
 	// Sd - Scaled
 	// En - Elven
 	// Gs - Glass
-	// Ds - Dragonscale
+	// De - Dragonscale
 	// HEAVY ARMOURS
 	// In - Iron
 	// Sl - Steal
@@ -449,7 +436,7 @@ begin
 	else if (m_sMatCode = 'Sd') then GlobalOutfitMaterial := 'ArmorMaterialScaled'
 	else if (m_sMatCode = 'En') then GlobalOutfitMaterial := 'ArmorMaterialElven'
 	else if (m_sMatCode = 'Gs') then GlobalOutfitMaterial := 'ArmorMaterialGlass'
-	else if (m_sMatCode = 'Ds') then GlobalOutfitMaterial := 'ArmorMaterialDragonscale'
+	else if (m_sMatCode = 'De') then GlobalOutfitMaterial := 'ArmorMaterialDragonscale'
 
 	// HEAVY ARMORS
 	else if (m_sMatCode = 'In') then GlobalOutfitMaterial := 'ArmorMaterialIron'

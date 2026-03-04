@@ -16,7 +16,7 @@ The script identifies valid files by scanning for the `CF_` tag. Your filename d
 
 | Type | Codes |
 | --- | --- |
-| **Light** | **Lr** (Leather), **Sd** (Scaled), **En** (Elven), **Gs** (Glass), **Ds** (Dragonscale) |
+| **Light** | **Lr** (Leather), **Sd** (Scaled), **En** (Elven), **Gs** (Glass), **De** (Dragonscale) |
 | **Heavy** | **In** (Iron), **Sl** (Steel), **Dn** (Dwarven), **Se** (SteelPlate), **Oh** (Orcish), **Ey** (Ebony), **Dc** (Daedric), **Dp** (Dragonplate) |
 
 ### **Automated Level Gating**
