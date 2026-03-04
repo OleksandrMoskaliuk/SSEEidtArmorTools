@@ -754,13 +754,16 @@ begin
 		removeKeyword(e, 'ArmorClothing');
 		
 		{ --- MATERIAL CLEANUP & INJECTION --- }
-		{ Remove all potential vanilla material keywords }
+		{ Remove all potential material keywords }
+		{ Vanilla & Common Materials }
 		removeKeyword(e, 'ArmorMaterialLeather');
 		removeKeyword(e, 'ArmorMaterialScaled');
 		removeKeyword(e, 'ArmorMaterialElven');
+		removeKeyword(e, 'ArmorMaterialElvenGilded');
 		removeKeyword(e, 'ArmorMaterialGlass');
 		removeKeyword(e, 'ArmorMaterialDragonscale');
 		removeKeyword(e, 'ArmorMaterialIron');
+		removeKeyword(e, 'ArmorMaterialIronBanded');
 		removeKeyword(e, 'ArmorMaterialSteel');
 		removeKeyword(e, 'ArmorMaterialDwarven');
 		removeKeyword(e, 'ArmorMaterialSteelPlate');
@@ -768,6 +771,26 @@ begin
 		removeKeyword(e, 'ArmorMaterialEbony');
 		removeKeyword(e, 'ArmorMaterialDragonplate');
 		removeKeyword(e, 'ArmorMaterialDaedric');
+		
+		{ DLC / Special Materials }
+		removeKeyword(e, 'ArmorMaterialImperialLight');
+		removeKeyword(e, 'ArmorMaterialImperialStudded');
+		removeKeyword(e, 'ArmorMaterialImperialHeavy');
+		removeKeyword(e, 'ArmorMaterialStormcloak');
+		removeKeyword(e, 'ArmorMaterialBonemold');
+		removeKeyword(e, 'ArmorMaterialChitinLight');
+		removeKeyword(e, 'ArmorMaterialChitinHeavy');
+		removeKeyword(e, 'ArmorMaterialStalhrimLight');
+		removeKeyword(e, 'ArmorMaterialStalhrimHeavy');
+		removeKeyword(e, 'ArmorMaterialNordicHeavy');
+		
+		{ Faction / Unique Materials }
+		removeKeyword(e, 'ArmorMaterialBlades');
+		removeKeyword(e, 'ArmorMaterialThievesGuild');
+		removeKeyword(e, 'ArmorMaterialThievesGuildLeader');
+		removeKeyword(e, 'ArmorMaterialDarkBrotherhood');
+		removeKeyword(e, 'ArmorMaterialNightingale');
+		removeKeyword(e, 'ArmorMaterialDawnguard');
 
 		{ Add the one true material defined by the file name }
 		if GlobalOutfitMaterial <> '' then begin
