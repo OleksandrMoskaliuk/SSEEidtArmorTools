@@ -19,9 +19,18 @@
 UNIT: ClarityForge
 PURPOSE: Advanced Armor Sanitization and Balancing for Requiem / Skyrim AE.
 
-PRE-REQUISITES FOR USE:
-1. Records must have 'First Person Flags' (BOD2) defined.
-2. Records must have at least one 'ArmorMaterial' Keyword assigned.
+FILE NAMING CONVENTION (NameCode):
+Files must follow the pattern: [Name]_CF_[MaterialCode][SmithingLevel].esp
+Example: "NordicPlate_CF_Eb80.esp"
+
+MATERIAL CODES:
+- Light: Lr (Leather), Sd (Scaled), En (Elven), Gs (Glass), Ds (Dragonscale)
+- Heavy: In (Iron), Sl (Steel), Dn (Dwarven), Se (SteelPlate), Oh (Orcish), 
+         Eb (Ebony), Dc (Daedric), Dp (Dragonplate)
+
+REQUIREMENT SCALING:
+- Smithing Req: Defined by filename (e.g., 80).
+- Player Level Req: Calculated as (Smithing + 20) / 2.
 
 CORE PHILOSOPHY:
 - Modular Outfits: Distinguishes between Functional (AR-bearing) and Visual (Cosmetic) pieces.
@@ -80,7 +89,7 @@ begin
 
 	{ Set Global Values }
 	GlobalSmithingReq := 5; // Smithing Skill Level 0 - 100;
-	GlobalPlayerLevelReq := (GlobalSmithingReq + 20) / 2.0;
+	GlobalPlayerLevelReq := Round((GlobalSmithingReq + 20) / 2.0);
 	GlobalArmorBonus := GlobalSmithingReq / 15.0; // Too much ArmorRating will cause Requiem script to fail
 	GlobalFileName := '';
 	GlobalOutfitMaterial := '';
