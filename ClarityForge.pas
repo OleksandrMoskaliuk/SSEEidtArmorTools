@@ -89,7 +89,7 @@ begin
 
 	{ Set Global Values }
 	GlobalSmithingReq := 5; // Smithing Skill Level 0 - 100;
-	GlobalPlayerLevelReq := Round((GlobalSmithingReq + 20) / 2.0);
+	GlobalPlayerLevelReq := 0; // (GlobalSmithingReq + 20) / 2.0;
 	GlobalArmorBonus := GlobalSmithingReq / 15.0; // Too much ArmorRating will cause Requiem script to fail
 	GlobalFileName := '';
 	GlobalOutfitMaterial := '';
@@ -237,6 +237,7 @@ begin
 		if (iTempLevel >= 5) and (iTempLevel <= 100) then begin
 			GlobalMaterialCode := sMat;
 			GlobalSmithingReq  := iTempLevel;
+			GlobalPlayerLevelReq := (GlobalSmithingReq + 20) / 2.0;
 			Result := True;
 		end;
 	end;
@@ -616,6 +617,7 @@ begin
 	// If at least one gameplay slot exists → NOT visual
 	Result := not hasGameplaySlot;
 end;
+
 {========================================================}
 { PROTECTION FROM ENCHANTMENTS                           }
 {========================================================}
@@ -669,6 +671,7 @@ begin
 		end;
 	end;
 end;
+
 {========================================================}
 { MATERIAL CHECKS                                        }
 {========================================================}
@@ -692,6 +695,7 @@ begin
 	HasKeyword(selectedRecord,'ArmorMaterialDragonplate') or
     HasKeyword(selectedRecord,'ArmorMaterialDaedric');
 end;
+
 {========================================================}
 { SET ARMOR TYPE                                         }
 {========================================================}
@@ -721,6 +725,7 @@ begin
 	else 
 		SetEditValue(armorTypeField, 'Light Armor');
 end;
+
 {========================================================}
 { ADD VITAL ARMOR KEYWORDS                               }
 {========================================================}
