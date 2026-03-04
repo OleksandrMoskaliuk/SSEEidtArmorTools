@@ -142,9 +142,9 @@ begin
 			
 			// GlobalFileName should hold cleaned name here
 			// Call the processor for this specific file 'f'
-			fNullifyOriginalRecipes(f, GlobalPatchFile);
 			fProcessArmorRecords(f);
 			fProcessWeaponRecords(f);
+			fNullifyOriginalRecipes(f, GlobalPatchFile);
 		end;
 	end;
 end;
@@ -270,7 +270,7 @@ begin
 			GlobalProcessedRecords := GlobalProcessedRecords + 1;
 			AddMessage('      Processing: ' + EditorID(CurrentRecord));
 			
-			m_NewRecord := fFunctionCopyArmorToNewFile(CurrentRecord, GlobalPatchFile, (StringReplace(GlobalOutfitMaterial, 'ArmorMaterial', '', [rfReplaceAll, rfIgnoreCase]) + ' Lv ' + IntToStr(GlobalSmithingReq) + ' '));
+			m_NewRecord := fOverrideRecordToPatch(CurrentRecord, GlobalPatchFile, (StringReplace(GlobalOutfitMaterial, 'ArmorMaterial', '', [rfReplaceAll, rfIgnoreCase]) + ' Lv ' + IntToStr(GlobalSmithingReq) + ' '));
 			
 			// In Skyrim, if a modder leaves slot 34 (Forearms) active on a Cuirass (slot 32),
 			// the game engine treats it as "occupying" the forearm slot, which causes those annoying conflicts with dedicated gauntlets or bracers.
@@ -344,7 +344,7 @@ begin
 			// Here we call the same AddVitalKeywords or specific weapon balancing
 			AddMessage('      Processing Weapon: ' + EditorID(CurrentRecord));
 			
-			m_NewRecord := fFunctionCopyArmorToNewFile(CurrentRecord, GlobalPatchFile, ('Weapon Lv ' + IntToStr(GlobalSmithingReq) + ' '));
+			m_NewRecord := fOverrideRecordToPatch(CurrentRecord, GlobalPatchFile, ('Weapon Lv ' + IntToStr(GlobalSmithingReq) + ' '));
 
 			//Standardize Weapon Keywords (VendorItemWeapon, etc.)
 			AddVitalKeywords(m_NewRecord, '');
@@ -3049,6 +3049,46 @@ begin
 	end;
 end;
 
+function fOverrideRecordToPatch(m_SourceRecord: IInterface; m_TargetFile: IInterface; m_sPrefix: string): IInterface;
+var
+	sNewName, sCurrentName: string;
+	fSourceFile: IInterface;
+begin
+	Result := nil;
+
+	// 1. Master Handling
+	fSourceFile := GetFile(m_SourceRecord);
+	AddMasterIfMissing(m_TargetFile, 'Skyrim.esm');
+	
+	// Ensure the source file is a master of our patch
+	if not Equals(fSourceFile, m_TargetFile) then
+		AddMasterIfMissing(m_TargetFile, GetFileName(fSourceFile));
+
+	// 2. Copy as Override
+	// Third parameter 'False' = Override (Maintains link to original FormID/EditorID)
+	Result := wbCopyElementToFile(m_SourceRecord, m_TargetFile, False, True);
+	
+	if Assigned(Result) then begin
+		// 3. Update Display Name (FULL)
+		sCurrentName := GetElementEditValues(m_SourceRecord, 'FULL');
+		
+		// Fallback to EditorID if the name is empty
+		if sCurrentName = '' then sCurrentName := EditorID(m_SourceRecord);
+		
+		// Create the [Tag] prefix (e.g., [Ey80])
+		sNewName := '[' + m_sPrefix + '] ' + sCurrentName;
+		
+		// Clean the tag for the display name display
+		sNewName := StringReplace(sNewName, 'CF_', '', [rfReplaceAll]);
+		sNewName := StringReplace(sNewName, '_', '', [rfReplaceAll]);
+		
+		SetElementEditValues(Result, 'FULL', sNewName);
+		
+		AddMessage('   [' + Signature(Result) + ' Override] ' + EditorID(Result) + ' -> ' + sNewName);
+	end else begin
+		AddMessage('   [Error] Failed to override ' + Signature(m_SourceRecord) + ': ' + EditorID(m_SourceRecord));
+	end;
+end;
 
 {========================================================}
 { END                                                    }
