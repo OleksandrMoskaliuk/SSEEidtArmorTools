@@ -73,7 +73,12 @@ var
 	GlobalOutfitMaterial: string;
 	GlobalVarFileName: string;
 	GlobalPatchFile: IInterface;
-	GlobalMaterialCode: string;
+	// Materials Cache
+	id_Lr, id_Sd, id_En, id_Gs, id_De: Cardinal; // Light
+	id_In, id_Sl, id_Dn, id_Se, id_Oh, id_Ey, id_Dc, id_Dp: Cardinal; // Heavy
+	// DLC / Faction Cache
+	id_ImpL, id_ImpS, id_ImpH, id_Stm, id_Bone, id_ChitL, id_ChitH, id_StalL, id_StalH, id_Nord: Cardinal;
+	id_Blad, id_Thiv, id_ThivL, id_Dark, id_Nigh, id_Dawn: Cardinal;
 
 {========================================================}
 { INITIALIZE                                             }
@@ -116,6 +121,8 @@ begin
 	
 	GlobalPatchFile := fAddNewFile(GlobalVarFileName, true);
 	
+	fSetupKeywordCache();
+	
 	// Exit if initialization failed
 	if not Assigned(GlobalPatchFile) then begin
 		Result := 1;
@@ -138,10 +145,6 @@ begin
 		AddMessage('Initialization: Working with ' + sFileName);
 		if fIsClarityForgeApplicable(sFileName) then begin
 			AddMessage('>>> Valid File Found: ' + sFileName);
-			fAssignGlobalMaterial(GlobalMaterialCode);
-			
-			// GlobalFileName should hold cleaned name here
-			// Call the processor for this specific file 'f'
 			fProcessArmorRecords(f);
 			fProcessWeaponRecords(f);
 			fNullifyOriginalRecipes(f, GlobalPatchFile);
@@ -219,7 +222,6 @@ begin
 		iTempLevel := StrToIntDef(Copy(sSuffix, 6, Length(sSuffix)), -1);
 
 		if (iTempLevel >= 5) and (iTempLevel <= 100) then begin
-			GlobalMaterialCode := sMat;
 			GlobalSmithingReq  := iTempLevel;
 			// Final calculation for Character Level
 			GlobalPlayerLevelReq := Round(GlobalSmithingReq * 0.8);
@@ -278,13 +280,13 @@ begin
 			
 			m_Slots := GetFirstPersonFlags(m_NewRecord);
 			
-			// 1.2 Classification & Cleanup
+			// Classification & Cleanup
 			AddVitalKeywords(m_NewRecord, m_Slots);
-			
-			// 1.3 Material Logic: Heavy/Light/Clothing
+
+			// Material Logic: Heavy/Light/Clothing
 			SetArmorType(m_NewRecord);
 			
-			// 1.4 Stat Balancing
+			// Stat Balancing
 			m_ArmorRating := GetVanillaAR(m_NewRecord, m_Slots);  
 			SetElementEditValues(m_NewRecord, 'DNAM - Armor Rating', FloatToStr(m_ArmorRating));
 			
@@ -294,13 +296,13 @@ begin
 			m_ArmorPrice := Round(GetVanillaAPrice(m_NewRecord, m_Slots)); 
 			SetElementEditValues(m_NewRecord, 'DATA\Value', IntToStr(m_ArmorPrice));
 			
-			// 1.5 Finalization
+			// Finalization
 			fAddEnchProtection(m_NewRecord, m_DummyEnch);
 			
-			// 1.6 Crafting
+			// Crafting
 			MakeCraftableV2(m_NewRecord);
 			
-			// 1.7 Tempering: Block Clothing and Visual Slots
+			// Tempering: Block Clothing and Visual Slots
 			if (not IsVisualSlot(m_Slots)) and (not HasKeyword(m_NewRecord, 'ArmorClothing')) then begin
 				currentKeywordEDID := 'TemperArmor' + GetElementEditValues(m_NewRecord, 'EDID');
 				recipeCraft := MainRecordByEditorID(GroupBySignature(GlobalPatchFile, 'COBJ'), currentKeywordEDID);
@@ -341,11 +343,10 @@ begin
 			CurrentRecord := ElementByIndex(GroupWEAP, i);
 
 			// 3. Logic Application
-			// Here we call the same AddVitalKeywords or specific weapon balancing
 			AddMessage('      Processing Weapon: ' + EditorID(CurrentRecord));
 			
 			m_NewRecord := fOverrideRecordToPatch(CurrentRecord, GlobalPatchFile, ('Weapon Lv ' + IntToStr(GlobalSmithingReq) + ' '));
-
+			
 			//Standardize Weapon Keywords (VendorItemWeapon, etc.)
 			AddVitalKeywords(m_NewRecord, '');
 			
@@ -415,47 +416,27 @@ begin
 	Result := True;
 	GlobalOutfitMaterial := '';
 	
-	// LIGHT ARMOURS
-	// Lr - Leather
-	// Sd - Scaled
-	// En - Elven
-	// Gs - Glass
-	// De - Dragonscale
-	// HEAVY ARMOURS
-	// In - Iron
-	// Sl - Steal
-	// Dn - Dwrven
-	// Se - Steel Plate
-	// Oh - Orcish
-	// Ey - Ebony
-	// Dc - Daedric
-	// Dp - Dragonplate
-	
 	// LIGHT ARMORS
-	if (m_sMatCode = 'Lr') then GlobalOutfitMaterial := 'ArmorMaterialLeather'
-	else if (m_sMatCode = 'Sd') then GlobalOutfitMaterial := 'ArmorMaterialScaled'
-	else if (m_sMatCode = 'En') then GlobalOutfitMaterial := 'ArmorMaterialElven'
-	else if (m_sMatCode = 'Gs') then GlobalOutfitMaterial := 'ArmorMaterialGlass'
-	else if (m_sMatCode = 'De') then GlobalOutfitMaterial := 'ArmorMaterialDragonscale'
+	if (m_sMatCode = 'Lr') then begin GlobalOutfitMaterial := 'ArmorMaterialLeather'; Exit; end;
+	if (m_sMatCode = 'Sd') then begin GlobalOutfitMaterial := 'ArmorMaterialScaled'; Exit; end;
+	if (m_sMatCode = 'En') then begin GlobalOutfitMaterial := 'ArmorMaterialElven'; Exit; end;
+	if (m_sMatCode = 'Gs') then begin GlobalOutfitMaterial := 'ArmorMaterialGlass'; Exit; end;
+	if (m_sMatCode = 'De') then begin GlobalOutfitMaterial := 'ArmorMaterialDragonscale'; Exit; end;
 
 	// HEAVY ARMORS
-	else if (m_sMatCode = 'In') then GlobalOutfitMaterial := 'ArmorMaterialIron'
-	else if (m_sMatCode = 'Sl') then GlobalOutfitMaterial := 'ArmorMaterialSteel'
-	else if (m_sMatCode = 'Dn') then GlobalOutfitMaterial := 'ArmorMaterialDwarven'
-	else if (m_sMatCode = 'Se') then GlobalOutfitMaterial := 'ArmorMaterialSteelPlate'
-	else if (m_sMatCode = 'Oh') then GlobalOutfitMaterial := 'ArmorMaterialOrcish'
-	else if (m_sMatCode = 'Ey') then GlobalOutfitMaterial := 'ArmorMaterialEbony'
-	else if (m_sMatCode = 'Dc') then GlobalOutfitMaterial := 'ArmorMaterialDaedric'
-	else if (m_sMatCode = 'Dp') then GlobalOutfitMaterial := 'ArmorMaterialDragonplate'
+	if (m_sMatCode = 'In') then begin GlobalOutfitMaterial := 'ArmorMaterialIron'; Exit; end;
+	if (m_sMatCode = 'Sl') then begin GlobalOutfitMaterial := 'ArmorMaterialSteel'; Exit; end;
+	if (m_sMatCode = 'Dn') then begin GlobalOutfitMaterial := 'ArmorMaterialDwarven'; Exit; end;
+	if (m_sMatCode = 'Se') then begin GlobalOutfitMaterial := 'ArmorMaterialSteelPlate'; Exit; end;
+	if (m_sMatCode = 'Oh') then begin GlobalOutfitMaterial := 'ArmorMaterialOrcish'; Exit; end;
+	if (m_sMatCode = 'Ey') then begin GlobalOutfitMaterial := 'ArmorMaterialEbony'; Exit; end;
+	if (m_sMatCode = 'Dc') then begin GlobalOutfitMaterial := 'ArmorMaterialDaedric'; Exit; end;
+	if (m_sMatCode = 'Dp') then begin GlobalOutfitMaterial := 'ArmorMaterialDragonplate'; Exit; end;
 	
-	// If no match was found, the code is invalid
-	else begin
-		Result := False;
-		AddMessage('   ERROR: Unknown Material Code: ' + m_sMatCode);
-	end;
-
-	if Result then
-		AddMessage('   Material Identified: ' + GlobalOutfitMaterial);
+	// If the code reaches this point, no match was found
+	Result := False;
+	GlobalOutfitMaterial := ''; // Safety reset
+	AddMessage('   ERROR: Unknown Material Code: ' + m_sMatCode);
 end;
 
 {========================================================}
@@ -662,25 +643,34 @@ end;
 {========================================================}
 { MATERIAL CHECKS                                        }
 {========================================================}
-function IsLightArmorMaterial(selectedRecord: IInterface): Boolean;
+function fIsLightArmorMaterial: Boolean;
 begin
-    Result :=
-    HasKeyword(selectedRecord,'ArmorMaterialLeather') or
-    HasKeyword(selectedRecord,'ArmorMaterialScaled') or
-    HasKeyword(selectedRecord,'ArmorMaterialElven') or
-    HasKeyword(selectedRecord,'ArmorMaterialGlass') or
-    HasKeyword(selectedRecord,'ArmorMaterialDragonscale');
+	{
+	  Light materials are: 
+	  Leather, Elven, Glass, Scaled, Dragonscale
+	}
+	Result := 
+		(GlobalOutfitMaterial = 'ArmorMaterialLeather') or
+		(GlobalOutfitMaterial = 'ArmorMaterialElven') or
+		(GlobalOutfitMaterial = 'ArmorMaterialGlass') or
+		(GlobalOutfitMaterial = 'ArmorMaterialScaled') or
+		(GlobalOutfitMaterial = 'ArmorMaterialDragonscale');
 end;
-function IsHeavyArmorMaterial(selectedRecord: IInterface): Boolean;
+function fIsHeavyArmorMaterial: Boolean;
 begin
-    Result :=
-    HasKeyword(selectedRecord,'ArmorMaterialSteel') or
-    HasKeyword(selectedRecord,'ArmorMaterialDwarven') or
-	HasKeyword(selectedRecord,'ArmorMaterialOrcish') or
-    HasKeyword(selectedRecord,'ArmorMaterialSteelPlate') or
-    HasKeyword(selectedRecord,'ArmorMaterialEbony') or
-	HasKeyword(selectedRecord,'ArmorMaterialDragonplate') or
-    HasKeyword(selectedRecord,'ArmorMaterialDaedric');
+	{ 
+	  We check our Global variable. In Skyrim, Heavy materials are:
+	  Iron, Steel, Dwarven, Orcish, Ebony, Daedric, Dragonplate, SteelPlate
+	}
+	Result := 
+		(GlobalOutfitMaterial = 'ArmorMaterialIron') or
+		(GlobalOutfitMaterial = 'ArmorMaterialSteel') or
+		(GlobalOutfitMaterial = 'ArmorMaterialDwarven') or
+		(GlobalOutfitMaterial = 'ArmorMaterialOrcish') or
+		(GlobalOutfitMaterial = 'ArmorMaterialEbony') or
+		(GlobalOutfitMaterial = 'ArmorMaterialDaedric') or
+		(GlobalOutfitMaterial = 'ArmorMaterialDragonplate') or
+		(GlobalOutfitMaterial = 'ArmorMaterialSteelPlate');
 end;
 
 {========================================================}
@@ -691,41 +681,111 @@ var
 	armorTypeField: IInterface;
 	Slots: string;
 	bisClothing: Boolean;
+	m_bIsJewelry: Boolean;
 begin
 	armorTypeField := ElementByPath(e, 'BOD2\Armor Type');
 	Slots := GetFirstPersonFlags(e);
 
 	{ Accessory / Visual / Jewelry Identification }
-	bisClothing := IsVisualSlot(Slots) 
-		or (Pos('Ring ', Slots) > 0) 
-		or (Pos('Amulet ', Slots) > 0) 
-		or (Pos('Ears ', Slots) > 0)
-		or (Pos('Backpack ', Slots) > 0);
+	m_bIsJewelry := (Pos('Ring ', Slots) > 0)
+		or (Pos('Amulet ', Slots) > 0)
+		or (Pos('Ears ', Slots) > 0);
+			
+	if m_bIsJewelry then begin
+		SetEditValue(armorTypeField, 'Clothing');
+		addKeyword(e, GetKeywordByEditorID('VendorItemJewelry'));
+		addKeyword(e, GetKeywordByEditorID('ArmorJewelry'));
+		addKeyword(e, GetKeywordByEditorID('JewelryExpensive'));
+		Exit;
+	end;
 
+	bisClothing := (IsVisualSlot(Slots)) or (Pos('Backpack ', Slots) > 0);
+		
 	if bisClothing then begin
 		SetEditValue(armorTypeField, 'Clothing');
+		addKeyword(e, GetKeywordByEditorID('ArmorClothing'));
+		addKeyword(e, GetKeywordByEditorID('VendorItemClothing'));
 		Exit;
 	end;
 	
-	if IsHeavyArmorMaterial(e) then 
-		SetEditValue(armorTypeField, 'Heavy Armor')
-	else 
+	if fIsHeavyArmorMaterial() then begin
+		SetEditValue(armorTypeField, 'Heavy Armor');
+		addKeyword(e, GetKeywordByEditorID('ArmorHeavy'));
+		addKeyword(e, GetKeywordByEditorID('VendorItemArmor'));			
+		removeKeyword(e, 'ArmorClothing');
+		Exit;
+	end;
+	
+	if fIsLightArmorMaterial() then begin
 		SetEditValue(armorTypeField, 'Light Armor');
+		addKeyword(e, GetKeywordByEditorID('ArmorLight'));
+		addKeyword(e, GetKeywordByEditorID('VendorItemArmor'));
+		removeKeyword(e, 'ArmorClothing');
+		Exit;
+	end;
+	
+end;
+
+{========================================================}
+{            PURGE ALL POTENTIAL MATERIAL TAGS           }
+{========================================================}
+procedure fPurgeAllMaterialKeywords(e: IInterface);
+begin
+	{ Vanilla & Common Materials }
+	removeKeywordV2(e, 'ArmorMaterialLeather');
+	removeKeywordV2(e, 'ArmorMaterialScaled');
+	removeKeywordV2(e, 'ArmorMaterialElven');
+	removeKeywordV2(e, 'ArmorMaterialElvenGilded');
+	removeKeywordV2(e, 'ArmorMaterialGlass');
+	removeKeywordV2(e, 'ArmorMaterialDragonscale');
+	removeKeywordV2(e, 'ArmorMaterialIron');
+	removeKeywordV2(e, 'ArmorMaterialIronBanded');
+	removeKeywordV2(e, 'ArmorMaterialSteel');
+	removeKeywordV2(e, 'ArmorMaterialDwarven');
+	removeKeywordV2(e, 'ArmorMaterialSteelPlate');
+	removeKeywordV2(e, 'ArmorMaterialOrcish');
+	removeKeywordV2(e, 'ArmorMaterialEbony');
+	removeKeywordV2(e, 'ArmorMaterialDragonplate');
+	removeKeywordV2(e, 'ArmorMaterialDaedric');
+	
+	{ DLC / Special Materials }
+	removeKeywordV2(e, 'ArmorMaterialImperialLight');
+	removeKeywordV2(e, 'ArmorMaterialImperialStudded');
+	removeKeywordV2(e, 'ArmorMaterialImperialHeavy');
+	removeKeywordV2(e, 'ArmorMaterialStormcloak');
+	removeKeywordV2(e, 'ArmorMaterialBonemold');
+	removeKeywordV2(e, 'ArmorMaterialChitinLight');
+	removeKeywordV2(e, 'ArmorMaterialChitinHeavy');
+	removeKeywordV2(e, 'ArmorMaterialStalhrimLight');
+	removeKeywordV2(e, 'ArmorMaterialStalhrimHeavy');
+	removeKeywordV2(e, 'ArmorMaterialNordicHeavy');
+	
+	{ Faction / Unique Materials }
+	removeKeywordV2(e, 'ArmorMaterialBlades');
+	removeKeywordV2(e, 'ArmorMaterialThievesGuild');
+	removeKeywordV2(e, 'ArmorMaterialThievesGuildLeader');
+	removeKeywordV2(e, 'ArmorMaterialDarkBrotherhood');
+	removeKeywordV2(e, 'ArmorMaterialNightingale');
+	removeKeywordV2(e, 'ArmorMaterialDawnguard');
+
+	{ Safety: Ensure the global material is also removed before re-adding }
+	if GlobalOutfitMaterial <> '' then
+		removeKeyword(e, GlobalOutfitMaterial);
 end;
 
 {========================================================}
 { ADD VITAL ARMOR KEYWORDS                               }
 {========================================================}
-procedure AddVitalKeywords(e: IInterface; Slots: string);
+procedure AddVitalKeywords(e: IInterface; m_sSlots: string);
 var
 	kw: IInterface;
-	m_sig: string;
-	isJewelry, isClothing: Boolean;
+	m_sSig: string;
+	m_bIsJewelry, m_bIsClothing: Boolean;
 begin
-	m_sig := Signature(e);
+	m_sSig := Signature(e);
 
 	{ 1. WEAPON LOGIC }
-	if m_sig = 'WEAP' then begin
+	if m_sSig = 'WEAP' then begin
 		if not HasKeyword(e, 'VendorItemWeapon') then begin
 			kw := GetKeywordByEditorID('VendorItemWeapon');
 			if Assigned(kw) then addKeyword(e, kw);
@@ -734,8 +794,9 @@ begin
 	end;
 
 	{ 2. ARMOR LOGIC }
-	if m_sig = 'ARMO' then begin
-		{ Initial Cleanup: Remove all conflicting Type and Vital keywords }
+	if m_sSig = 'ARMO' then begin
+	
+		{ Initial Cleanup }
 		removeKeyword(e, 'ArmorHelmet');
 		removeKeyword(e, 'ArmorCuirass');
 		removeKeyword(e, 'ArmorGauntlets');
@@ -745,99 +806,46 @@ begin
 		removeKeyword(e, 'ArmorLight');
 		removeKeyword(e, 'ArmorClothing');
 		
-		{ --- MATERIAL CLEANUP & INJECTION --- }
-		{ Remove all potential material keywords }
-		{ Vanilla & Common Materials }
-		removeKeyword(e, 'ArmorMaterialLeather');
-		removeKeyword(e, 'ArmorMaterialScaled');
-		removeKeyword(e, 'ArmorMaterialElven');
-		removeKeyword(e, 'ArmorMaterialElvenGilded');
-		removeKeyword(e, 'ArmorMaterialGlass');
-		removeKeyword(e, 'ArmorMaterialDragonscale');
-		removeKeyword(e, 'ArmorMaterialIron');
-		removeKeyword(e, 'ArmorMaterialIronBanded');
-		removeKeyword(e, 'ArmorMaterialSteel');
-		removeKeyword(e, 'ArmorMaterialDwarven');
-		removeKeyword(e, 'ArmorMaterialSteelPlate');
-		removeKeyword(e, 'ArmorMaterialOrcish');
-		removeKeyword(e, 'ArmorMaterialEbony');
-		removeKeyword(e, 'ArmorMaterialDragonplate');
-		removeKeyword(e, 'ArmorMaterialDaedric');
 		
-		{ DLC / Special Materials }
-		removeKeyword(e, 'ArmorMaterialImperialLight');
-		removeKeyword(e, 'ArmorMaterialImperialStudded');
-		removeKeyword(e, 'ArmorMaterialImperialHeavy');
-		removeKeyword(e, 'ArmorMaterialStormcloak');
-		removeKeyword(e, 'ArmorMaterialBonemold');
-		removeKeyword(e, 'ArmorMaterialChitinLight');
-		removeKeyword(e, 'ArmorMaterialChitinHeavy');
-		removeKeyword(e, 'ArmorMaterialStalhrimLight');
-		removeKeyword(e, 'ArmorMaterialStalhrimHeavy');
-		removeKeyword(e, 'ArmorMaterialNordicHeavy');
-		
-		{ Faction / Unique Materials }
-		removeKeyword(e, 'ArmorMaterialBlades');
-		removeKeyword(e, 'ArmorMaterialThievesGuild');
-		removeKeyword(e, 'ArmorMaterialThievesGuildLeader');
-		removeKeyword(e, 'ArmorMaterialDarkBrotherhood');
-		removeKeyword(e, 'ArmorMaterialNightingale');
-		removeKeyword(e, 'ArmorMaterialDawnguard');
+		removeKeywordV2(e, 'ArmorMaterialLeather');
+		{ --- SYSTEMATIC MATERIAL PURGE --- }
+		//fPurgeAllMaterialKeywords(e);
 
-		{ Add the one true material defined by the file name }
-		if GlobalOutfitMaterial <> '' then begin
-			kw := GetKeywordByEditorID(GlobalOutfitMaterial);
-			if Assigned(kw) then addKeyword(e, kw);
-		end;
-
-		{ Accessory Logic }
-		isJewelry := (Pos('Ring ', Slots) > 0) or (Pos('Amulet ', Slots) > 0) or (Pos('Ears ', Slots) > 0);
-		isClothing := IsVisualSlot(Slots) or isJewelry or (Pos('Backpack ', Slots) > 0);
-
-		if isClothing then begin
-			addKeyword(e, GetKeywordByEditorID('ArmorClothing'));
-			if isJewelry then begin
-				addKeyword(e, GetKeywordByEditorID('VendorItemJewelry'));
-				addKeyword(e, GetKeywordByEditorID('ArmorJewelry'));
-				addKeyword(e, GetKeywordByEditorID('JewelryExpensive'));
-			end else begin
-				addKeyword(e, GetKeywordByEditorID('VendorItemClothing'));
-			end;
-			Exit;
-		end;
-
-		{ Standard Armor Logic }
-		if IsHeavyArmorMaterial(e) then begin
-			addKeyword(e, GetKeywordByEditorID('ArmorHeavy'));
-			addKeyword(e, GetKeywordByEditorID('VendorItemArmor'));
+		{ Inject the one true material defined by the file name }
+		kw := GetKeywordByEditorID(GlobalOutfitMaterial);
+		if not Assigned(kw) then begin
+			//AddMessage('   [DEBUG ERROR] Could not find Keyword Record for: ' + GlobalOutfitMaterial);
 		end else begin
-			addKeyword(e, GetKeywordByEditorID('ArmorLight'));
-			addKeyword(e, GetKeywordByEditorID('VendorItemArmor'));
+			if not IsVisualSlot(GetFirstPersonFlags(e)) then begin
+				addKeyword(e, kw);
+				kw := null;
+			end;
+			//AddMessage('   [DEBUG SUCCESS] Added Keyword: ' + GlobalOutfitMaterial);
 		end;
 
 		{ SHIELD (Slot 39) }
-		if Pos('Shield ', Slots) > 0 then begin
+		if Pos('Shield ', m_sSlots) > 0 then begin
 			kw := GetKeywordByEditorID('ArmorShield');
 			if Assigned(kw) then addKeyword(e, kw);
 			Exit;
 		end;
 
 		{ BODY }
-		if Pos('Body ', Slots) > 0 then begin
+		if Pos('Body ', m_sSlots) > 0 then begin
 			kw := GetKeywordByEditorID('ArmorCuirass');
 			if Assigned(kw) then addKeyword(e, kw);
 			Exit;
 		end;
 
 		{ HEAD / HAIR / CIRCLET }
-		if (Pos('Head ', Slots) > 0) or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0) then begin
+		if (Pos('Head ', m_sSlots) > 0) or (Pos('Hair ', m_sSlots) > 0) or (Pos('Circlet ', m_sSlots) > 0) then begin
 			kw := GetKeywordByEditorID('ArmorHelmet');
 			if Assigned(kw) then addKeyword(e, kw);
 			Exit;
 		end;
 
 		{ HANDS / FOREARMS }
-		if (Pos('Hands ', Slots) > 0) or ((Pos('Forearms ', Slots) > 0)) then begin
+		if (Pos('Hands ', m_sSlots) > 0) or ((Pos('Forearms ', m_sSlots) > 0)) then begin
 			kw := GetKeywordByEditorID('ArmorGauntlets');
 			if Assigned(kw) then addKeyword(e, kw);
 			AddFistKeywords(e);
@@ -845,7 +853,7 @@ begin
 		end;
 
 		{ FEET }
-		if Pos('Feet ', Slots) > 0 then begin
+		if Pos('Feet ', m_sSlots) > 0 then begin
 			kw := GetKeywordByEditorID('ArmorBoots');
 			if Assigned(kw) then addKeyword(e, kw);
 			Exit;
@@ -1796,7 +1804,7 @@ begin
 end;
 
 {========================================================}
-{ UTILITY                                                }
+{                       UTILITY                          }
 {========================================================}
 function addKeyword(itemRecord: IInterface; keyword: IInterface): Integer;
 var
@@ -1879,6 +1887,81 @@ begin
 	if not Assigned(Result) or (FixedFormID(Result) = 0) then begin
 		AddMessage('CRITICAL: Material "' + aName + '" is NULL or 00000000. Check Load Order.');
 		Result := nil;
+	end;
+end;
+
+{ Helper to safely get FormID without "Deep Search" hanging }
+function fGetSafeID(m_sEditorID: string): Cardinal;
+var
+	m_eKw: IInterface;
+begin
+	m_eKw := GetKeywordByEditorID(m_sEditorID);
+	if Assigned(m_eKw) then
+		Result := FixedFormID(m_eKw)
+	else
+		Result := 0;
+end;
+
+procedure fSetupKeywordCache;
+begin
+	AddMessage('--- Initializing Keyword Cache ---');
+	
+	AddMessage('--- Hardcoding Keyword Cache (Fast Path) ---');
+	
+	// Light Materials
+	id_Lr := $00068B82; // ArmorMaterialLeather
+	id_Sd := $00068B84; // ArmorMaterialScaled
+	id_En := $00068B81; // ArmorMaterialElven
+	id_Gs := $00068B83; // ArmorMaterialGlass
+	id_De := $00068B80; // ArmorMaterialDragonscale
+
+	// Heavy Materials
+	id_In := $00068B85; // ArmorMaterialIron
+	id_Sl := $00068B8E; // ArmorMaterialSteel
+	id_Dn := $00068B87; // ArmorMaterialDwarven
+	id_Se := $00068B8F; // ArmorMaterialSteelPlate
+	id_Oh := $00068B8D; // ArmorMaterialOrcish
+	id_Ey := $00068B8C; // ArmorMaterialEbony
+	id_Dc := $00068B8B; // ArmorMaterialDaedric
+	id_Dp := $00068B86; // ArmorMaterialDragonplate
+
+	// Factions / Special
+	id_Dark := $00068B7E; // ArmorMaterialDarkBrotherhood
+	id_Nigh := $00068B7F; // ArmorMaterialNightingale
+	id_Thiv := $00068B8A; // ArmorMaterialThievesGuild
+	id_Blad := $00068B7D; // ArmorMaterialBlades
+	
+	AddMessage('--- Cache Ready ---');
+end;
+
+procedure removeKeywordV2(e: IInterface; m_sKeywordEditorID: string);
+var
+	m_eKeywords, m_eEntry, m_eTargetKw: IInterface;
+	m_iTargetFormID: Cardinal;
+	m_iFoundID: Cardinal;
+	i: Integer;
+begin
+	// 1. Get the FormID of the keyword we want to remove
+	m_eTargetKw := GetKeywordByEditorID(m_sKeywordEditorID);
+	if not Assigned(m_eTargetKw) then Exit; 
+	
+	m_iTargetFormID := FixedFormID(m_eTargetKw);
+
+	// 2. Locate the Keyword Array (KWDA)
+	m_eKeywords := ElementBySignature(e, 'KWDA');
+	if not Assigned(m_eKeywords) then Exit;
+
+	// 3. Loop BACKWARDS to safely remove elements
+	for i := ElementCount(m_eKeywords) - 1 downto 0 do begin
+		m_eEntry := ElementByIndex(m_eKeywords, i);
+		
+		// 4. Get the native FormID value from the entry
+		// This bypasses EditorID/LinksTo naming issues
+		m_iFoundID := GetNativeValue(m_eEntry);
+		
+		if m_iFoundID = m_iTargetFormID then begin
+			RemoveElement(m_eKeywords, i);
+		end;
 	end;
 end;
 
@@ -2557,25 +2640,10 @@ begin
 		end;
 		
 		{ Check if armor considered as "Visual Armor Slot" }
-		if IsVisualSlot(GetFirstPersonFlags(itemRecord)) then begin
+		if IsVisualSlot(GetFirstPersonFlags(itemRecord))then begin
 			addItemV2(recipeItems, GetMaterial('Leather01'), 1);
 			addItemV2(recipeItems, GetMaterial('LeatherStrips'), 1);
 			addItemV2(recipeItems, GetMaterial('IngotIron'), 1);
-			
-			{ Prevents "Phantom Perks" where accessories trigger high-tier armor buffs }
-			removeKeyword(itemRecord, 'ArmorMaterialIron');
-			removeKeyword(itemRecord, 'ArmorMaterialSteel');
-			removeKeyword(itemRecord, 'ArmorMaterialDwarven');
-			removeKeyword(itemRecord, 'ArmorMaterialOrcish');
-			removeKeyword(itemRecord, 'ArmorMaterialSteelPlate');
-			removeKeyword(itemRecord, 'ArmorMaterialEbony');
-			removeKeyword(itemRecord, 'ArmorMaterialDaedric');
-			removeKeyword(itemRecord, 'ArmorMaterialDragonplate');
-			removeKeyword(itemRecord, 'ArmorMaterialLeather');
-			removeKeyword(itemRecord, 'ArmorMaterialScaled');
-			removeKeyword(itemRecord, 'ArmorMaterialElven');
-			removeKeyword(itemRecord, 'ArmorMaterialGlass');
-			removeKeyword(itemRecord, 'ArmorMaterialDragonscale');
 			
 			{ Cleanup and Validation }
 			removeInvalidEntries(recipeCraft);
@@ -2586,36 +2654,6 @@ begin
 			Exit;
 		end;
 		
-		{ Check if armor considered as "Armor Clothing" }
-		if HasKeyword(itemRecord, 'ArmorClothing') then begin
-			addItemV2(recipeItems, GetMaterial('Leather01'), 1);
-			addItemV2(recipeItems, GetMaterial('LeatherStrips'), 1);
-			addItemV2(recipeItems, GetMaterial('IngotIron'), 1);
-			
-			{ Prevents "Phantom Perks" where accessories trigger high-tier armor buffs }
-			removeKeyword(itemRecord, 'ArmorMaterialIron');
-			removeKeyword(itemRecord, 'ArmorMaterialSteel');
-			removeKeyword(itemRecord, 'ArmorMaterialDwarven');
-			removeKeyword(itemRecord, 'ArmorMaterialOrcish');
-			removeKeyword(itemRecord, 'ArmorMaterialSteelPlate');
-			removeKeyword(itemRecord, 'ArmorMaterialEbony');
-			removeKeyword(itemRecord, 'ArmorMaterialDaedric');
-			removeKeyword(itemRecord, 'ArmorMaterialDragonplate');
-			removeKeyword(itemRecord, 'ArmorMaterialLeather');
-			removeKeyword(itemRecord, 'ArmorMaterialScaled');
-			removeKeyword(itemRecord, 'ArmorMaterialElven');
-			removeKeyword(itemRecord, 'ArmorMaterialGlass');
-			removeKeyword(itemRecord, 'ArmorMaterialDragonscale');
-			
-			{ Cleanup and Validation }
-			removeInvalidEntries(recipeCraft);
-			if GetElementEditValues(recipeCraft, 'COCT') = '' then begin
-				warn('No item requirements specified for: ' + Name(recipeCraft));
-			end;
-			
-			Result := recipeCraft;
-			Exit;
-		end;
 
 		{========================================================}
 		{ LIGHT ARMOR SETS                                       }
