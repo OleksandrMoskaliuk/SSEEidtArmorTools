@@ -89,7 +89,7 @@ begin
 
 	{ Set Global Values }
 	GlobalSmithingReq := 5; // Smithing Skill Level 0 - 100;
-	GlobalPlayerLevelReq := 0; // (GlobalSmithingReq + 20) / 2.0;
+	GlobalPlayerLevelReq := 0; // (GlobalSmithingReq * 0.8);
 	GlobalArmorBonus := GlobalSmithingReq / 15.0; // Too much ArmorRating will cause Requiem script to fail
 	GlobalFileName := '';
 	GlobalOutfitMaterial := '';
@@ -222,7 +222,7 @@ begin
 			GlobalMaterialCode := sMat;
 			GlobalSmithingReq  := iTempLevel;
 			// Final calculation for Character Level
-			GlobalPlayerLevelReq := Round((GlobalSmithingReq + 20) / 2.0);
+			GlobalPlayerLevelReq := Round(GlobalSmithingReq * 0.8);
 			
 			AddMessage('   Detected: ' + GlobalFileName + ' [' + GlobalOutfitMaterial + ']');
 			Result := True;
