@@ -1,6 +1,8 @@
+---
+
 # 📜 ClarityForge: Preparation & Usage Guide
 
-To ensure the script functions correctly and follows your **Game Balance Philosophy**, files must follow a specific naming convention. The script uses the filename to determine material types, skill requirements, and character progression gating.
+To ensure the script functions correctly files must follow a specific naming convention. The script uses the filename to determine material types, skill requirements, and character progression gating.
 
 ---
 
@@ -21,11 +23,13 @@ The script identifies valid files by scanning for the `CF_` tag. Your filename d
 
 ### **Automated Level Gating**
 
-The script calculates the **Character Level Requirement** using the formula:
+The script now enforces two layers of progression gating:
 
-`GlobalPlayerLevelReq := (SmithingLevel * 0.8)`
+1. **Skill Gating:** The `SmithingLevel` (e.g., 80) is required to craft the item.
+2. **Character Gating:** The script calculates the **Character Level Requirement** using the formula:
+`GlobalPlayerLevelReq := Round(SmithingLevel * PLAYER_LEVEL_REQUIREMENT)`
 
-*Example: A Level 80 Ebony set will require the player to be Character Level 50.*
+*Example: With `PLAYER_LEVEL_REQUIREMENT = 0.75`, a Level 80 Ebony set will require the player to be **Character Level 60** to craft.*
 
 ---
 
@@ -35,9 +39,8 @@ Before running the script, you **MUST** perform these steps in xEdit:
 
 1. **Set First Person Flags (BOD2):** Define which body parts the item covers. This is the primary data used to distinguish between **Gameplay** and **Visual** slots.
 2. **Naming Convention:** Ensure the `.esp` or `.esl` is named using the **NameCode** system above.
-* *Note: The script now automatically purges conflicting material keywords and injects the correct one based on the filename.*
 
-
+* **Keyword Management:** The script now utilizes a **High-Speed FormID Cache** to automatically purge conflicting material and type keywords and inject the correct ones. This ensures your patch overrides are "clean" and free of legacy metadata.
 
 ---
 
@@ -57,23 +60,24 @@ ClarityForge automatically generates a **Unique Crafting Manual** for every outf
 ### 1. Crafting & Progression
 
 * **`REQUIRED_SMITHING_SKILL`** (Detected from Filename)
-* **Forge Logic:** Recipes require this base skill level to appear.
-* **Armor Bonus:** Base protection increases by `Skill / 15.0`.
-
-
+* **`PLAYER_LEVEL_REQUIREMENT`** (Default: 0.75) - The ratio of Player Level to Smithing Level required to craft.
+* **Forge Logic:** Recipes require both levels to appear in the crafting menu.
+* **Armor Bonus:** Base protection increases dynamically. Current formula: `BaseAR + (SmithingLevel / 15)`.
 * **`FOR_FEMALE_ONLY`** (Default: True)
 * Injects a gender check (`GetIsSex`) into the recipe for female-only outfits.
-
-
 
 ### 2. Balance & Difficulty
 
 * **`ADVANCED_ENCHANTMENT_PROTECTION`** (Default: True)
-    * Injects a **Dummy Enchantment** into Visual Slots. This fills the `EITM` slot, preventing mods like **Enchantment Swapper** from adding "free" enchantments to accessory slots.
+* Injects a **Dummy Enchantment** into Visual Slots. This fills the `EITM` slot, preventing mods like **Enchantment Swapper** from adding "free" enchantments to accessory slots.
+
+
 * **`BACKPACK_SLOT_ENCHANTABLE`** (Default: False)
-    * Determines if **Slot 47** (Backpacks/Utility) is a gameplay or visual slot. Setting this to `False` prevents power-creep.
+* Determines if **Slot 47** (Backpacks/Utility) is a gameplay or visual slot. Setting this to `False` prevents power-creep.
+
+
 * **`FOREARMS_DEBUFF_MULTIPLIER`** (Default: 2.5)
-    * Applies a debuff to **Slot 34** if used as primary protection. Discourages "slot-stacking" with vanilla gauntlets.
+* Applies a debuff to **Slot 34** if used as primary protection. Discourages "slot-stacking" with vanilla gauntlets.
 
 
 
@@ -84,13 +88,13 @@ ClarityForge automatically generates a **Unique Crafting Manual** for every outf
 ### Visual Slot Finalization
 
 * **Definition:** Any item not occupying a primary combat slot (Head, Body, Hands, Feet, Shield).
-* **Stats:** Set to **0.1 Weight**, **0 Armor Rating**, and **(25 + SmithingReq) Gold Value**.
+* **Stats:** Set to **Weight = 0.1 **, **Armor Rating = 0**, and **Price = (25 + SmithingReq)**.
 
 ### Weapon Balancing
 
 * **Base Stats:** Synchronized with **UESP Wiki** values based on Material and Type.
 * **Lethality Bonus:** Damage scales based on `REQUIRED_SMITHING_SKILL`.
-* **Vendor Integration:** Automatically assigns `VendorItemWeapon` if missing..
+* **Vendor Integration:** Automatically assigns `VendorItemWeapon` if missing.
 
 ---
 
@@ -98,3 +102,5 @@ ClarityForge automatically generates a **Unique Crafting Manual** for every outf
 
 * **One BOD2 (First Person Flag) Rule:** Each record **MUST** have exactly **ONE** `BOD2` flag set to be identified correctly as a specific part (Helmet, Cuirass, etc.).
 * **Filename Dependency:** If the `CF_` tag or material code is missing/incorrect, the script will skip the file entirely for safety.
+
+---

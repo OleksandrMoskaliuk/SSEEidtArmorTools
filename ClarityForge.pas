@@ -46,6 +46,7 @@ const
 	{                     CONFIGURATION                      }
 	{========================================================}
 	FOR_FEMALE_ONLY = True;
+	PLAYER_LEVEL_REQUIREMENT = 0.75; // Max Player Level in order to create smithig lv 100 equipment. Set to 0 to disable.
 	BACKPACK_SLOT_ENCHANTABLE = True;
 	ADVANCED_ENCHANTMENT_PROTECTION = True;
 	FOREARMS_SLOT_ALWAYS_ENCHANTABLE = True; // If True Forearms will be always enchantable.
@@ -88,7 +89,7 @@ begin
 
 	{ Set Global Values }
 	GlobalSmithingReq := 5; // Smithing Skill Level 0 - 100;
-	GlobalPlayerLevelReq := 0; // (GlobalSmithingReq * 0.8);
+	GlobalPlayerLevelReq := 0; // (GlobalSmithingReq * PLAYER_LEVEL_REQUIREMENT);
 	GlobalArmorBonus := GlobalSmithingReq / 15.0; // Too much ArmorRating will cause Requiem script to fail
 	GlobalFileName := '';
 	GlobalOutfitMaterial := '';
@@ -216,7 +217,7 @@ begin
 		if (iTempLevel >= 5) and (iTempLevel <= 100) then begin
 			GlobalSmithingReq  := iTempLevel;
 			// Final calculation for Character Level
-			GlobalPlayerLevelReq := Round(GlobalSmithingReq * 0.8);
+			GlobalPlayerLevelReq := Round(GlobalSmithingReq * PLAYER_LEVEL_REQUIREMENT);
 			
 			AddMessage('   Detected: ' + GlobalFileName + ' [' + GlobalOutfitMaterial + ']');
 			Result := True;
