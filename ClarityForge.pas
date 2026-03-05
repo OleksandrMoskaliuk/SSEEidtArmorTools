@@ -73,12 +73,6 @@ var
 	GlobalOutfitMaterial: string;
 	GlobalVarFileName: string;
 	GlobalPatchFile: IInterface;
-	// Materials Cache
-	id_Lr, id_Sd, id_En, id_Gs, id_De: Cardinal; // Light
-	id_In, id_Sl, id_Dn, id_Se, id_Oh, id_Ey, id_Dc, id_Dp: Cardinal; // Heavy
-	// DLC / Faction Cache
-	id_ImpL, id_ImpS, id_ImpH, id_Stm, id_Bone, id_ChitL, id_ChitH, id_StalL, id_StalH, id_Nord: Cardinal;
-	id_Blad, id_Thiv, id_ThivL, id_Dark, id_Nigh, id_Dawn: Cardinal;
 
 {========================================================}
 { INITIALIZE                                             }
@@ -120,8 +114,6 @@ begin
 	GlobalVarFileName := 'ClarityForge_Patch.esp';
 	
 	GlobalPatchFile := fAddNewFile(GlobalVarFileName, true);
-	
-	fSetupKeywordCache();
 	
 	// Exit if initialization failed
 	if not Assigned(GlobalPatchFile) then begin
@@ -712,7 +704,6 @@ begin
 		SetEditValue(armorTypeField, 'Heavy Armor');
 		addKeyword(e, GetKeywordByEditorID('ArmorHeavy'));
 		addKeyword(e, GetKeywordByEditorID('VendorItemArmor'));			
-		removeKeyword(e, 'ArmorClothing');
 		Exit;
 	end;
 	
@@ -720,7 +711,6 @@ begin
 		SetEditValue(armorTypeField, 'Light Armor');
 		addKeyword(e, GetKeywordByEditorID('ArmorLight'));
 		addKeyword(e, GetKeywordByEditorID('VendorItemArmor'));
-		removeKeyword(e, 'ArmorClothing');
 		Exit;
 	end;
 	
@@ -770,7 +760,7 @@ begin
 
 	{ Safety: Ensure the global material is also removed before re-adding }
 	if GlobalOutfitMaterial <> '' then
-		removeKeyword(e, GlobalOutfitMaterial);
+		removeKeywordV2(e, GlobalOutfitMaterial);
 end;
 
 {========================================================}
@@ -797,14 +787,14 @@ begin
 	if m_sSig = 'ARMO' then begin
 	
 		{ Initial Cleanup }
-		removeKeyword(e, 'ArmorHelmet');
-		removeKeyword(e, 'ArmorCuirass');
-		removeKeyword(e, 'ArmorGauntlets');
-		removeKeyword(e, 'ArmorBoots');
-		removeKeyword(e, 'ArmorShield');
-		removeKeyword(e, 'ArmorHeavy');
-		removeKeyword(e, 'ArmorLight');
-		removeKeyword(e, 'ArmorClothing');
+		removeKeywordV2(e, 'ArmorHelmet');
+		removeKeywordV2(e, 'ArmorCuirass');
+		removeKeywordV2(e, 'ArmorGauntlets');
+		removeKeywordV2(e, 'ArmorBoots');
+		removeKeywordV2(e, 'ArmorShield');
+		removeKeywordV2(e, 'ArmorHeavy');
+		removeKeywordV2(e, 'ArmorLight');
+		removeKeywordV2(e, 'ArmorClothing');
 		
 		
 		removeKeywordV2(e, 'ArmorMaterialLeather');
@@ -1902,38 +1892,6 @@ begin
 		Result := 0;
 end;
 
-procedure fSetupKeywordCache;
-begin
-	AddMessage('--- Initializing Keyword Cache ---');
-	
-	AddMessage('--- Hardcoding Keyword Cache (Fast Path) ---');
-	
-	// Light Materials
-	id_Lr := $00068B82; // ArmorMaterialLeather
-	id_Sd := $00068B84; // ArmorMaterialScaled
-	id_En := $00068B81; // ArmorMaterialElven
-	id_Gs := $00068B83; // ArmorMaterialGlass
-	id_De := $00068B80; // ArmorMaterialDragonscale
-
-	// Heavy Materials
-	id_In := $00068B85; // ArmorMaterialIron
-	id_Sl := $00068B8E; // ArmorMaterialSteel
-	id_Dn := $00068B87; // ArmorMaterialDwarven
-	id_Se := $00068B8F; // ArmorMaterialSteelPlate
-	id_Oh := $00068B8D; // ArmorMaterialOrcish
-	id_Ey := $00068B8C; // ArmorMaterialEbony
-	id_Dc := $00068B8B; // ArmorMaterialDaedric
-	id_Dp := $00068B86; // ArmorMaterialDragonplate
-
-	// Factions / Special
-	id_Dark := $00068B7E; // ArmorMaterialDarkBrotherhood
-	id_Nigh := $00068B7F; // ArmorMaterialNightingale
-	id_Thiv := $00068B8A; // ArmorMaterialThievesGuild
-	id_Blad := $00068B7D; // ArmorMaterialBlades
-	
-	AddMessage('--- Cache Ready ---');
-end;
-
 procedure removeKeywordV2(e: IInterface; m_sKeywordEditorID: string);
 var
 	m_eKeywords, m_eEntry, m_eTargetKw: IInterface;
@@ -2191,8 +2149,6 @@ begin
 		SetElementEditValues(newItem, 'LVLO\Reference', IntToHex(FixedFormID(item), 8));
 		SetElementEditValues(newItem, 'LVLO\Count', IntToStr(amount));
 	end;
-	
-	
 	
 	Result := newItem;
 end;
