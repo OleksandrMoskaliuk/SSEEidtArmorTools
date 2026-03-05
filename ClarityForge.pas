@@ -43,7 +43,7 @@ uses SK_UtilsRemake;
 
 const
 	{========================================================}
-	{ GLOBAL VARS CONFIGURATION                              }
+	{                     CONFIGURATION                      }
 	{========================================================}
 	FOR_FEMALE_ONLY = True;
 	BACKPACK_SLOT_ENCHANTABLE = True;
@@ -75,7 +75,7 @@ var
 	GlobalPatchFile: IInterface;
 
 {========================================================}
-{ INITIALIZE                                             }
+{                   INITIALIZE                           }
 {========================================================}
 function Initialize: Integer;
 begin
@@ -145,7 +145,7 @@ begin
 end;
 
 {========================================================}
-{ CREATE DUMMY ENCHANTMENT                               }
+{              CREATE DUMMY ENCHANTMENT                  }
 {========================================================}
 function CreateDummyEnchantment(f: IInterface): IInterface;
 var
@@ -186,7 +186,7 @@ begin
 end;
 
 {========================================================}
-{ CLARITY FORGE FILE DETECTION                           }
+{             CLARITY FORGE FILE DETECTION               }
 {========================================================}
 function fIsClarityForgeApplicable(m_sFileName: string): Boolean;
 var
@@ -225,7 +225,7 @@ begin
 end;
 
 {========================================================}
-{              PROCESS ARMOR RECORDS IN FILE             }
+{            PROCESS ARMOR RECORDS IN FILE               }
 {========================================================}
 procedure fProcessArmorRecords(m_f: IInterface);
 var
@@ -273,7 +273,7 @@ begin
 			m_Slots := GetFirstPersonFlags(m_NewRecord);
 			
 			// Classification & Cleanup
-			AddVitalKeywords(m_NewRecord, m_Slots);
+			fKeywordsSetUp(m_NewRecord, m_Slots);
 
 			// Material Logic: Heavy/Light/Clothing
 			SetArmorType(m_NewRecord);
@@ -340,7 +340,7 @@ begin
 			m_NewRecord := fOverrideRecordToPatch(CurrentRecord, GlobalPatchFile, ('Weapon Lv ' + IntToStr(GlobalSmithingReq) + ' '));
 			
 			//Standardize Weapon Keywords (VendorItemWeapon, etc.)
-			AddVitalKeywords(m_NewRecord, '');
+			fKeywordsSetUp(m_NewRecord, '');
 			
 			m_WeaponDamage := GetVanillaWDamage(m_NewRecord);
 			SetElementEditValues(m_NewRecord, 'DATA\Damage', IntToStr(m_WeaponDamage));
@@ -579,7 +579,7 @@ begin
 end;
 
 {========================================================}
-{ PROTECTION FROM ENCHANTMENTS                           }
+{              PROTECTION FROM ENCHANTMENTS              }
 {========================================================}
 procedure fAddEnchProtection(e: IInterface; enc: IInterface);
 var
@@ -633,7 +633,7 @@ begin
 end;
 
 {========================================================}
-{ MATERIAL CHECKS                                        }
+{               MATERIAL CHECKS                          }
 {========================================================}
 function fIsLightArmorMaterial: Boolean;
 begin
@@ -666,7 +666,7 @@ begin
 end;
 
 {========================================================}
-{ SET ARMOR TYPE                                         }
+{               SET ARMOR TYPE                           }
 {========================================================}
 procedure SetArmorType(e: IInterface);
 var
@@ -721,6 +721,17 @@ end;
 {========================================================}
 procedure fPurgeAllMaterialKeywords(e: IInterface);
 begin
+
+	{ Initial Cleanup }
+		removeKeywordV2(e, 'ArmorHelmet');
+		removeKeywordV2(e, 'ArmorCuirass');
+		removeKeywordV2(e, 'ArmorGauntlets');
+		removeKeywordV2(e, 'ArmorBoots');
+		removeKeywordV2(e, 'ArmorShield');
+		removeKeywordV2(e, 'ArmorHeavy');
+		removeKeywordV2(e, 'ArmorLight');
+		removeKeywordV2(e, 'ArmorClothing');
+		
 	{ Vanilla & Common Materials }
 	removeKeywordV2(e, 'ArmorMaterialLeather');
 	removeKeywordV2(e, 'ArmorMaterialScaled');
@@ -764,9 +775,9 @@ begin
 end;
 
 {========================================================}
-{ ADD VITAL ARMOR KEYWORDS                               }
+{                    KEYWORDS                            }
 {========================================================}
-procedure AddVitalKeywords(e: IInterface; m_sSlots: string);
+procedure fKeywordsSetUp(e: IInterface; m_sSlots: string);
 var
 	kw: IInterface;
 	m_sSig: string;
@@ -785,32 +796,17 @@ begin
 
 	{ 2. ARMOR LOGIC }
 	if m_sSig = 'ARMO' then begin
-	
-		{ Initial Cleanup }
-		removeKeywordV2(e, 'ArmorHelmet');
-		removeKeywordV2(e, 'ArmorCuirass');
-		removeKeywordV2(e, 'ArmorGauntlets');
-		removeKeywordV2(e, 'ArmorBoots');
-		removeKeywordV2(e, 'ArmorShield');
-		removeKeywordV2(e, 'ArmorHeavy');
-		removeKeywordV2(e, 'ArmorLight');
-		removeKeywordV2(e, 'ArmorClothing');
 		
-		
-		removeKeywordV2(e, 'ArmorMaterialLeather');
-		{ --- SYSTEMATIC MATERIAL PURGE --- }
-		//fPurgeAllMaterialKeywords(e);
+		// Clean record from common Keywords
+		fPurgeAllMaterialKeywords(e);
 
 		{ Inject the one true material defined by the file name }
 		kw := GetKeywordByEditorID(GlobalOutfitMaterial);
-		if not Assigned(kw) then begin
-			//AddMessage('   [DEBUG ERROR] Could not find Keyword Record for: ' + GlobalOutfitMaterial);
-		end else begin
+		if  Assigned(kw) then begin
 			if not IsVisualSlot(GetFirstPersonFlags(e)) then begin
 				addKeyword(e, kw);
 				kw := null;
 			end;
-			//AddMessage('   [DEBUG SUCCESS] Added Keyword: ' + GlobalOutfitMaterial);
 		end;
 
 		{ SHIELD (Slot 39) }
@@ -851,7 +847,7 @@ begin
 	end;
 end;
 {========================================================}
-{ ADD FIST KEYWORDS                                      }
+{               ADD FIST KEYWORDS                        }
 {========================================================}
 procedure AddFistKeywords(e: IInterface);
 var
@@ -879,7 +875,7 @@ begin
 end;
 
 {========================================================}
-{ GET VANILLA WEAPON DAMAGE                              }
+{            GET VANILLA WEAPON DAMAGE                   }
 {========================================================}
 function GetVanillaWDamage(e: IInterface): Integer;
 var
@@ -2311,9 +2307,10 @@ begin
 		tmpKeywordsCollection := ElementBySignature(itemRecord, 'KWDA');
 		
 		{ 4. Add your global skill requirement condition (e.g. Smithing 25) }
-		if GlobalSmithingReq > 0 then begin
-			addSkillCondition(recipeCraft, GlobalSmithingReq);
-		end;
+		addSkillCondition(recipeCraft, GlobalSmithingReq);
+		
+		{ 5. Add Player Level  condition }
+		fAddPlayerLevelCondition(recipeCraft, GlobalPlayerLevelReq);
 		
 		SetElementEditValues(recipeCraft, 'EDID', 'RecipeWeapon' + GetElementEditValues(itemRecord, 'EDID'));
 		SetElementEditValues(recipeCraft, 'BNAM', GetEditValue(getRecordByFormID(WEAPON_CRAFTING_WORKBENCH_FORM_ID)));
