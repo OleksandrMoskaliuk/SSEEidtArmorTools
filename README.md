@@ -23,7 +23,7 @@ The script identifies valid files by scanning for the `CF_` tag. Your filename d
 
 The script calculates the **Character Level Requirement** using the formula:
 
-`GlobalPlayerLevelReq := (SmithingLevel + 20) / 2`
+`GlobalPlayerLevelReq := (SmithingLevel * 0.8)`
 
 *Example: A Level 80 Ebony set will require the player to be Character Level 50.*
 
