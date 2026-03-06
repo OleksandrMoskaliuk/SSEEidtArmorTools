@@ -217,7 +217,7 @@ begin
 		if (iTempLevel >= 5) and (iTempLevel <= 100) then begin
 			GlobalSmithingReq  := iTempLevel;
 			// Final calculation for Character Level
-			GlobalPlayerLevelReq := Round(GlobalSmithingReq * PLAYER_LEVEL_REQUIREMENT);
+			GlobalPlayerLevelReq := fGetCurvedPlayerLevel(GlobalSmithingReq);
 			
 			AddMessage('   Detected: ' + GlobalFileName + ' [' + GlobalOutfitMaterial + ']');
 			Result := True;
@@ -1916,6 +1916,29 @@ begin
 			RemoveElement(m_eKeywords, i);
 		end;
 	end;
+end;
+
+
+function fGetCurvedPlayerLevel(m_iSmithing: Integer): Integer;
+var
+	m_fProgress: Double;
+begin
+	// If skill is 0 or negative, default to Level 1
+	if m_iSmithing <= 0 then begin
+		Result := 1;
+		Exit;
+	end;
+
+	// 1. Normalize smithing to a 0.0 -> 1.0 range
+	m_fProgress := m_iSmithing / 100.0;
+
+	// 2. Quadratic Curve Formula: 1 + (59 * Progress^2)
+	// We use (m_fProgress * m_fProgress) for a clean squared result
+	Result := Round(1 + (59.0 * (m_fProgress * m_fProgress)));
+
+	// 3. Final safety clamp to your specified range (1 to 60)
+	if Result < 1 then Result := 1;
+	if Result > 60 then Result := 60;
 end;
 
 {========================================================}
