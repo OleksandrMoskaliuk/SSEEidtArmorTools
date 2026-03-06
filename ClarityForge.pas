@@ -755,20 +755,18 @@ begin
 	removeKeywordV2(e, 'ArmorMaterialImperialStudded');
 	removeKeywordV2(e, 'ArmorMaterialImperialHeavy');
 	removeKeywordV2(e, 'ArmorMaterialStormcloak');
-	removeKeywordV2(e, 'ArmorMaterialBonemold');
-	removeKeywordV2(e, 'ArmorMaterialChitinLight');
-	removeKeywordV2(e, 'ArmorMaterialChitinHeavy');
-	removeKeywordV2(e, 'ArmorMaterialStalhrimLight');
-	removeKeywordV2(e, 'ArmorMaterialStalhrimHeavy');
-	removeKeywordV2(e, 'ArmorMaterialNordicHeavy');
+	removeKeywordV2(e, 'DLC2ArmorMaterialBonemoldLight');
+	removeKeywordV2(e, 'DLC2ArmorMaterialChitinLight');
+	removeKeywordV2(e, 'DLC2ArmorMaterialChitinHeavy');
+	removeKeywordV2(e, 'DLC2ArmorMaterialStalhrimLight');
+	removeKeywordV2(e, 'DLC2ArmorMaterialStalhrimHeavy');
+	removeKeywordV2(e, 'DLC2ArmorMaterialNordicHeavy');
 	
 	{ Faction / Unique Materials }
 	removeKeywordV2(e, 'ArmorMaterialBlades');
 	removeKeywordV2(e, 'ArmorMaterialThievesGuild');
 	removeKeywordV2(e, 'ArmorMaterialThievesGuildLeader');
-	removeKeywordV2(e, 'ArmorMaterialDarkBrotherhood');
-	removeKeywordV2(e, 'ArmorMaterialNightingale');
-	removeKeywordV2(e, 'ArmorMaterialDawnguard');
+	removeKeywordV2(e, 'DLC1ArmorMaterialDawnguard');
 
 	{ Safety: Ensure the global material is also removed before re-adding }
 	if GlobalOutfitMaterial <> '' then
