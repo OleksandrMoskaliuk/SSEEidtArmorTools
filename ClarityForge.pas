@@ -46,7 +46,6 @@ const
 	{                     CONFIGURATION                      }
 	{========================================================}
 	FOR_FEMALE_ONLY = True;
-	PLAYER_LEVEL_REQUIREMENT = 0.75; // Max Player Level in order to create smithig lv 100 equipment. Set to 0 to disable.
 	BACKPACK_SLOT_ENCHANTABLE = True;
 	ADVANCED_ENCHANTMENT_PROTECTION = True;
 	FOREARMS_SLOT_ALWAYS_ENCHANTABLE = True; // If True Forearms will be always enchantable.
@@ -89,7 +88,7 @@ begin
 
 	{ Set Global Values }
 	GlobalSmithingReq := 5; // Smithing Skill Level 0 - 100;
-	GlobalPlayerLevelReq := 0; // (GlobalSmithingReq * PLAYER_LEVEL_REQUIREMENT);
+	GlobalPlayerLevelReq := 0;
 	GlobalArmorBonus := GlobalSmithingReq / 15.0; // Too much ArmorRating will cause Requiem script to fail
 	GlobalFileName := '';
 	GlobalOutfitMaterial := '';
@@ -295,14 +294,12 @@ begin
 			// Crafting
 			MakeCraftableV2(m_NewRecord);
 			
-			// Tempering: Block Clothing and Visual Slots
-			if (not IsVisualSlot(m_Slots)) and (not HasKeyword(m_NewRecord, 'ArmorClothing')) then begin
-				currentKeywordEDID := 'TemperArmor' + GetElementEditValues(m_NewRecord, 'EDID');
-				recipeCraft := MainRecordByEditorID(GroupBySignature(GlobalPatchFile, 'COBJ'), currentKeywordEDID);
-				// If not found, skip temper creation
-				if not Assigned(recipeCraft) then begin
-					makeTemperable(m_NewRecord);
-				end;
+			// Tempering: Block Clothing, Jewelry and Visual Slots
+			if not (HasKeyword(m_NewRecord, 'ArmorClothing') 
+				or HasKeyword(m_NewRecord, 'ArmorJewelry') 
+				or IsVisualSlot(m_Slots)) then begin
+				makeTemperable(m_NewRecord);
+				
 			end;
 			
 		end;
@@ -751,22 +748,22 @@ begin
 	removeKeywordV2(e, 'ArmorMaterialDaedric');
 	
 	{ DLC / Special Materials }
-	removeKeywordV2(e, 'ArmorMaterialImperialLight');
-	removeKeywordV2(e, 'ArmorMaterialImperialStudded');
-	removeKeywordV2(e, 'ArmorMaterialImperialHeavy');
-	removeKeywordV2(e, 'ArmorMaterialStormcloak');
-	removeKeywordV2(e, 'DLC2ArmorMaterialBonemoldLight');
-	removeKeywordV2(e, 'DLC2ArmorMaterialChitinLight');
-	removeKeywordV2(e, 'DLC2ArmorMaterialChitinHeavy');
-	removeKeywordV2(e, 'DLC2ArmorMaterialStalhrimLight');
-	removeKeywordV2(e, 'DLC2ArmorMaterialStalhrimHeavy');
-	removeKeywordV2(e, 'DLC2ArmorMaterialNordicHeavy');
+	{ removeKeywordV2(e, 'ArmorMaterialImperialLight'); }
+	{ removeKeywordV2(e, 'ArmorMaterialImperialStudded'); }
+	{ removeKeywordV2(e, 'ArmorMaterialImperialHeavy'); }
+	{ removeKeywordV2(e, 'ArmorMaterialStormcloak'); }
+	{ removeKeywordV2(e, 'DLC2ArmorMaterialBonemoldLight'); }
+	{ removeKeywordV2(e, 'DLC2ArmorMaterialChitinLight'); }
+	{ removeKeywordV2(e, 'DLC2ArmorMaterialChitinHeavy'); }
+	{ removeKeywordV2(e, 'DLC2ArmorMaterialStalhrimLight'); }
+	{ removeKeywordV2(e, 'DLC2ArmorMaterialStalhrimHeavy'); }
+	{ removeKeywordV2(e, 'DLC2ArmorMaterialNordicHeavy'); }
 	
 	{ Faction / Unique Materials }
-	removeKeywordV2(e, 'ArmorMaterialBlades');
-	removeKeywordV2(e, 'ArmorMaterialThievesGuild');
-	removeKeywordV2(e, 'ArmorMaterialThievesGuildLeader');
-	removeKeywordV2(e, 'DLC1ArmorMaterialDawnguard');
+	{ removeKeywordV2(e, 'ArmorMaterialBlades'); }
+	{ removeKeywordV2(e, 'ArmorMaterialThievesGuild'); }
+	{ removeKeywordV2(e, 'ArmorMaterialThievesGuildLeader'); }
+	{ removeKeywordV2(e, 'DLC1ArmorMaterialDawnguard'); }
 
 	{ Safety: Ensure the global material is also removed before re-adding }
 	if GlobalOutfitMaterial <> '' then
