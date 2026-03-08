@@ -295,11 +295,8 @@ begin
 			MakeCraftableV2(m_NewRecord);
 			
 			// Tempering: Block Clothing, Jewelry and Visual Slots
-			if not (HasKeyword(m_NewRecord, 'ArmorClothing') 
-				or HasKeyword(m_NewRecord, 'ArmorJewelry') 
-				or IsVisualSlot(m_Slots)) then begin
+			if (IsVisualSlot(m_Slots) = False) then begin
 				makeTemperable(m_NewRecord);
-				
 			end;
 			
 		end;
@@ -2522,7 +2519,7 @@ begin
 				Exit;
 			end;
 		end else begin
-			currentKeywordEDID := 'RecipeArmor' + GetElementEditValues(itemRecord, 'EDID');
+			currentKeywordEDID := 'CF_RecipeArmor' + GetElementEditValues(itemRecord, 'EDID');
 			recipeCraft := MainRecordByEditorID(GroupBySignature(GlobalPatchFile, 'COBJ'), currentKeywordEDID);
 			// If found, skip creation and just return the existing record
 			if Assigned(recipeCraft) then begin
@@ -2550,10 +2547,10 @@ begin
 		
 		{ Set Recipe Identity  For Visual Slot Only}
 		if IsVisualSlot(GetFirstPersonFlags(itemRecord))then begin
-			SetElementEditValues(recipeCraft, 'EDID', 'RecipeVisulaSlot' + GetElementEditValues(itemRecord, 'EDID'));
+			SetElementEditValues(recipeCraft, 'EDID', 'CF_RecipeVisulaSlot' + GetElementEditValues(itemRecord, 'EDID'));
 			SetElementEditValues(recipeCraft, 'BNAM', GetEditValue(getRecordByFormID(ARMOR_CRAFTING_WORKBENCH_FORM_ID)));
 		end else begin
-			SetElementEditValues(recipeCraft, 'EDID', 'RecipeArmor' + GetElementEditValues(itemRecord, 'EDID'));
+			SetElementEditValues(recipeCraft, 'EDID', 'CF_RecipeArmor' + GetElementEditValues(itemRecord, 'EDID'));
 			SetElementEditValues(recipeCraft, 'BNAM', GetEditValue(getRecordByFormID(ARMOR_CRAFTING_WORKBENCH_FORM_ID)));
 		end;
 		{ If Armor is ony for Female actor }
