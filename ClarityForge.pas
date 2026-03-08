@@ -364,36 +364,33 @@ end;
 {========================================================}
 procedure fNullifyOriginalRecipes(m_fSource: IInterface; m_fPatch: IInterface);
 var
-	GroupCOBJ, CurrentRecipe, OverriddenRecipe: IInterface;
+	m_gCOBJ, m_eCurrent, m_eOverride: IInterface;
 	i: Integer;
-	sResultItem: string;
 begin
-	// 1. Locate the COBJ group in the source file
-	GroupCOBJ := GroupBySignature(m_fSource, 'COBJ');
+	m_gCOBJ := GroupBySignature(m_fSource, 'COBJ');
+	if not Assigned(m_gCOBJ) then Exit;
 
-	if Assigned(GroupCOBJ) then begin
-		AddMessage('   -> Checking ' + IntToStr(ElementCount(GroupCOBJ)) + ' recipes for nullification...');
+	AddMessage('   -> Neutralizing all original recipes (Crafting & Tempering)...');
 
-		for i := 0 to ElementCount(GroupCOBJ) - 1 do begin
-			CurrentRecipe := ElementByIndex(GroupCOBJ, i);
+	for i := 0 to ElementCount(m_gCOBJ) - 1 do begin
+		m_eCurrent := ElementByIndex(m_gCOBJ, i);
+		
+		// 1. Create the override
+		m_eOverride := wbCopyElementToFile(m_eCurrent, m_fPatch, False, True);
+		
+		if Assigned(m_eOverride) then begin
+			{ 
+			  THE CLEAN KILL: 
+			  Removing the BNAM (Workbench) makes the recipe "homeless".
+			  It won't show up in the Forge, the Grindstone, OR the Armor Table.
+			}
+			SetElementEditValues(m_eOverride, 'BNAM', '');
 			
-			// Optional: Only nullify if the recipe creates an ARMO or WEAP
-			// This prevents nullifying recipes for items you might want to keep (like ingots)
-			sResultItem := GetElementEditValues(CurrentRecipe, 'CNAM');
-			
-			// 2. Override the recipe into our patch file
-			OverriddenRecipe := wbCopyElementToFile(CurrentRecipe, m_fPatch, False, True);
-			
-			if Assigned(OverriddenRecipe) then begin
-				// 3. Clear existing conditions to start fresh
-				RemoveElement(OverriddenRecipe, 'Conditions');
-				
-				// 4. Add an impossible condition (Player Level >= 999999)
-				// This effectively hides the recipe from the forge entirely
-				fAddPlayerLevelCondition(OverriddenRecipe, 999999);
-				
-				AddMessage('      [Nullified] ' + EditorID(OverriddenRecipe));
-			end;
+			// 2. Clear conditions to ensure no background script checks trigger
+			if ElementExists(m_eOverride, 'Conditions') then
+				RemoveElement(m_eOverride, 'Conditions');
+
+			AddMessage('      [Disabled] ' + EditorID(m_eCurrent));
 		end;
 	end;
 end;
