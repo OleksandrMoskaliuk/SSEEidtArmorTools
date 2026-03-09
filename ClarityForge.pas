@@ -52,7 +52,7 @@ const
 	FOREARMS_DEBUFF_MULTIPLIER = 2.5; // Forearms Armor Rating debuff.  Set to 1 to disable.
 	CRAFTING_MANUAL_PRICE_MULTIPLIER = 50; // Book value = GlobalSmithingReq * CRAFTING_MANUAL_PRICE_MULTIPLIER
 	VISUAL_SLOT_WEIGHT = 0.1;
-	PERK_REQUIREMENT = False;
+	IS_PERK_REQUIRED = False;
 	sScriptVersion = '1.1.4';
 	sRepoUrl = 'https://github.com/OleksandrMoskaliuk/SSEEidtArmorTools';	
 
@@ -296,7 +296,7 @@ begin
 			
 			// Tempering: Block Clothing, Jewelry and Visual Slots
 			if (IsVisualSlot(m_Slots) = False) then begin
-				makeTemperable(m_NewRecord);
+				fMakeTemperable(m_NewRecord);
 			end;
 			
 		end;
@@ -348,7 +348,7 @@ begin
 			SetElementEditValues(m_NewRecord, 'DATA\Weight', FloatToStr(m_WeaponWeight));
 				
 			MakeCraftableV2(m_NewRecord);
-			makeTemperable(m_NewRecord);	
+			fMakeTemperable(m_NewRecord);	
 				
 		end;
 	end else begin
@@ -1780,159 +1780,6 @@ begin
 end;
 
 {========================================================}
-{                       UTILITY                          }
-{========================================================}
-function addKeyword(itemRecord: IInterface; keyword: IInterface): Integer;
-var
-    kwCollection, newEntry: IInterface;
-begin
-    Result := 0;
-    if not Assigned(itemRecord) or not Assigned(keyword) then Exit;
-
-    { 1. Check if the item already has this keyword using the Keyword's actual EditorID }
-    if HasKeyword(itemRecord, EditorID(keyword)) then Exit;
-
-    { 2. Get the KWDA block (Keywords array) }
-    kwCollection := ElementBySignature(itemRecord, 'KWDA');
-    if not Assigned(kwCollection) then
-        kwCollection := Add(itemRecord, 'KWDA', True);
-
-    { 3. Add the keyword }
-    if Assigned(kwCollection) then begin
-        newEntry := ElementAssign(kwCollection, HighInteger, nil, False);
-        SetEditValue(newEntry, IntToHex(FixedFormID(keyword), 8));
-        Result := 1;
-    end;
-end;
-
-function GetKeywordByEditorID(aEditorID: string): IInterface;
-var
-    i, j: Integer;
-    currFile, kwGroup, rec: IInterface;
-begin
-    Result := nil;
-    for i := 0 to FileCount - 1 do begin
-        currFile := FileByIndex(i);
-        
-        { Find the Keyword group in this file }
-        kwGroup := GroupBySignature(currFile, 'KYWD');
-        if not Assigned(kwGroup) then continue;
-
-        { Iterate through every keyword in the group }
-        for j := 0 to ElementCount(kwGroup) - 1 do begin
-            rec := ElementByIndex(kwGroup, j);
-            if EditorID(rec) = aEditorID then begin
-                Result := rec;
-                Exit;
-            end;
-        end;
-    end;
-    AddMessage('Critical Warning: ' + aEditorID + ' not found even in deep search!');
-end;
-
-function GetMaterial(aName: string): IInterface;
-var
-	fID: string;
-begin
-	Result := nil;
-	fID := '';
-	
-	{ Map common names to hardcoded vanilla FormIDs }
-	if aName = 'IngotIron' then fID := '0005ACE4'
-	else if aName = 'Gold001' then fID := '0000000F'
-	else if aName = 'IngotSteel' then fID := '0005ACE5'
-	else if aName = 'IngotCorundum' then fID := '0005AD93'
-	else if aName = 'IngotDwarven' then fID := '000DB8A2' { Corrected to Ingot }
-	else if aName = 'IngotRefinedMoonstone' then fID := '0005AD9F'
-	else if aName = 'IngotRefinedMalachite' then fID := '0005ADA1'
-	else if aName = 'IngotEbony' then fID := '0005AD9D'
-	else if aName = 'IngotOrichalcum' then fID := '0005AD99'
-	else if aName = 'IngotQuicksilver' then fID := '0005ADA0'
-	else if aName = 'Leather01' then fID := '000DB5D2'
-	else if aName = 'LeatherStrips' then fID := '000800E4'
-	else if aName = 'DragonScales' then fID := '0003ADA3'
-	else if aName = 'DragonBone' then fID := '0003ADA4'
-	else if aName = 'DaedraHeart' then fID := '0003AD5B'
-	else if aName = 'GoldIngot' then fID := '0005AD9E';
-	
-	{ Direct lookup via the internal xEdit helper }
-	//Result := getRecordByFormID(fID);
-	Result := RecordByFormID(FileByIndex(0), fID, True);
-	
-	{ 3. Strict NULL and Zero-Reference Check }
-	if not Assigned(Result) or (FixedFormID(Result) = 0) then begin
-		AddMessage('CRITICAL: Material "' + aName + '" is NULL or 00000000. Check Load Order.');
-		Result := nil;
-	end;
-end;
-
-{ Helper to safely get FormID without "Deep Search" hanging }
-function fGetSafeID(m_sEditorID: string): Cardinal;
-var
-	m_eKw: IInterface;
-begin
-	m_eKw := GetKeywordByEditorID(m_sEditorID);
-	if Assigned(m_eKw) then
-		Result := FixedFormID(m_eKw)
-	else
-		Result := 0;
-end;
-
-procedure removeKeywordV2(e: IInterface; m_sKeywordEditorID: string);
-var
-	m_eKeywords, m_eEntry, m_eTargetKw: IInterface;
-	m_iTargetFormID: Cardinal;
-	m_iFoundID: Cardinal;
-	i: Integer;
-begin
-	// 1. Get the FormID of the keyword we want to remove
-	m_eTargetKw := GetKeywordByEditorID(m_sKeywordEditorID);
-	if not Assigned(m_eTargetKw) then Exit; 
-	
-	m_iTargetFormID := FixedFormID(m_eTargetKw);
-
-	// 2. Locate the Keyword Array (KWDA)
-	m_eKeywords := ElementBySignature(e, 'KWDA');
-	if not Assigned(m_eKeywords) then Exit;
-
-	// 3. Loop BACKWARDS to safely remove elements
-	for i := ElementCount(m_eKeywords) - 1 downto 0 do begin
-		m_eEntry := ElementByIndex(m_eKeywords, i);
-		
-		// 4. Get the native FormID value from the entry
-		// This bypasses EditorID/LinksTo naming issues
-		m_iFoundID := GetNativeValue(m_eEntry);
-		
-		if m_iFoundID = m_iTargetFormID then begin
-			RemoveElement(m_eKeywords, i);
-		end;
-	end;
-end;
-
-
-function fGetCurvedPlayerLevel(m_iSmithing: Integer): Integer;
-var
-	m_fProgress: Double;
-begin
-	// If skill is 0 or negative, default to Level 1
-	if m_iSmithing <= 0 then begin
-		Result := 1;
-		Exit;
-	end;
-
-	// 1. Normalize smithing to a 0.0 -> 1.0 range
-	m_fProgress := m_iSmithing / 100.0;
-
-	// 2. Quadratic Curve Formula: 1 + (59 * Progress^2)
-	// We use (m_fProgress * m_fProgress) for a clean squared result
-	Result := Round(1 + (59.0 * (m_fProgress * m_fProgress)));
-
-	// 3. Final safety clamp to your specified range (1 to 60)
-	if Result < 1 then Result := 1;
-	if Result > 60 then Result := 60;
-end;
-
-{========================================================}
 {            ADD SMITHING SKILL CONDITION                }
 {========================================================}
 procedure addSkillCondition(recipe: IInterface; skillLevel: Integer);
@@ -2246,7 +2093,7 @@ begin
 		addItemV2(recipeItems, GetMaterial('LeatherStrips'), 1);
 		addItemV2(recipeItems, GetMaterial('Gold001'), GlobalSmithingReq * CRAFTING_MANUAL_PRICE_MULTIPLIER);
 		
-		if (PERK_REQUIREMENT) then begin
+		if (IS_PERK_REQUIRED) then begin
 			{ Loop keywords to assign Perks }
 			for i := 0 to ElementCount(tmpKeywordsCollection) - 1 do begin
 				currentKeywordEDID := GlobalOutfitMaterial;
@@ -2328,7 +2175,7 @@ begin
 		SetElementEditValues(recipeCraft, 'EDID', 'RecipeWeapon' + GetElementEditValues(itemRecord, 'EDID'));
 		SetElementEditValues(recipeCraft, 'BNAM', GetEditValue(getRecordByFormID(WEAPON_CRAFTING_WORKBENCH_FORM_ID)));
 		
-		if (PERK_REQUIREMENT) then begin
+		if (IS_PERK_REQUIRED) then begin
 			for i := 0 to ElementCount(tmpKeywordsCollection) - 1 do begin
 				currentKeywordEDID := GetElementEditValues(LinksTo(ElementByIndex(tmpKeywordsCollection, i)), 'EDID');
 				
@@ -2557,7 +2404,7 @@ begin
 		addFemaleCondition(recipeCraft);
 		AddManualCondition(recipeCraft, GlobalCraftingManual);
 		
-		if (PERK_REQUIREMENT) then begin
+		if (IS_PERK_REQUIRED) then begin
 			{ Loop keywords to assign Perks }
 			for i := 0 to ElementCount(tmpKeywordsCollection) - 1 do begin
 				currentKeywordEDID := GetElementEditValues(LinksTo(ElementByIndex(tmpKeywordsCollection, i)), 'EDID');
@@ -2968,40 +2815,224 @@ begin
 	Result := recipeCraft;
 end;
 
-function fAddNewFile(m_sFileName: string; m_bIsESL: boolean): IInterface;
+{========================================================}
+{ CREATE TEMPERING RECIPE                                }
+{========================================================}
+function fMakeTemperable(itemRecord: IInterface): IInterface;
 var
-	m_FileHandle: IInterface;
+	recipeTemper, recipeCondition, recipeConditions, recipeItem, recipeItems : IInterface;
+begin
+	recipeTemper := createRecipe(itemRecord);
+
+	if IS_PERK_REQUIRED then begin
+	
+		// add new condition list
+		Add(recipeTemper, 'Conditions', true);
+		// get reference to condition list inside recipe
+		recipeConditions := ElementByPath(recipeTemper, 'Conditions');
+
+		// add IsEnchanted condition
+		// get new condition from list
+		recipeCondition := ElementByIndex(recipeConditions, 0);
+		// set type to 'Not equal to / Or'
+		SetElementEditValues(recipeCondition, 'CTDA - CTDA\Type', '10010000');
+		// set some needed properties
+		SetElementEditValues(recipeCondition, 'CTDA - CTDA\Comparison Value', '0');
+		SetElementEditValues(recipeCondition, 'CTDA - CTDA\Function', 'EPTemperingItemIsEnchanted');
+		SetElementEditValues(recipeCondition, 'CTDA - CTDA\Run On', 'Subject');
+		// don't know what is this, but it should be equal to -1, if Function Runs On Subject
+		SetElementEditValues(recipeCondition, 'CTDA - CTDA\Parameter #3', '-1');
+
+		// add second condition, for perk ArcaneBlacksmith check
+		addPerkCondition(recipeConditions, getRecordByFormID('0005218E')); // ArcaneBlacksmith
+	end;
+	
+	// add required items list
+	Add(recipeTemper, 'items', true);
+	// get reference to required items list inside recipe
+	recipeItems := ElementByPath(recipeTemper, 'items');
+
+	if Signature(itemRecord) = 'WEAP' then begin
+		// set EditorID for recipe
+		SetElementEditValues(recipeTemper, 'EDID', 'CF_TemperWeapon' + GetElementEditValues(itemRecord, 'EDID'));
+		// add reference to the workbench keyword
+		SetElementEditValues(recipeTemper, 'BNAM', GetEditValue(
+		getRecordByFormID(WEAPON_TEMPERING_WORKBENCH_FORM_ID)));
+	end;
+	
+	if Signature(itemRecord) = 'ARMO' then begin
+		// set EditorID for recipe
+		SetElementEditValues(recipeTemper, 'EDID', 'CF_TemperArmor' + GetElementEditValues(itemRecord, 'EDID'));
+
+		// add reference to the workbench keyword
+		SetElementEditValues(recipeTemper, 'BNAM', GetEditValue(
+		getRecordByFormID(ARMOR_TEMPERING_WORKBENCH_FORM_ID)));
+	end;
+
+    // figure out required component...
+	addItem(recipeItems, getMainMaterial(itemRecord), 1);
+
+    // remove nil record in items requirements, if any
+	removeInvalidEntries(recipeTemper);
+
+if GetElementEditValues(recipeTemper, 'COCT') = '' then begin
+warn('no item requirements was specified for - ' + Name(recipeTemper));
+end;
+
+    // return created tempering recipe, just in case
+Result := recipeTemper;
+end;
+
+{========================================================}
+{                       UTILITY                          }
+{========================================================}
+function addKeyword(itemRecord: IInterface; keyword: IInterface): Integer;
+var
+    kwCollection, newEntry: IInterface;
+begin
+    Result := 0;
+    if not Assigned(itemRecord) or not Assigned(keyword) then Exit;
+
+    { 1. Check if the item already has this keyword using the Keyword's actual EditorID }
+    if HasKeyword(itemRecord, EditorID(keyword)) then Exit;
+
+    { 2. Get the KWDA block (Keywords array) }
+    kwCollection := ElementBySignature(itemRecord, 'KWDA');
+    if not Assigned(kwCollection) then
+        kwCollection := Add(itemRecord, 'KWDA', True);
+
+    { 3. Add the keyword }
+    if Assigned(kwCollection) then begin
+        newEntry := ElementAssign(kwCollection, HighInteger, nil, False);
+        SetEditValue(newEntry, IntToHex(FixedFormID(keyword), 8));
+        Result := 1;
+    end;
+end;
+
+function GetKeywordByEditorID(aEditorID: string): IInterface;
+var
+    i, j: Integer;
+    currFile, kwGroup, rec: IInterface;
+begin
+    Result := nil;
+    for i := 0 to FileCount - 1 do begin
+        currFile := FileByIndex(i);
+        
+        { Find the Keyword group in this file }
+        kwGroup := GroupBySignature(currFile, 'KYWD');
+        if not Assigned(kwGroup) then continue;
+
+        { Iterate through every keyword in the group }
+        for j := 0 to ElementCount(kwGroup) - 1 do begin
+            rec := ElementByIndex(kwGroup, j);
+            if EditorID(rec) = aEditorID then begin
+                Result := rec;
+                Exit;
+            end;
+        end;
+    end;
+    AddMessage('Critical Warning: ' + aEditorID + ' not found even in deep search!');
+end;
+
+function GetMaterial(aName: string): IInterface;
+var
+	fID: string;
 begin
 	Result := nil;
-
-	// Check 1: Empty String
-	if Trim(m_sFileName) = '' then begin
-		AddMessage('Error: Filename is empty.');
-		Exit;
+	fID := '';
+	
+	{ Map common names to hardcoded vanilla FormIDs }
+	if aName = 'IngotIron' then fID := '0005ACE4'
+	else if aName = 'Gold001' then fID := '0000000F'
+	else if aName = 'IngotSteel' then fID := '0005ACE5'
+	else if aName = 'IngotCorundum' then fID := '0005AD93'
+	else if aName = 'IngotDwarven' then fID := '000DB8A2' { Corrected to Ingot }
+	else if aName = 'IngotRefinedMoonstone' then fID := '0005AD9F'
+	else if aName = 'IngotRefinedMalachite' then fID := '0005ADA1'
+	else if aName = 'IngotEbony' then fID := '0005AD9D'
+	else if aName = 'IngotOrichalcum' then fID := '0005AD99'
+	else if aName = 'IngotQuicksilver' then fID := '0005ADA0'
+	else if aName = 'Leather01' then fID := '000DB5D2'
+	else if aName = 'LeatherStrips' then fID := '000800E4'
+	else if aName = 'DragonScales' then fID := '0003ADA3'
+	else if aName = 'DragonBone' then fID := '0003ADA4'
+	else if aName = 'DaedraHeart' then fID := '0003AD5B'
+	else if aName = 'GoldIngot' then fID := '0005AD9E';
+	
+	{ Direct lookup via the internal xEdit helper }
+	//Result := getRecordByFormID(fID);
+	Result := RecordByFormID(FileByIndex(0), fID, True);
+	
+	{ 3. Strict NULL and Zero-Reference Check }
+	if not Assigned(Result) or (FixedFormID(Result) = 0) then begin
+		AddMessage('CRITICAL: Material "' + aName + '" is NULL or 00000000. Check Load Order.');
+		Result := nil;
 	end;
+end;
 
-	// Check 2: Protected Names
-	if SameText(m_sFileName, 'Skyrim.esm') or SameText(m_sFileName, 'Update.esm') then begin
-		AddMessage('Error: Cannot use protected master names.');
-		Exit;
-	end;
+{ Helper to safely get FormID without "Deep Search" hanging }
+function fGetSafeID(m_sEditorID: string): Cardinal;
+var
+	m_eKw: IInterface;
+begin
+	m_eKw := GetKeywordByEditorID(m_sEditorID);
+	if Assigned(m_eKw) then
+		Result := FixedFormID(m_eKw)
+	else
+		Result := 0;
+end;
 
-	// Check 3: Get existing file handle or create new one
-	m_FileHandle := FileByName(m_sFileName);
-	if not Assigned(m_FileHandle) then
-		m_FileHandle := AddNewFileName(m_sFileName, m_bIsESL);
+procedure removeKeywordV2(e: IInterface; m_sKeywordEditorID: string);
+var
+	m_eKeywords, m_eEntry, m_eTargetKw: IInterface;
+	m_iTargetFormID: Cardinal;
+	m_iFoundID: Cardinal;
+	i: Integer;
+begin
+	// 1. Get the FormID of the keyword we want to remove
+	m_eTargetKw := GetKeywordByEditorID(m_sKeywordEditorID);
+	if not Assigned(m_eTargetKw) then Exit; 
+	
+	m_iTargetFormID := FixedFormID(m_eTargetKw);
 
-	// Check 4: Final Validation and Master Assignment
-	if Assigned(m_FileHandle) then begin
-		// Add necessary base masters
-		AddMasterIfMissing(m_FileHandle, 'Skyrim.esm');
-		AddMasterIfMissing(m_FileHandle, 'Update.esm');
+	// 2. Locate the Keyword Array (KWDA)
+	m_eKeywords := ElementBySignature(e, 'KWDA');
+	if not Assigned(m_eKeywords) then Exit;
+
+	// 3. Loop BACKWARDS to safely remove elements
+	for i := ElementCount(m_eKeywords) - 1 downto 0 do begin
+		m_eEntry := ElementByIndex(m_eKeywords, i);
 		
-		AddMessage('Success: ' + m_sFileName + ' initialized with base masters.');
-		Result := m_FileHandle;
-	end else begin
-		AddMessage('Critical: Failed to create ' + m_sFileName);
+		// 4. Get the native FormID value from the entry
+		// This bypasses EditorID/LinksTo naming issues
+		m_iFoundID := GetNativeValue(m_eEntry);
+		
+		if m_iFoundID = m_iTargetFormID then begin
+			RemoveElement(m_eKeywords, i);
+		end;
 	end;
+end;
+
+function fGetCurvedPlayerLevel(m_iSmithing: Integer): Integer;
+var
+	m_fProgress: Double;
+begin
+	// If skill is 0 or negative, default to Level 1
+	if m_iSmithing <= 0 then begin
+		Result := 1;
+		Exit;
+	end;
+
+	// 1. Normalize smithing to a 0.0 -> 1.0 range
+	m_fProgress := m_iSmithing / 100.0;
+
+	// 2. Quadratic Curve Formula: 1 + (59 * Progress^2)
+	// We use (m_fProgress * m_fProgress) for a clean squared result
+	Result := Round(1 + (59.0 * (m_fProgress * m_fProgress)));
+
+	// 3. Final safety clamp to your specified range (1 to 60)
+	if Result < 1 then Result := 1;
+	if Result > 60 then Result := 60;
 end;
 
 function fFunctionCopyArmorToNewFile(SourceRecord: IInterface; TargetFile: IInterface; sPrefix: string): IInterface;
@@ -3091,6 +3122,42 @@ begin
 		AddMessage('   [' + Signature(Result) + ' Override] ' + EditorID(Result) + ' -> ' + sNewName);
 	end else begin
 		AddMessage('   [Error] Failed to override ' + Signature(m_SourceRecord) + ': ' + EditorID(m_SourceRecord));
+	end;
+end;
+
+function fAddNewFile(m_sFileName: string; m_bIsESL: boolean): IInterface;
+var
+	m_FileHandle: IInterface;
+begin
+	Result := nil;
+
+	// Check 1: Empty String
+	if Trim(m_sFileName) = '' then begin
+		AddMessage('Error: Filename is empty.');
+		Exit;
+	end;
+
+	// Check 2: Protected Names
+	if SameText(m_sFileName, 'Skyrim.esm') or SameText(m_sFileName, 'Update.esm') then begin
+		AddMessage('Error: Cannot use protected master names.');
+		Exit;
+	end;
+
+	// Check 3: Get existing file handle or create new one
+	m_FileHandle := FileByName(m_sFileName);
+	if not Assigned(m_FileHandle) then
+		m_FileHandle := AddNewFileName(m_sFileName, m_bIsESL);
+
+	// Check 4: Final Validation and Master Assignment
+	if Assigned(m_FileHandle) then begin
+		// Add necessary base masters
+		AddMasterIfMissing(m_FileHandle, 'Skyrim.esm');
+		AddMasterIfMissing(m_FileHandle, 'Update.esm');
+		
+		AddMessage('Success: ' + m_sFileName + ' initialized with base masters.');
+		Result := m_FileHandle;
+	end else begin
+		AddMessage('Critical: Failed to create ' + m_sFileName);
 	end;
 end;
 
