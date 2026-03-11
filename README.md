@@ -19,16 +19,15 @@ Add the NameCode to your mod's **Notes** in the MO2 UI.
 
 ### **Supported Material Codes**
 
-| Code | Material | Code | Material |
-| --- | --- | --- | --- |
-| **In** | Iron | **En** | Elven |
-| **Sl** | Steel | **Gs** | Glass |
-| **Dn** | Dwarven | **Eb** | Ebony |
-| **Oh** | Orcish | **Dc** | Daedric |
-| **Lr** | Leather | **Dp** | Dragonplate |
-| **Sd** | Scaled | **Ds** | Dragonscale |
-
-![alt text](img/mo2_lightarmor_notes.png)
+| Category | Code | Material | Code | Material |
+| --- | --- | --- | --- | --- |
+| **Light** | **Lr** | Leather | **Gs** | Glass |
+|  | **Sd** | Scaled | **De** | Dragonscale |
+|  | **En** | Elven |  |  |
+| **Heavy** | **In** | Iron | **Se** | Steel Plate |
+|  | **Sl** | Steel | **Oh** | Orcish |
+|  | **Dn** | Dwarven | **Ey** | Ebony |
+|  | **Dc** | Daedric | **Dp** | Dragonplate |
 
 > **Note on Scaling:** In the example above, `74` represents the **Smithing Skill** required. The script uses this number to calculate the actual **Character Level** requirement automatically.
 
