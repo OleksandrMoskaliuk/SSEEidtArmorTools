@@ -48,8 +48,6 @@ const
 	FOR_FEMALE_ONLY = True;
 	BACKPACK_SLOT_ENCHANTABLE = True;
 	ADVANCED_ENCHANTMENT_PROTECTION = True;
-	FOREARMS_SLOT_ALWAYS_ENCHANTABLE = True; // If True Forearms will be always enchantable.
-	FOREARMS_DEBUFF_MULTIPLIER = 2.5; // Forearms Armor Rating debuff.  Set to 1 to disable.
 	CRAFTING_MANUAL_PRICE_MULTIPLIER = 50; // Book value = GlobalSmithingReq * CRAFTING_MANUAL_PRICE_MULTIPLIER
 	VISUAL_SLOT_WEIGHT = 0.1;
 	IS_PERK_REQUIRED = False;
@@ -99,12 +97,12 @@ begin
 	GlobalArmorPriceBonus := Round(GlobalSmithingReq / 10.0);
 	
 	GlobalWeaponWeightBonus := GlobalSmithingReq / 20.0;
-	GlobalForearmsDebuffMultiplier := FOREARMS_DEBUFF_MULTIPLIER;
+	GlobalForearmsDebuffMultiplier := 0;
 	
 	{ Reset Tracking Booleans }
 	GlobalDoOnce := False;
 	GlobalProcessedRecords := 0;
-	GlobalDisableForearmsARBonus := False; // Always Enabled
+	GlobalDisableForearmsARBonus := True; // Always Disabled
 	
 	{ Logging Configuration }
 	AddMessage('--- ARMOR CONFIGURATOR STARTED ---');
@@ -294,8 +292,12 @@ begin
 			// Crafting
 			MakeCraftableV2(m_NewRecord);
 			
-			// Tempering: Block Clothing, Jewelry and Visual Slots
-			if (IsVisualSlot(m_Slots) = False) then begin
+			// Tempering, exclude Jewelry and Backpack
+			if (IsVisualSlot(m_Slots) = False)
+			and ((Pos('Ring ', m_Slots) > 0) = False) 
+			and ((Pos('Amulet ', m_Slots) > 0) = False)
+			and ((Pos('Backpack ', m_Slots) > 0) = False)
+			and ((Pos('Ears ', m_Slots) > 0) = False )  then begin
 				fMakeTemperable(m_NewRecord);
 			end;
 			
@@ -556,7 +558,7 @@ begin
 			or (slotName = 'Amulet')
 			or (slotName = 'Ring')
 			or (slotName = 'Ears')
-			or (slotName = 'Forearms')
+			// or (slotName = 'Forearms') disabled in v2.0
 			then begin
 				hasGameplaySlot := True;
 				Break;				// one is enough
@@ -580,8 +582,6 @@ var
 	visualNote: string;
 begin
 	if not IsVisualSlot(GetFirstPersonFlags(e)) then Exit;
-	
-	if (FOREARMS_SLOT_ALWAYS_ENCHANTABLE and Pos(GetFirstPersonFlags(e),'Forearms ') > 0) then Exit;
 	
 	visualNote := 'Visual Slot: This item is for appearance only. It provides no protection and cannot be enchanted.';
 	
@@ -2172,7 +2172,7 @@ begin
 		{ 5. Add Player Level  condition }
 		fAddPlayerLevelCondition(recipeCraft, GlobalPlayerLevelReq);
 		
-		SetElementEditValues(recipeCraft, 'EDID', 'RecipeWeapon' + GetElementEditValues(itemRecord, 'EDID'));
+		SetElementEditValues(recipeCraft, 'EDID', 'CF_RecipeWeapon' + GetElementEditValues(itemRecord, 'EDID'));
 		SetElementEditValues(recipeCraft, 'BNAM', GetEditValue(getRecordByFormID(WEAPON_CRAFTING_WORKBENCH_FORM_ID)));
 		
 		if (IS_PERK_REQUIRED) then begin
@@ -2457,6 +2457,21 @@ begin
 			addItemV2(recipeItems, GetMaterial('Leather01'), 1);
 			addItemV2(recipeItems, GetMaterial('LeatherStrips'), 1);
 			addItemV2(recipeItems, GetMaterial('IngotIron'), 1);
+			
+			{ Cleanup and Validation }
+			removeInvalidEntries(recipeCraft);
+			if GetElementEditValues(recipeCraft, 'COCT') = '' then begin
+				warn('No item requirements specified for: ' + Name(recipeCraft));
+			end;
+			Result := recipeCraft;
+			Exit;
+		end;
+		
+		{ Check if armor considered as "Backpack" }
+		if (Pos(GetFirstPersonFlags(itemRecord), 'Backpack ') > 0) then begin
+			addItemV2(recipeItems, GetMaterial('IngotCorundum'), 1);
+			addItemV2(recipeItems, GetMaterial('LeatherStrips'), 2);
+			addItemV2(recipeItems, GetMaterial('Leather01'), 1);
 			
 			{ Cleanup and Validation }
 			removeInvalidEntries(recipeCraft);
