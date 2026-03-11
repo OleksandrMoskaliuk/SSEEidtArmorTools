@@ -46,7 +46,7 @@ $$PlayerLevel = 1 + (59 \times (\frac{SmithingSkill}{100})^2)$$
 | **20** | **Level 3** |
 | **40** | **Level 10** |
 | **60** | **Level 22** |
-| **74 (Example)** | **Level 33** |
+| **74** | **Level 33** |
 | **80** | **Level 39** |
 | **100** | **Level 60** |
 
