@@ -2470,7 +2470,7 @@ begin
 		end;
 		
 		{ Check if armor considered as "Backpack" }
-		if (Pos(GetFirstPersonFlags(itemRecord), 'Backpack ') > 0) then begin
+		if ( then begin
 			addItemV2(recipeItems, GetMaterial('IngotCorundum'), 1);
 			addItemV2(recipeItems, GetMaterial('LeatherStrips'), 2);
 			addItemV2(recipeItems, GetMaterial('Leather01'), 1);
@@ -2482,6 +2482,78 @@ begin
 			end;
 			Result := recipeCraft;
 			Exit;
+		end;
+		
+		{ -- Jewelry & Accessories Section -- }
+		if (Pos(GetFirstPersonFlags(itemRecord), 'Ring ') > 0) 
+		or (Pos(GetFirstPersonFlags(itemRecord), 'Amulet') > 0)
+		or (Pos(GetFirstPersonFlags(itemRecord), 'Ears ') > 0)    
+		or (Pos(GetFirstPersonFlags(itemRecord), 'Circlet ') > 0)   
+		or (Pos(GetFirstPersonFlags(itemRecord), 'Backpack ') > 0) then begin
+			
+			{ Generic Base for all Jewelry/Backpacks }
+			addItemV2(recipeItems, GetMaterial('LeatherStrips'), 2);
+			addItemV2(recipeItems, GetMaterial('Leather01'), 1);
+			
+			{ - LIGHT MATERIALS - }
+			if HasKeyword(itemRecord, 'ArmorMaterialLeather') then begin 
+				addItemV2(recipeItems, GetMaterial('Leather01'), 1);
+				addItemV2(recipeItems, GetMaterial('IngotSteel'), 1);
+			end;
+			if HasKeyword(itemRecord, 'ArmorMaterialScaled') then begin 
+				addItemV2(recipeItems, GetMaterial('IngotCorundum'), 1);
+			end;
+			if HasKeyword(itemRecord, 'ArmorMaterialElven') then begin 
+				addItemV2(recipeItems, GetMaterial('IngotRefinedMoonstone'), 1);
+			end;
+			if HasKeyword(itemRecord, 'ArmorMaterialGlass') then begin 
+				addItemV2(recipeItems, GetMaterial('IngotRefinedMalachite'), 1);
+			end;
+			if HasKeyword(itemRecord, 'ArmorMaterialDragonscale') then begin 
+				addItemV2(recipeItems, GetMaterial('DragonScales'), 1);
+				addItemV2(recipeItems, GetMaterial('IngotSteel'), 1);
+			end;
+
+			{ - HEAVY MATERIALS - }
+			if HasKeyword(itemRecord, 'ArmorMaterialIron') then begin
+				addItemV2(recipeItems, GetMaterial('IngotIron'), 1);
+			end;
+			if HasKeyword(itemRecord, 'ArmorMaterialSteel') then begin
+				addItemV2(recipeItems, GetMaterial('IngotSteel'), 1);
+			end;
+			if HasKeyword(itemRecord, 'ArmorMaterialSteelPlate') then begin
+				addItemV2(recipeItems, GetMaterial('IngotCorundum'), 1);
+			end;
+			if HasKeyword(itemRecord, 'ArmorMaterialDwarven') then begin
+				addItemV2(recipeItems, GetMaterial('IngotDwarven'), 1);
+			end;
+			if HasKeyword(itemRecord, 'ArmorMaterialOrcish') then begin
+				addItemV2(recipeItems, GetMaterial('IngotOrichalcum'), 1);
+			end;
+			if HasKeyword(itemRecord, 'ArmorMaterialEbony') then begin
+				addItemV2(recipeItems, GetMaterial('IngotEbony'), 1);
+			end;
+			if HasKeyword(itemRecord, 'ArmorMaterialDaedric') then begin
+				addItemV2(recipeItems, GetMaterial('IngotEbony'), 1);
+				addItemV2(recipeItems, GetMaterial('DaedraHeart'), 1);
+			end;
+			if HasKeyword(itemRecord, 'ArmorMaterialDragonplate') then begin
+				addItemV2(recipeItems, GetMaterial('DragonBone'), 1);
+				addItemV2(recipeItems, GetMaterial('IngotSteel'), 1);
+			end;
+
+			{ Special Case: Backpacks always need extra Leather }
+			if (Pos(GetFirstPersonFlags(itemRecord), 'Backpack ') > 0) then begin
+				addItemV2(recipeItems, GetMaterial('Leather01'), 1);
+			end;
+
+			{ Cleanup and Validation }
+			removeInvalidEntries(recipeItems);
+			if GetElementEditValues(recipeCraft, 'COCT') = '' then begin
+				AddMessage('Warning: No item requirements specified for Jewelry: ' + Name(itemRecord));
+			end;
+			Result := recipeCraft;
+			Exit;	
 		end;
 		
 
