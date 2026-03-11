@@ -66,7 +66,6 @@ ClarityForge generates a **Unique Crafting Manual** for every processed mod to k
 * **Dynamic Naming:** Manuals use the `.esp` name + material + level.
 * *Example:* `[COCO] 2B Wedding Outfit Elven Lv 74 Book`
 
-* **Manual Naming:** Manuals are named based on the `.esp` filename.
 * **Pricing:** The gold value scales with tier: `SmithingReq * 50`. (Level 74 manual = **3,700g**).
 * **Forge Cleanup (Nullification):** Original recipes are rendered "homeless" by removing their Workbench Keyword, preventing menu clutter.
 
