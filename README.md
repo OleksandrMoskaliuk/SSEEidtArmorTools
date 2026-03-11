@@ -1,9 +1,6 @@
+## 📜 ClarityForge: Preparation & Usage Guide
 
----
-
-# 📜 ClarityForge: Preparation & Usage Guide
-
-**ClarityForge** is a metadata-driven balancing and sanitization engine for Skyrim SE/AE. It uses **MO2 Metadata** to determine material types and progression, allowing you to balance outfits across different mods without ever renaming your `.esp` files.
+**ClarityForge** is a metadata-driven balancing and sanitization engine for Skyrim SE/AE. It uses **MO2 Metadata** to determine progression and material types, allowing you to balance outfits across different mods without ever renaming your `.esp` files.
 
 ---
 
@@ -25,18 +22,20 @@ Add the NameCode to your mod's **Notes** in the MO2 UI.
 
 ClarityForge distinguishes between your **Crafting Skill** and your **Character Level**. By entering a Smithing Level in the MO2 Note, the script generates a balanced Character Level requirement using a **Quadratic Curve**.
 
-**The Level Formula:** 
+**The Level Formula:** 
+
 
 $$PlayerLevel = 1 + (59 \times (\frac{SmithingSkill}{100})^2)$$
 
-| Smithing Skill (Tag) | Material Example | Character Level Req |
-| --- | --- | --- |
-| **20** | Iron / Leather | **Level 3** |
-| **40** | Steel / Scaled | **Level 10** |
-| **60** | Elven / Dwarven | **Level 22** |
-| **74 (Example)** | High-Tier Elven | **Level 33** |
-| **80** | Ebony / Glass | **Level 39** |
-| **100** | Daedric / Dragon | **Level 60** |
+| Smithing Skill (Tag) | Character Level Req |
+| --- | --- |
+| **5** | **Level 1** |
+| **20** | **Level 3** |
+| **40** | **Level 10** |
+| **60** | **Level 22** |
+| **74 (Example)** | **Level 33** |
+| **80** | **Level 39** |
+| **100** | **Level 60** |
 
 ![alt text](PlayerLVRequirement.png)
 ---
@@ -67,9 +66,9 @@ ClarityForge generates a **Unique Crafting Manual** for every processed mod to k
 * **Dynamic Naming:** Manuals use the `.esp` name + material + level.
 * *Example:* `[COCO] 2B Wedding Outfit Elven Lv 74 Book`
 
-
+* **Manual Naming:** Manuals are named based on the `.esp` filename.
 * **Pricing:** The gold value scales with tier: `SmithingReq * 50`. (Level 74 manual = **3,700g**).
-* **Forge Cleanup:** Original recipes are hidden from all workbanks to prevent menu clutter.
+* **Forge Cleanup (Nullification):** Original recipes are rendered "homeless" by removing their Workbench Keyword, preventing menu clutter.
 
 ---
 
@@ -92,6 +91,8 @@ For proper classification, each record should ideally have exactly **one** prima
 ## 🚫 Critical Warnings
 
 * **Metadata Dependency:** If the `CF_` tag is missing from the MO2 Note, the script will skip the file.
-* **Manual naming:** Manuals are named based on the `.esp` filename, not the folder name.
+* **One BOD2 Flag Rule:** Each record **must** have exactly **one** primary `BOD2` flag set for proper classification (Helmet, Hands, etc.).
 
 ---
+
+Would you like me to help you format a **Material Code Table** so users know exactly which two-letter codes (like `En`, `Eb`, `In`) to use in their MO2 notes?
