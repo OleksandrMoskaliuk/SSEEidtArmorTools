@@ -261,7 +261,7 @@ begin
 	if Assigned(GroupARMO) then begin
 		AddMessage('   -> Scanning ' + IntToStr(ElementCount(GroupARMO)) + ' Armor records...');
 		
-		GlobalCraftingManual := CopyBookAsNewRecord(GlobalPatchFile, '0001AFCF', ('Crafing Manual ' + GlobalFileName + ' ' +  StringReplace(GlobalOutfitMaterial, 'ArmorMaterial', '', [rfReplaceAll, rfIgnoreCase]) + ' Lv ' + IntToStr(GlobalSmithingReq) + ' Book'));
+		GlobalCraftingManual := CopyBookAsNewRecord(GlobalPatchFile, '0001AFCF', ('Crafting Manual ' + GlobalFileName + ' ' +  StringReplace(GlobalOutfitMaterial, 'ArmorMaterial', '', [rfReplaceAll, rfIgnoreCase]) + ' Lv ' + IntToStr(GlobalSmithingReq) + ' Book'));
 		MakeCraftableV2(GlobalCraftingManual);
 		
 			
@@ -2044,7 +2044,7 @@ var
 begin
 	itemSignature := Signature(itemRecord);
 
-	{--- CRAFING MANUAL ---}
+	{--- CRAFTING MANUAL ---}
 	if (itemSignature = 'BOOK') then begin
 		
 		{ 1. Construct the target EditorID }
