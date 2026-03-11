@@ -140,6 +140,7 @@ begin
 		if fIsClarityForgeApplicable(m_sModComment) then begin
 			AddMessage('>>> Valid File Found: ' + sFileName);
 			AddMessage('    Metadata: ' + m_sModComment);
+			GlobalFileName := ChangeFileExt(sFileName, '');
 			fProcessArmorRecords(f);
 			fProcessWeaponRecords(f);
 			fNullifyOriginalRecipes(f, GlobalPatchFile);
@@ -262,7 +263,7 @@ begin
 	if Assigned(GroupARMO) then begin
 		AddMessage('   -> Scanning ' + IntToStr(ElementCount(GroupARMO)) + ' Armor records...');
 		
-		GlobalCraftingManual := CopyBookAsNewRecord(GlobalPatchFile, '0001AFCF', (GlobalFileName + ' ' +  StringReplace(GlobalOutfitMaterial, 'ArmorMaterial', '', [rfReplaceAll, rfIgnoreCase]) + ' Lv ' + IntToStr(GlobalSmithingReq) + ' Book'));
+		GlobalCraftingManual := CopyBookAsNewRecord(GlobalPatchFile, '0001AFCF', ('Crafing Manual ' + GlobalFileName + ' ' +  StringReplace(GlobalOutfitMaterial, 'ArmorMaterial', '', [rfReplaceAll, rfIgnoreCase]) + ' Lv ' + IntToStr(GlobalSmithingReq) + ' Book'));
 		MakeCraftableV2(GlobalCraftingManual);
 		
 			
@@ -690,7 +691,7 @@ begin
 	m_bIsJewelry := (Pos('Ring ', Slots) > 0)
 		or (Pos('Amulet ', Slots) > 0)
 		or (Pos('Ears ', Slots) > 0)
-		or (Pos('Circlet 'Slots) > 0);
+		or (Pos('Circlet ', Slots) > 0);
 			
 	if m_bIsJewelry then begin
 		SetEditValue(armorTypeField, 'Clothing');
@@ -1215,7 +1216,7 @@ function GetVanillaAR(e: IInterface; Slots: string): Float;
 begin
 	Result := 0;
 	if HasKeyword(e, 'ArmorClothing') then Exit;
-	if (GetElementEditValues(m_eRecord, 'BOD2\Armor Type') = 'Clothing') then Exit;
+	if (GetElementEditValues(e, 'BOD2\Armor Type') = 'Clothing') then Exit;
 
 	{==================== HEAVY ====================}
 	if HasKeyword(e, 'ArmorMaterialIron') then begin
@@ -1412,7 +1413,7 @@ begin
 	Result := VISUAL_SLOT_WEIGHT;
 	m_WeightReduceHeavy := GlobalSmithingReq * 0.1; 
 	if HasKeyword(e, 'ArmorClothing') then Exit;
-	if (GetElementEditValues(m_eRecord, 'BOD2\Armor Type') = 'Clothing') then Exit;
+	if (GetElementEditValues(e, 'BOD2\Armor Type') = 'Clothing') then Exit;
 
 	{==================== HEAVY ====================}
 	if HasKeyword(e, 'ArmorMaterialIron') then begin
@@ -1590,7 +1591,7 @@ end;
 function GetVanillaAPrice(e: IInterface; Slots: string): Float;
 begin
 	Result := 0.0;
-	if HasKeyword(e, 'ArmorClothing') or (GetElementEditValues(m_eRecord, 'BOD2\Armor Type') = 'Clothing') then begin
+	if HasKeyword(e, 'ArmorClothing') or (GetElementEditValues(e, 'BOD2\Armor Type') = 'Clothing') then begin
 		Result := 25 + GlobalArmorPriceBonus;
 		Exit;
 	end;
@@ -2054,7 +2055,7 @@ begin
 	if (itemSignature = 'BOOK') then begin
 		
 		{ 1. Construct the target EditorID }
-		currentKeywordEDID := 'RecipeCraftingManual' + GetElementEditValues(itemRecord, 'EDID');
+		currentKeywordEDID := 'CF_RecipeCraftingManual' + GetElementEditValues(itemRecord, 'EDID');
 		
 		{ 2. Search for the existing recipe in the Patch File }
 		{ GroupBySignature ensures we are only looking inside 'COBJ' records }
@@ -2085,7 +2086,7 @@ begin
 		AddMissingManualCondition(recipeCraft, GlobalCraftingManual);
 		
 		
-		SetElementEditValues(recipeCraft, 'EDID', 'RecipeCraftingManual' + GetElementEditValues(itemRecord, 'EDID'));
+		SetElementEditValues(recipeCraft, 'EDID', 'CF_RecipeCraftingManual' + GetElementEditValues(itemRecord, 'EDID'));
 		SetElementEditValues(recipeCraft, 'BNAM', GetEditValue(getRecordByFormID(ARMOR_CRAFTING_WORKBENCH_FORM_ID)));
 		
 		
