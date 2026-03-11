@@ -311,8 +311,9 @@ begin
 			if (IsVisualSlot(m_Slots) = False)
 			and ((Pos('Ring ', m_Slots) > 0) = False) 
 			and ((Pos('Amulet ', m_Slots) > 0) = False)
-			and ((Pos('Backpack ', m_Slots) > 0) = False)
-			and ((Pos('Ears ', m_Slots) > 0) = False )  then begin
+			and ((Pos('Ears ', m_Slots) > 0) = False )  
+			and ((Pos('Circlet ', m_Slots) > 0) = False )
+			and ((Pos('Backpack ', m_Slots) > 0) = False) then begin
 				fMakeTemperable(m_NewRecord);
 			end;
 			
@@ -688,7 +689,8 @@ begin
 	{ Accessory / Visual / Jewelry Identification }
 	m_bIsJewelry := (Pos('Ring ', Slots) > 0)
 		or (Pos('Amulet ', Slots) > 0)
-		or (Pos('Ears ', Slots) > 0);
+		or (Pos('Ears ', Slots) > 0)
+		or (Pos('Circlet 'Slots) > 0);
 			
 	if m_bIsJewelry then begin
 		SetEditValue(armorTypeField, 'Clothing');
@@ -730,14 +732,14 @@ procedure fPurgeAllMaterialKeywords(e: IInterface);
 begin
 
 	{ Initial Cleanup }
-		removeKeywordV2(e, 'ArmorHelmet');
-		removeKeywordV2(e, 'ArmorCuirass');
-		removeKeywordV2(e, 'ArmorGauntlets');
-		removeKeywordV2(e, 'ArmorBoots');
-		removeKeywordV2(e, 'ArmorShield');
-		removeKeywordV2(e, 'ArmorHeavy');
-		removeKeywordV2(e, 'ArmorLight');
-		removeKeywordV2(e, 'ArmorClothing');
+	removeKeywordV2(e, 'ArmorHelmet');
+	removeKeywordV2(e, 'ArmorCuirass');
+	removeKeywordV2(e, 'ArmorGauntlets');
+	removeKeywordV2(e, 'ArmorBoots');
+	removeKeywordV2(e, 'ArmorShield');
+	removeKeywordV2(e, 'ArmorHeavy');
+	removeKeywordV2(e, 'ArmorLight');
+	removeKeywordV2(e, 'ArmorClothing');
 		
 	{ Vanilla & Common Materials }
 	removeKeywordV2(e, 'ArmorMaterialLeather');
@@ -755,24 +757,6 @@ begin
 	removeKeywordV2(e, 'ArmorMaterialEbony');
 	removeKeywordV2(e, 'ArmorMaterialDragonplate');
 	removeKeywordV2(e, 'ArmorMaterialDaedric');
-	
-	{ DLC / Special Materials }
-	{ removeKeywordV2(e, 'ArmorMaterialImperialLight'); }
-	{ removeKeywordV2(e, 'ArmorMaterialImperialStudded'); }
-	{ removeKeywordV2(e, 'ArmorMaterialImperialHeavy'); }
-	{ removeKeywordV2(e, 'ArmorMaterialStormcloak'); }
-	{ removeKeywordV2(e, 'DLC2ArmorMaterialBonemoldLight'); }
-	{ removeKeywordV2(e, 'DLC2ArmorMaterialChitinLight'); }
-	{ removeKeywordV2(e, 'DLC2ArmorMaterialChitinHeavy'); }
-	{ removeKeywordV2(e, 'DLC2ArmorMaterialStalhrimLight'); }
-	{ removeKeywordV2(e, 'DLC2ArmorMaterialStalhrimHeavy'); }
-	{ removeKeywordV2(e, 'DLC2ArmorMaterialNordicHeavy'); }
-	
-	{ Faction / Unique Materials }
-	{ removeKeywordV2(e, 'ArmorMaterialBlades'); }
-	{ removeKeywordV2(e, 'ArmorMaterialThievesGuild'); }
-	{ removeKeywordV2(e, 'ArmorMaterialThievesGuildLeader'); }
-	{ removeKeywordV2(e, 'DLC1ArmorMaterialDawnguard'); }
 
 	{ Safety: Ensure the global material is also removed before re-adding }
 	if GlobalOutfitMaterial <> '' then
@@ -828,15 +812,15 @@ begin
 			Exit;
 		end;
 
-		{ HEAD / HAIR / CIRCLET }
-		if (Pos('Head ', m_sSlots) > 0) or (Pos('Hair ', m_sSlots) > 0) or (Pos('Circlet ', m_sSlots) > 0) then begin
+		{ HEAD / HAIR }
+		if (Pos('Head ', m_sSlots) > 0) or (Pos('Hair ', m_sSlots) > 0) then begin
 			kw := GetKeywordByEditorID('ArmorHelmet');
 			if Assigned(kw) then addKeyword(e, kw);
 			Exit;
 		end;
 
 		{ HANDS / FOREARMS }
-		if (Pos('Hands ', m_sSlots) > 0) or ((Pos('Forearms ', m_sSlots) > 0)) then begin
+		if (Pos('Hands ', m_sSlots) > 0) then begin
 			kw := GetKeywordByEditorID('ArmorGauntlets');
 			if Assigned(kw) then addKeyword(e, kw);
 			AddFistKeywords(e);
@@ -1231,12 +1215,13 @@ function GetVanillaAR(e: IInterface; Slots: string): Float;
 begin
 	Result := 0;
 	if HasKeyword(e, 'ArmorClothing') then Exit;
+	if (GetElementEditValues(m_eRecord, 'BOD2\Armor Type') = 'Clothing') then Exit;
 
 	{==================== HEAVY ====================}
 	if HasKeyword(e, 'ArmorMaterialIron') then begin
 		if HasKeyword(e, 'ArmorCuirass') then begin Result := 25 + GlobalArmorBonus; Exit; end;
 		if HasKeyword(e, 'ArmorShield') then begin Result := 20 + GlobalArmorBonus; Exit; end;
-		if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0) then begin Result := 15 + GlobalArmorBonus; Exit; end;
+		if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0)  then begin Result := 15 + GlobalArmorBonus; Exit; end;
 		if HasKeyword(e, 'ArmorGauntlets') then begin Result := 10 + GlobalArmorBonus; Exit; end;
 		if HasKeyword(e, 'ArmorBoots') then begin Result := 10 + GlobalArmorBonus; Exit; end;
 		if Pos('Forearms ', Slots) > 0 then begin
@@ -1250,7 +1235,7 @@ begin
 	if HasKeyword(e, 'ArmorMaterialSteel') then begin
 		if HasKeyword(e, 'ArmorCuirass') then begin Result := 31 + GlobalArmorBonus; Exit; end;
 		if HasKeyword(e, 'ArmorShield') then begin Result := 24 + GlobalArmorBonus; Exit; end;
-		if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0) then begin Result := 17 + GlobalArmorBonus; Exit; end;
+		if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0)  then begin Result := 17 + GlobalArmorBonus; Exit; end;
 		if HasKeyword(e, 'ArmorGauntlets') then begin Result := 12 + GlobalArmorBonus; Exit; end;
 		if HasKeyword(e, 'ArmorBoots') then begin Result := 12 + GlobalArmorBonus; Exit; end;
 		if Pos('Forearms ', Slots) > 0 then begin
@@ -1264,7 +1249,7 @@ begin
 	if HasKeyword(e, 'ArmorMaterialDwarven') then begin
 		if HasKeyword(e, 'ArmorCuirass') then begin Result := 34 + GlobalArmorBonus; Exit; end;
 		if HasKeyword(e, 'ArmorShield') then begin Result := 26 + GlobalArmorBonus; Exit; end;
-		if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0) then begin Result := 18 + GlobalArmorBonus; Exit; end;
+		if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0)  then begin Result := 18 + GlobalArmorBonus; Exit; end;
 		if HasKeyword(e, 'ArmorGauntlets') then begin Result := 13 + GlobalArmorBonus; Exit; end;
 		if HasKeyword(e, 'ArmorBoots') then begin Result := 13 + GlobalArmorBonus; Exit; end;
 		if Pos('Forearms ', Slots) > 0 then begin
@@ -1278,7 +1263,7 @@ begin
 	if HasKeyword(e, 'ArmorMaterialOrcish') then begin
 		if HasKeyword(e, 'ArmorCuirass') then begin Result := 40 + GlobalArmorBonus; Exit; end;
 		if HasKeyword(e, 'ArmorShield') then begin Result := 30 + GlobalArmorBonus; Exit; end;
-		if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0) then begin Result := 20 + GlobalArmorBonus; Exit; end;
+		if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0)  then begin Result := 20 + GlobalArmorBonus; Exit; end;
 		if HasKeyword(e, 'ArmorGauntlets') then begin Result := 15 + GlobalArmorBonus; Exit; end;
 		if HasKeyword(e, 'ArmorBoots') then begin Result := 15 + GlobalArmorBonus; Exit; end;
 		if Pos('Forearms ', Slots) > 0 then begin
@@ -1292,7 +1277,7 @@ begin
 	if HasKeyword(e, 'ArmorMaterialSteelPlate') then begin
 		if HasKeyword(e, 'ArmorCuirass') then begin Result := 40 + GlobalArmorBonus; Exit; end;
 		if HasKeyword(e, 'ArmorShield') then begin Result := 28 + GlobalArmorBonus; Exit; end;
-		if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0) then begin Result := 19 + GlobalArmorBonus; Exit; end;
+		if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0)  then begin Result := 19 + GlobalArmorBonus; Exit; end;
 		if HasKeyword(e, 'ArmorGauntlets') then begin Result := 14 + GlobalArmorBonus; Exit; end;
 		if HasKeyword(e, 'ArmorBoots') then begin Result := 14 + GlobalArmorBonus; Exit; end;
 		if Pos('Forearms ', Slots) > 0 then begin
@@ -1306,7 +1291,7 @@ begin
 	if HasKeyword(e, 'ArmorMaterialEbony') then begin
 		if HasKeyword(e, 'ArmorCuirass') then begin Result := 43 + GlobalArmorBonus; Exit; end;
 		if HasKeyword(e, 'ArmorShield') then begin Result := 32 + GlobalArmorBonus; Exit; end;
-		if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0) then begin Result := 21 + GlobalArmorBonus; Exit; end;
+		if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0)  then begin Result := 21 + GlobalArmorBonus; Exit; end;
 		if HasKeyword(e, 'ArmorGauntlets') then begin Result := 16 + GlobalArmorBonus; Exit; end;
 		if HasKeyword(e, 'ArmorBoots') then begin Result := 16 + GlobalArmorBonus; Exit; end;
 		if Pos('Forearms ', Slots) > 0 then begin
@@ -1320,7 +1305,7 @@ begin
 	if HasKeyword(e, 'ArmorMaterialDaedric') then begin
 		if HasKeyword(e, 'ArmorCuirass') then begin Result := 49 + GlobalArmorBonus; Exit; end;
 		if HasKeyword(e, 'ArmorShield') then begin Result := 36 + GlobalArmorBonus; Exit; end;
-		if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0) then begin Result := 23 + GlobalArmorBonus; Exit; end;
+		if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0)  then begin Result := 23 + GlobalArmorBonus; Exit; end;
 		if HasKeyword(e, 'ArmorGauntlets') then begin Result := 18 + GlobalArmorBonus; Exit; end;
 		if HasKeyword(e, 'ArmorBoots') then begin Result := 18 + GlobalArmorBonus; Exit; end;
 		if Pos('Forearms ', Slots) > 0 then begin
@@ -1334,7 +1319,7 @@ begin
 	if HasKeyword(e, 'ArmorMaterialDragonplate') then begin
 		if HasKeyword(e, 'ArmorCuirass') then begin Result := 46 + GlobalArmorBonus; Exit; end;
 		if HasKeyword(e, 'ArmorShield') then begin Result := 34 + GlobalArmorBonus; Exit; end;
-		if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0) then begin Result := 22 + GlobalArmorBonus; Exit; end;
+		if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0)  then begin Result := 22 + GlobalArmorBonus; Exit; end;
 		if HasKeyword(e, 'ArmorGauntlets') then begin Result := 17 + GlobalArmorBonus; Exit; end;
 		if HasKeyword(e, 'ArmorBoots') then begin Result := 17 + GlobalArmorBonus; Exit; end;
 		if Pos('Forearms ', Slots) > 0 then begin
@@ -1350,7 +1335,7 @@ begin
 	if HasKeyword(e, 'ArmorMaterialLeather') then begin
 		if HasKeyword(e, 'ArmorCuirass') then begin Result := 26 + GlobalArmorBonus; Exit; end;
 		if HasKeyword(e, 'ArmorShield') then begin Result := 18 + GlobalArmorBonus; Exit; end;
-		if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0) then begin Result := 12 + GlobalArmorBonus; Exit; end;
+		if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0)  then begin Result := 12 + GlobalArmorBonus; Exit; end;
 		if HasKeyword(e, 'ArmorGauntlets') then begin Result := 7 + GlobalArmorBonus; Exit; end;
 		if HasKeyword(e, 'ArmorBoots') then begin Result := 7 + GlobalArmorBonus; Exit; end;
 		if Pos('Forearms ', Slots) > 0 then begin
@@ -1364,7 +1349,7 @@ begin
 	if HasKeyword(e, 'ArmorMaterialScaled') then begin
 		if HasKeyword(e, 'ArmorCuirass') then begin Result := 32 + GlobalArmorBonus; Exit; end;
 		if HasKeyword(e, 'ArmorShield') then begin Result := 20 + GlobalArmorBonus; Exit; end;
-		if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0) then begin Result := 14 + GlobalArmorBonus; Exit; end;
+		if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0)  then begin Result := 14 + GlobalArmorBonus; Exit; end;
 		if HasKeyword(e, 'ArmorGauntlets') then begin Result := 9 + GlobalArmorBonus; Exit; end;
 		if HasKeyword(e, 'ArmorBoots') then begin Result := 9 + GlobalArmorBonus; Exit; end;
 		if Pos('Forearms ', Slots) > 0 then begin
@@ -1378,7 +1363,7 @@ begin
 	if HasKeyword(e, 'ArmorMaterialElven') then begin
 		if HasKeyword(e, 'ArmorCuirass') then begin Result := 29 + GlobalArmorBonus; Exit; end;
 		if HasKeyword(e, 'ArmorShield') then begin Result := 21 + GlobalArmorBonus; Exit; end;
-		if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0) then begin Result := 13 + GlobalArmorBonus; Exit; end;
+		if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0)  then begin Result := 13 + GlobalArmorBonus; Exit; end;
 		if HasKeyword(e, 'ArmorGauntlets') then begin Result := 8 + GlobalArmorBonus; Exit; end;
 		if HasKeyword(e, 'ArmorBoots') then begin Result := 8 + GlobalArmorBonus; Exit; end;
 		if Pos('Forearms ', Slots) > 0 then begin
@@ -1392,7 +1377,7 @@ begin
 	if HasKeyword(e, 'ArmorMaterialGlass') then begin
 		if HasKeyword(e, 'ArmorCuirass') then begin Result := 38 + GlobalArmorBonus; Exit; end;
 		if HasKeyword(e, 'ArmorShield') then begin Result := 27 + GlobalArmorBonus; Exit; end;
-		if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0) then begin Result := 16 + GlobalArmorBonus; Exit; end;
+		if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0)  then begin Result := 16 + GlobalArmorBonus; Exit; end;
 		if HasKeyword(e, 'ArmorGauntlets') then begin Result := 11 + GlobalArmorBonus; Exit; end;
 		if HasKeyword(e, 'ArmorBoots') then begin Result := 11 + GlobalArmorBonus; Exit; end;
 		if Pos('Forearms ', Slots) > 0 then begin
@@ -1406,7 +1391,7 @@ begin
 	if HasKeyword(e, 'ArmorMaterialDragonscale') then begin
 		if HasKeyword(e, 'ArmorCuirass') then begin Result := 41 + GlobalArmorBonus; Exit; end;
 		if HasKeyword(e, 'ArmorShield') then begin Result := 29 + GlobalArmorBonus; Exit; end;
-		if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0) then begin Result := 17 + GlobalArmorBonus; Exit; end;
+		if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0)  then begin Result := 17 + GlobalArmorBonus; Exit; end;
 		if HasKeyword(e, 'ArmorGauntlets') then begin Result := 12 + GlobalArmorBonus; Exit; end;
 		if HasKeyword(e, 'ArmorBoots') then begin Result := 12 + GlobalArmorBonus; Exit; end;
 		if Pos('Forearms ', Slots) > 0 then begin
@@ -1427,12 +1412,13 @@ begin
 	Result := VISUAL_SLOT_WEIGHT;
 	m_WeightReduceHeavy := GlobalSmithingReq * 0.1; 
 	if HasKeyword(e, 'ArmorClothing') then Exit;
+	if (GetElementEditValues(m_eRecord, 'BOD2\Armor Type') = 'Clothing') then Exit;
 
 	{==================== HEAVY ====================}
 	if HasKeyword(e, 'ArmorMaterialIron') then begin
 		if HasKeyword(e, 'ArmorCuirass') then begin Result := 30 - m_WeightReduceHeavy; Exit; end;
 		if HasKeyword(e, 'ArmorShield') then begin Result := 12; Exit; end;
-		if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0) then begin Result := 6; Exit; end;
+		if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0)  then begin Result := 6; Exit; end;
 		if HasKeyword(e, 'ArmorGauntlets') then begin Result := 5; Exit; end;
 		if HasKeyword(e, 'ArmorBoots') then begin Result := 5; Exit; end;
 		if Pos('Forearms ', Slots) > 0 then begin
@@ -1445,7 +1431,7 @@ begin
 	if HasKeyword(e, 'ArmorMaterialSteel') then begin
 		if HasKeyword(e, 'ArmorCuirass') then begin Result := 35 - m_WeightReduceHeavy; Exit; end;
 		if HasKeyword(e, 'ArmorShield') then begin Result := 12; Exit; end;
-		if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0) then begin Result := 5; Exit; end;
+		if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0)  then begin Result := 5; Exit; end;
 		if HasKeyword(e, 'ArmorGauntlets') then begin Result := 4; Exit; end;
 		if HasKeyword(e, 'ArmorBoots') then begin Result := 4; Exit; end;
 		if Pos('Forearms ', Slots) > 0 then begin
@@ -1458,7 +1444,7 @@ begin
 	if HasKeyword(e, 'ArmorMaterialDwarven') then begin
 		if HasKeyword(e, 'ArmorCuirass') then begin Result := 45 - m_WeightReduceHeavy; Exit; end;
 		if HasKeyword(e, 'ArmorShield') then begin Result := 15; Exit; end;
-		if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0) then begin Result := 12; Exit; end;
+		if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0)  then begin Result := 12; Exit; end;
 		if HasKeyword(e, 'ArmorGauntlets') then begin Result := 8; Exit; end;
 		if HasKeyword(e, 'ArmorBoots') then begin Result := 8; Exit; end;
 		if Pos('Forearms ', Slots) > 0 then begin
@@ -1471,7 +1457,7 @@ begin
 	if HasKeyword(e, 'ArmorMaterialOrcish') then begin
 		if HasKeyword(e, 'ArmorCuirass') then begin Result := 35 - m_WeightReduceHeavy; Exit; end;
 		if HasKeyword(e, 'ArmorShield') then begin Result := 14; Exit; end;
-		if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0) then begin Result := 8; Exit; end;
+		if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0)  then begin Result := 8; Exit; end;
 		if HasKeyword(e, 'ArmorGauntlets') then begin Result := 7; Exit; end;
 		if HasKeyword(e, 'ArmorBoots') then begin Result := 7; Exit; end;
 		if Pos('Forearms ', Slots) > 0 then begin
@@ -1484,7 +1470,7 @@ begin
 	if HasKeyword(e, 'ArmorMaterialSteelPlate') then begin
 		if HasKeyword(e, 'ArmorCuirass') then begin Result := 38 - m_WeightReduceHeavy; Exit; end;
 		if HasKeyword(e, 'ArmorShield') then begin Result := 12; Exit; end;
-		if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0) then begin Result := 9; Exit; end;
+		if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0)  then begin Result := 9; Exit; end;
 		if HasKeyword(e, 'ArmorGauntlets') then begin Result := 6; Exit; end;
 		if HasKeyword(e, 'ArmorBoots') then begin Result := 6; Exit; end;
 		if Pos('Forearms ', Slots) > 0 then begin
@@ -1497,7 +1483,7 @@ begin
 	if HasKeyword(e, 'ArmorMaterialEbony') then begin
 		if HasKeyword(e, 'ArmorCuirass') then begin Result := 38 - m_WeightReduceHeavy; Exit; end;
 		if HasKeyword(e, 'ArmorShield') then begin Result := 14; Exit; end;
-		if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0) then begin Result := 10; Exit; end;
+		if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0)  then begin Result := 10; Exit; end;
 		if HasKeyword(e, 'ArmorGauntlets') then begin Result := 7; Exit; end;
 		if HasKeyword(e, 'ArmorBoots') then begin Result := 7; Exit; end;
 		if Pos('Forearms ', Slots) > 0 then begin
@@ -1510,7 +1496,7 @@ begin
 	if HasKeyword(e, 'ArmorMaterialDaedric') then begin
 		if HasKeyword(e, 'ArmorCuirass') then begin Result := 50 - m_WeightReduceHeavy; Exit; end;
 		if HasKeyword(e, 'ArmorShield') then begin Result := 15; Exit; end;
-		if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0) then begin Result := 10; Exit; end;
+		if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0)  then begin Result := 10; Exit; end;
 		if HasKeyword(e, 'ArmorGauntlets') then begin Result := 6; Exit; end;
 		if HasKeyword(e, 'ArmorBoots') then begin Result := 6; Exit; end;
 		if Pos('Forearms ', Slots) > 0 then begin
@@ -1523,7 +1509,7 @@ begin
 	if HasKeyword(e, 'ArmorMaterialDragonplate') then begin
 		if HasKeyword(e, 'ArmorCuirass') then begin Result := 40 - m_WeightReduceHeavy; Exit; end;
 		if HasKeyword(e, 'ArmorShield') then begin Result := 12; Exit; end;
-		if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0) then begin Result := 8; Exit; end;
+		if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0)  then begin Result := 8; Exit; end;
 		if HasKeyword(e, 'ArmorGauntlets') then begin Result := 8; Exit; end;
 		if HasKeyword(e, 'ArmorBoots') then begin Result := 8; Exit; end;
 		if Pos('Forearms ', Slots) > 0 then begin
@@ -1537,7 +1523,7 @@ begin
 	if HasKeyword(e, 'ArmorMaterialLeather') then begin
 		if HasKeyword(e, 'ArmorCuirass') then begin Result := 6; Exit; end;
 		if HasKeyword(e, 'ArmorShield') then begin Result := 4; Exit; end;
-		if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0) then begin Result := 2; Exit; end;
+		if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0)  then begin Result := 2; Exit; end;
 		if HasKeyword(e, 'ArmorGauntlets') then begin Result := 2; Exit; end;
 		if HasKeyword(e, 'ArmorBoots') then begin Result := 2; Exit; end;
 		if Pos('Forearms ', Slots) > 0 then begin
@@ -1550,7 +1536,7 @@ begin
 	if HasKeyword(e, 'ArmorMaterialScaled') then begin
 		if HasKeyword(e, 'ArmorCuirass') then begin Result := 6; Exit; end;
 		if HasKeyword(e, 'ArmorShield') then begin Result := 6; Exit; end;
-		if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0) then begin Result := 2; Exit; end;
+		if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0)  then begin Result := 2; Exit; end;
 		if HasKeyword(e, 'ArmorGauntlets') then begin Result := 2; Exit; end;
 		if HasKeyword(e, 'ArmorBoots') then begin Result := 2; Exit; end;
 		if Pos('Forearms ', Slots) > 0 then begin
@@ -1563,7 +1549,7 @@ begin
 	if HasKeyword(e, 'ArmorMaterialElven') then begin
 		if HasKeyword(e, 'ArmorCuirass') then begin Result := 4; Exit; end;
 		if HasKeyword(e, 'ArmorShield') then begin Result := 4; Exit; end;
-		if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0) then begin Result := 1; Exit; end;
+		if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0)  then begin Result := 1; Exit; end;
 		if HasKeyword(e, 'ArmorGauntlets') then begin Result := 1; Exit; end;
 		if HasKeyword(e, 'ArmorBoots') then begin Result := 1; Exit; end;
 		if Pos('Forearms ', Slots) > 0 then begin
@@ -1576,7 +1562,7 @@ begin
 	if HasKeyword(e, 'ArmorMaterialGlass') then begin
 		if HasKeyword(e, 'ArmorCuirass') then begin Result := 7; Exit; end;
 		if HasKeyword(e, 'ArmorShield') then begin Result := 6; Exit; end;
-		if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0) then begin Result := 2; Exit; end;
+		if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0)  then begin Result := 2; Exit; end;
 		if HasKeyword(e, 'ArmorGauntlets') then begin Result := 2; Exit; end; { Fixed from 11 to 2 }
 		if HasKeyword(e, 'ArmorBoots') then begin Result := 2; Exit; end;
 		if Pos('Forearms ', Slots) > 0 then begin
@@ -1589,7 +1575,7 @@ begin
 	if HasKeyword(e, 'ArmorMaterialDragonscale') then begin
 		if HasKeyword(e, 'ArmorCuirass') then begin Result := 10; Exit; end;
 		if HasKeyword(e, 'ArmorShield') then begin Result := 6; Exit; end;
-		if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0) then begin Result := 4; Exit; end;
+		if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0)  then begin Result := 4; Exit; end;
 		if HasKeyword(e, 'ArmorGauntlets') then begin Result := 3; Exit; end;
 		if HasKeyword(e, 'ArmorBoots') then begin Result := 3; Exit; end;
 		if Pos('Forearms ', Slots) > 0 then begin
@@ -1604,7 +1590,7 @@ end;
 function GetVanillaAPrice(e: IInterface; Slots: string): Float;
 begin
 	Result := 0.0;
-	if HasKeyword(e, 'ArmorClothing') then begin
+	if HasKeyword(e, 'ArmorClothing') or (GetElementEditValues(m_eRecord, 'BOD2\Armor Type') = 'Clothing') then begin
 		Result := 25 + GlobalArmorPriceBonus;
 		Exit;
 	end;
@@ -1613,7 +1599,7 @@ begin
 	if HasKeyword(e, 'ArmorMaterialIron') then begin
 		if HasKeyword(e, 'ArmorCuirass') then Result := 125;
 		if (Result = 0) and HasKeyword(e, 'ArmorShield') then Result := 60;
-		if (Result = 0) and (HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0)) then Result := 60;
+		if (Result = 0) and (HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0)) then Result := 60;
 		if (Result = 0) and HasKeyword(e, 'ArmorGauntlets') then Result := 25;
 		if (Result = 0) and HasKeyword(e, 'ArmorBoots') then Result := 25;
 		if (Result = 0) and (Pos('Forearms ', Slots) > 0) then begin
@@ -1627,7 +1613,7 @@ begin
 	if HasKeyword(e, 'ArmorMaterialSteel') then begin
 		if HasKeyword(e, 'ArmorCuirass') then Result := 275;
 		if (Result = 0) and HasKeyword(e, 'ArmorShield') then Result := 150;
-		if (Result = 0) and (HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0)) then Result := 125;
+		if (Result = 0) and (HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0)) then Result := 125;
 		if (Result = 0) and HasKeyword(e, 'ArmorGauntlets') then Result := 55;
 		if (Result = 0) and HasKeyword(e, 'ArmorBoots') then Result := 55;
 		if (Result = 0) and (Pos('Forearms ', Slots) > 0) then begin
@@ -1641,7 +1627,7 @@ begin
 	if HasKeyword(e, 'ArmorMaterialDwarven') then begin
 		if HasKeyword(e, 'ArmorCuirass') then Result := 400;
 		if (Result = 0) and HasKeyword(e, 'ArmorShield') then Result := 225;
-		if (Result = 0) and (HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0)) then Result := 200;
+		if (Result = 0) and (HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0)) then Result := 200;
 		if (Result = 0) and HasKeyword(e, 'ArmorGauntlets') then Result := 85;
 		if (Result = 0) and HasKeyword(e, 'ArmorBoots') then Result := 85;
 		if (Result = 0) and (Pos('Forearms ', Slots) > 0) then begin
@@ -1655,7 +1641,7 @@ begin
 	if HasKeyword(e, 'ArmorMaterialOrcish') then begin
 		if HasKeyword(e, 'ArmorCuirass') then Result := 1000;
 		if (Result = 0) and HasKeyword(e, 'ArmorShield') then Result := 500;
-		if (Result = 0) and (HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0)) then Result := 500;
+		if (Result = 0) and (HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0)) then Result := 500;
 		if (Result = 0) and HasKeyword(e, 'ArmorGauntlets') then Result := 200;
 		if (Result = 0) and HasKeyword(e, 'ArmorBoots') then Result := 200;
 		if (Result = 0) and (Pos('Forearms ', Slots) > 0) then begin
@@ -1669,7 +1655,7 @@ begin
 	if HasKeyword(e, 'ArmorMaterialSteelPlate') then begin
 		if HasKeyword(e, 'ArmorCuirass') then Result := 625;
 		if (Result = 0) and HasKeyword(e, 'ArmorShield') then Result := 150;
-		if (Result = 0) and (HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0)) then Result := 300;
+		if (Result = 0) and (HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0)) then Result := 300;
 		if (Result = 0) and HasKeyword(e, 'ArmorGauntlets') then Result := 125;
 		if (Result = 0) and HasKeyword(e, 'ArmorBoots') then Result := 125;
 		if (Result = 0) and (Pos('Forearms ', Slots) > 0) then begin
@@ -1683,7 +1669,7 @@ begin
 	if HasKeyword(e, 'ArmorMaterialEbony') then begin
 		if HasKeyword(e, 'ArmorCuirass') then Result := 1500;
 		if (Result = 0) and HasKeyword(e, 'ArmorShield') then Result := 750;
-		if (Result = 0) and (HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0)) then Result := 750;
+		if (Result = 0) and (HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0)) then Result := 750;
 		if (Result = 0) and HasKeyword(e, 'ArmorGauntlets') then Result := 275;
 		if (Result = 0) and HasKeyword(e, 'ArmorBoots') then Result := 275;
 		if (Result = 0) and (Pos('Forearms ', Slots) > 0) then begin
@@ -1697,7 +1683,7 @@ begin
 	if HasKeyword(e, 'ArmorMaterialDaedric') then begin
 		if HasKeyword(e, 'ArmorCuirass') then Result := 3200;
 		if (Result = 0) and HasKeyword(e, 'ArmorShield') then Result := 1600;
-		if (Result = 0) and (HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0)) then Result := 1600;
+		if (Result = 0) and (HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0)) then Result := 1600;
 		if (Result = 0) and HasKeyword(e, 'ArmorGauntlets') then Result := 625;
 		if (Result = 0) and HasKeyword(e, 'ArmorBoots') then Result := 625;
 		if (Result = 0) and (Pos('Forearms ', Slots) > 0) then begin
@@ -1711,7 +1697,7 @@ begin
 	if HasKeyword(e, 'ArmorMaterialDragonplate') then begin
 		if HasKeyword(e, 'ArmorCuirass') then Result := 2125;
 		if (Result = 0) and HasKeyword(e, 'ArmorShield') then Result := 1050;
-		if (Result = 0) and (HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0)) then Result := 1050;
+		if (Result = 0) and (HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0)) then Result := 1050;
 		if (Result = 0) and HasKeyword(e, 'ArmorGauntlets') then Result := 425;
 		if (Result = 0) and HasKeyword(e, 'ArmorBoots') then Result := 425;
 		if (Result = 0) and (Pos('Forearms ', Slots) > 0) then begin
@@ -1726,7 +1712,7 @@ begin
 	if HasKeyword(e, 'ArmorMaterialLeather') then begin
 		if HasKeyword(e, 'ArmorCuirass') then Result := 125;
 		if (Result = 0) and HasKeyword(e, 'ArmorShield') then Result := 40;
-		if (Result = 0) and (HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0)) then Result := 60;
+		if (Result = 0) and (HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0)) then Result := 60;
 		if (Result = 0) and HasKeyword(e, 'ArmorGauntlets') then Result := 25;
 		if (Result = 0) and HasKeyword(e, 'ArmorBoots') then Result := 25;
 		if (Result = 0) and (Pos('Forearms ', Slots) > 0) then begin
@@ -1740,7 +1726,7 @@ begin
 	if HasKeyword(e, 'ArmorMaterialScaled') then begin
 		if HasKeyword(e, 'ArmorCuirass') then Result := 350;
 		if (Result = 0) and HasKeyword(e, 'ArmorShield') then Result := 175;
-		if (Result = 0) and (HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0)) then Result := 175;
+		if (Result = 0) and (HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0)) then Result := 175;
 		if (Result = 0) and HasKeyword(e, 'ArmorGauntlets') then Result := 70;
 		if (Result = 0) and HasKeyword(e, 'ArmorBoots') then Result := 70;
 		if (Result = 0) and (Pos('Forearms ', Slots) > 0) then begin
@@ -1754,7 +1740,7 @@ begin
 	if HasKeyword(e, 'ArmorMaterialElven') then begin
 		if HasKeyword(e, 'ArmorCuirass') then Result := 225;
 		if (Result = 0) and HasKeyword(e, 'ArmorShield') then Result := 115;
-		if (Result = 0) and (HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0)) then Result := 110;
+		if (Result = 0) and (HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0)) then Result := 110;
 		if (Result = 0) and HasKeyword(e, 'ArmorGauntlets') then Result := 45;
 		if (Result = 0) and HasKeyword(e, 'ArmorBoots') then Result := 45;
 		if (Result = 0) and (Pos('Forearms ', Slots) > 0) then begin
@@ -1768,7 +1754,7 @@ begin
 	if HasKeyword(e, 'ArmorMaterialGlass') then begin
 		if HasKeyword(e, 'ArmorCuirass') then Result := 900;
 		if (Result = 0) and HasKeyword(e, 'ArmorShield') then Result := 450;
-		if (Result = 0) and (HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0)) then Result := 450;
+		if (Result = 0) and (HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0)) then Result := 450;
 		if (Result = 0) and HasKeyword(e, 'ArmorGauntlets') then Result := 190;
 		if (Result = 0) and HasKeyword(e, 'ArmorBoots') then Result := 190;
 		if (Result = 0) and (Pos('Forearms ', Slots) > 0) then begin
@@ -1782,7 +1768,7 @@ begin
 	if HasKeyword(e, 'ArmorMaterialDragonscale') then begin
 		if HasKeyword(e, 'ArmorCuirass') then Result := 1500;
 		if (Result = 0) and HasKeyword(e, 'ArmorShield') then Result := 750;
-		if (Result = 0) and (HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0) or (Pos('Circlet ', Slots) > 0)) then Result := 750;
+		if (Result = 0) and (HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', Slots) > 0)) then Result := 750;
 		if (Result = 0) and HasKeyword(e, 'ArmorGauntlets') then Result := 300;
 		if (Result = 0) and HasKeyword(e, 'ArmorBoots') then Result := 300;
 		if (Result = 0) and (Pos('Forearms ', Slots) > 0) then begin
