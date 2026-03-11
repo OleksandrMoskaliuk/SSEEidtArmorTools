@@ -49,8 +49,6 @@ const
 	{========================================================}
 	MO2_MODS_DIR = 'D:\GAMES\Honediem\mods\';
 	FOR_FEMALE_ONLY = True;
-	BACKPACK_SLOT_ENCHANTABLE = True;
-	ADVANCED_ENCHANTMENT_PROTECTION = True;
 	CRAFTING_MANUAL_PRICE_MULTIPLIER = 50; // Book value = GlobalSmithingReq * CRAFTING_MANUAL_PRICE_MULTIPLIER
 	VISUAL_SLOT_WEIGHT = 0.1;
 	IS_PERK_REQUIRED = False;
@@ -571,7 +569,7 @@ begin
 			or (slotName = 'Shield')
 			or (slotName = 'Hair')
 			or (slotName = 'Circlet')
-			or ((slotName = 'Backpack') and BACKPACK_SLOT_ENCHANTABLE)
+			or ((slotName = 'Backpack')
 			or (slotName = 'Amulet')
 			or (slotName = 'Ring')
 			or (slotName = 'Ears')
@@ -618,27 +616,24 @@ begin
 	end;
 
 	{ 3. Enchantment Swapper Protection }
-	if ADVANCED_ENCHANTMENT_PROTECTION then begin
-		if Assigned(enc) then begin
-			{ Check if Object Effect is missing or set to [00000000] }
-			if (not Assigned(ElementByPath(e, 'EITM'))) or (FixedFormID(ElementByPath(e, 'EITM')) = 0) then begin
-				
-				{ Ensure the EITM field exists }
-				if not Assigned(ElementByPath(e, 'EITM')) then
-					Add(e, 'EITM', True);
-				
-				{ Set the dummy enchantment }
-				SetNativeValue(ElementByPath(e, 'EITM'), FixedFormID(enc));
-				
-				{ Ensure EAMT exists and set to 0 }
-				if not Assigned(ElementByPath(e, 'EAMT')) then
-					Add(e, 'EAMT', True);
-				SetElementEditValues(e, 'EAMT', '0');
-			end;
-		end else begin
-			AddMessage('Warning: m_DummyEnch cache is empty for ' + Name(e));
+	if Assigned(enc) then begin
+		{ Check if Object Effect is missing or set to [00000000] }
+		if (not Assigned(ElementByPath(e, 'EITM'))) or (FixedFormID(ElementByPath(e, 'EITM')) = 0) then begin
+			
+			{ Ensure the EITM field exists }
+			if not Assigned(ElementByPath(e, 'EITM')) then
+				Add(e, 'EITM', True);
+			
+			{ Set the dummy enchantment }
+			SetNativeValue(ElementByPath(e, 'EITM'), FixedFormID(enc));
+			
+			{ Ensure EAMT exists and set to 0 }
+			if not Assigned(ElementByPath(e, 'EAMT')) then
+				Add(e, 'EAMT', True);
+			SetElementEditValues(e, 'EAMT', '0');
 		end;
 	end;
+	
 end;
 
 {========================================================}
@@ -2478,7 +2473,6 @@ begin
 			
 			{ Generic Base for all Jewelry/Backpacks }
 			addItemV2(recipeItems, GetMaterial('LeatherStrips'), 2);
-			addItemV2(recipeItems, GetMaterial('Leather01'), 1);
 			
 			{ - LIGHT MATERIALS - }
 			if HasKeyword(itemRecord, 'ArmorMaterialLeather') then begin 
@@ -2529,7 +2523,7 @@ begin
 
 			{ Special Case: Backpacks always need extra Leather }
 			if (Pos(GetFirstPersonFlags(itemRecord), 'Backpack ') > 0) then begin
-				addItemV2(recipeItems, GetMaterial('Leather01'), 1);
+				addItemV2(recipeItems, GetMaterial('Leather01'), 2);
 			end;
 
 			{ Cleanup and Validation }
