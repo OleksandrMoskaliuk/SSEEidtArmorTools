@@ -28,6 +28,8 @@ Add the NameCode to your mod's **Notes** in the MO2 UI.
 | **Lr** | Leather | **Dp** | Dragonplate |
 | **Sd** | Scaled | **Ds** | Dragonscale |
 
+![alt text](img\mo2_lightarmor_notes.png)
+
 > **Note on Scaling:** In the example above, `74` represents the **Smithing Skill** required. The script uses this number to calculate the actual **Character Level** requirement automatically.
 
 ---
@@ -50,7 +52,7 @@ $$PlayerLevel = 1 + (59 \times (\frac{SmithingSkill}{100})^2)$$
 | **80** | **Level 39** |
 | **100** | **Level 60** |
 
-![alt text](PlayerLVRequirement.png)
+![alt text](img\PlayerLVRequirement.png)
 ---
 
 ## 🧩 Compatibility & Overhauls (3BFTweaks / Requiem)
