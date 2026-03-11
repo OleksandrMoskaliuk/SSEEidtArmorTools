@@ -35,6 +35,8 @@ Add the NameCode to your mod's **Notes** in the MO2 UI.
 | Heavy Armor | Daedric | **Dc** | Daedric |
 | Heavy Armor | Dragonplate | **Dp** | Dragonplate |
 
+![alt text](img/mo2_lightarmor_notes.png)
+
 > **Note on Scaling:** In the example above, `74` represents the **Smithing Skill** required. The script uses this number to calculate the actual **Character Level** requirement automatically.
 
 ---
