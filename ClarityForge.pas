@@ -85,18 +85,17 @@ begin
 	Result := 0;
 
 	{ Set Global Values }
-	GlobalSmithingReq := 5; // Smithing Skill Level 0 - 100;
-	GlobalPlayerLevelReq := 0;
+	GlobalSmithingReq := 0; // Smithing Skill Level 0 - 100;
 	GlobalArmorBonus := GlobalSmithingReq / 15.0; // Too much ArmorRating will cause Requiem script to fail
+	GlobalWeaponDamageBonus := 0;
+	GlobalWeaponPriceBonus := 0;
+	GlobalArmorPriceBonus := 0;
+	GlobalWeaponWeightBonus := 0;
+	GlobalPlayerLevelReq := 0;
 	GlobalFileName := '';
 	GlobalOutfitMaterial := '';
-
-	{ Note: Result of division is Float, so we Round for Integer bonuses }
-	GlobalWeaponDamageBonus := Round(GlobalSmithingReq / 40.0);
-	GlobalWeaponPriceBonus := GlobalSmithingReq;
-	GlobalArmorPriceBonus := Round(GlobalSmithingReq / 10.0);
 	
-	GlobalWeaponWeightBonus := GlobalSmithingReq / 20.0;
+	// Forearms considered as "Visual Only" in V2.0+
 	GlobalForearmsDebuffMultiplier := 0;
 	
 	{ Reset Tracking Booleans }
@@ -106,7 +105,6 @@ begin
 	
 	{ Logging Configuration }
 	AddMessage('--- ARMOR CONFIGURATOR STARTED ---');
-	AddMessage('SMITHING REQUIREMENT = ' + IntToStr(GlobalSmithingReq));
 	
 	// Creating Patch file
 	GlobalVarFileName := 'ClarityForge_Patch.esp';
@@ -213,6 +211,12 @@ begin
 
 		if (iTempLevel >= 5) and (iTempLevel <= 100) then begin
 			GlobalSmithingReq  := iTempLevel;
+			AddMessage('SMITHING REQUIREMENT = ' + IntToStr(GlobalSmithingReq));
+			GlobalArmorBonus := GlobalSmithingReq / 15.0; // Too much ArmorRating will cause Requiem script to fail
+			GlobalArmorPriceBonus := Round(GlobalSmithingReq / 10.0);
+			GlobalWeaponDamageBonus := Round(GlobalSmithingReq / 40.0);
+			GlobalWeaponPriceBonus := GlobalSmithingReq;
+			GlobalWeaponWeightBonus := GlobalSmithingReq / 20.0;
 			// Final calculation for Character Level
 			GlobalPlayerLevelReq := fGetCurvedPlayerLevel(GlobalSmithingReq);
 			
@@ -1410,7 +1414,7 @@ var
 	m_WeightReduceHeavy: Float;
 begin
 	Result := VISUAL_SLOT_WEIGHT;
-	m_WeightReduceHeavy := 9; 
+	m_WeightReduceHeavy := GlobalSmithingReq * 0.1; 
 	if HasKeyword(e, 'ArmorClothing') then Exit;
 
 	{==================== HEAVY ====================}
