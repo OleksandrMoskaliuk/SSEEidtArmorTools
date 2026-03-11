@@ -569,12 +569,10 @@ begin
 			or (slotName = 'Shield')
 			or (slotName = 'Hair')
 			or (slotName = 'Circlet')
-			or ((slotName = 'Backpack')
+			or (slotName = 'Backpack')
 			or (slotName = 'Amulet')
 			or (slotName = 'Ring')
-			or (slotName = 'Ears')
-			// or (slotName = 'Forearms') disabled in v2.0
-			then begin
+			or (slotName = 'Ears') then begin
 				hasGameplaySlot := True;
 				Break;				// one is enough
 			end;
@@ -2527,12 +2525,12 @@ begin
 			end;
 
 			{ Cleanup and Validation }
-			removeInvalidEntries(recipeItems);
+			removeInvalidEntries(recipeCraft);
 			if GetElementEditValues(recipeCraft, 'COCT') = '' then begin
-				AddMessage('Warning: No item requirements specified for Jewelry: ' + Name(itemRecord));
+				AddMessage('Warning: No item requirements specified for Jewelry/Backpack: ' + Name(itemRecord));
 			end;
 			Result := recipeCraft;
-			Exit;	
+			Exit;
 		end;
 		
 
@@ -3220,7 +3218,7 @@ begin
 	if Assigned(m_FileHandle) then begin
 		// Add necessary base masters
 		AddMasterIfMissing(m_FileHandle, 'Skyrim.esm');
-		AddMasterIfMissing(m_FileHandle, 'Update.esm');
+		//AddMasterIfMissing(m_FileHandle, 'Update.esm');
 		
 		AddMessage('Success: ' + m_sFileName + ' initialized with base masters.');
 		Result := m_FileHandle;
