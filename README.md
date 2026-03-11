@@ -1,3 +1,6 @@
+
+---
+
 ## 📜 ClarityForge: Preparation & Usage Guide
 
 **ClarityForge** is a metadata-driven balancing and sanitization engine for Skyrim SE/AE. It uses **MO2 Metadata** to determine progression and material types, allowing you to balance outfits across different mods without ever renaming your `.esp` files.
@@ -14,6 +17,17 @@ Add the NameCode to your mod's **Notes** in the MO2 UI.
 **Pattern:** `[Any Text] CF_[MaterialCode][SmithingLevel]`
 **Example Note:** `Dark Elf Blader - CBBE 3BA CF_En74`
 
+### **Supported Material Codes**
+
+| Code | Material | Code | Material |
+| --- | --- | --- | --- |
+| **In** | Iron | **En** | Elven |
+| **Sl** | Steel | **Gs** | Glass |
+| **Dn** | Dwarven | **Eb** | Ebony |
+| **Oh** | Orcish | **Dc** | Daedric |
+| **Lr** | Leather | **Dp** | Dragonplate |
+| **Sd** | Scaled | **Ds** | Dragonscale |
+
 > **Note on Scaling:** In the example above, `74` represents the **Smithing Skill** required. The script uses this number to calculate the actual **Character Level** requirement automatically.
 
 ---
@@ -23,7 +37,6 @@ Add the NameCode to your mod's **Notes** in the MO2 UI.
 ClarityForge distinguishes between your **Crafting Skill** and your **Character Level**. By entering a Smithing Level in the MO2 Note, the script generates a balanced Character Level requirement using a **Quadratic Curve**.
 
 **The Level Formula:** 
-
 
 $$PlayerLevel = 1 + (59 \times (\frac{SmithingSkill}{100})^2)$$
 
@@ -65,7 +78,6 @@ ClarityForge generates a **Unique Crafting Manual** for every processed mod to k
 * **Unlock Requirement:** You must have the manual in your inventory to see or craft the items.
 * **Dynamic Naming:** Manuals use the `.esp` name + material + level.
 * *Example:* `[COCO] 2B Wedding Outfit Elven Lv 74 Book`
-
 * **Pricing:** The gold value scales with tier: `SmithingReq * 50`. (Level 74 manual = **3,700g**).
 * **Forge Cleanup (Nullification):** Original recipes are rendered "homeless" by removing their Workbench Keyword, preventing menu clutter.
 
@@ -93,5 +105,3 @@ For proper classification, each record should ideally have exactly **one** prima
 * **One BOD2 Flag Rule:** Each record **must** have exactly **one** primary `BOD2` flag set for proper classification (Helmet, Hands, etc.).
 
 ---
-
-Would you like me to help you format a **Material Code Table** so users know exactly which two-letter codes (like `En`, `Eb`, `In`) to use in their MO2 notes?
