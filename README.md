@@ -19,15 +19,21 @@ Add the NameCode to your mod's **Notes** in the MO2 UI.
 
 ### **Supported Material Codes**
 
-| Category | Code | Material | Code | Material |
-| --- | --- | --- | --- | --- |
-| **Light** | **Lr** | Leather | **Gs** | Glass |
-|  | **Sd** | Scaled | **De** | Dragonscale |
-|  | **En** | Elven |  |  |
-| **Heavy** | **In** | Iron | **Se** | Steel Plate |
-|  | **Sl** | Steel | **Oh** | Orcish |
-|  | **Dn** | Dwarven | **Ey** | Ebony |
-|  | **Dc** | Daedric | **Dp** | Dragonplate |
+| Category | Material | Code |
+| --- | --- | --- |
+| Light Armor | Leather  | **Lr** | Leather |
+| Light Armor | Scaled | **Sd** | Scaled |
+| Light Armor | Elven | **En** | Elven |
+| Light Armor | Glass | **Gs** | Glass |
+| Light Armor | Dragonscale | **De** | Dragonscale |
+| Heavy Armor | Iron | **In** |  Iron |
+| Heavy Armor | Steel | **Sl** | Steel |
+| Heavy Armor | Dwarven | **Dn** | Dwarven |
+| Heavy Armor | Steel Plate | **Se** | Steel Plate |
+| Heavy Armor | Orcish | **Oh** | Orcish |
+| Heavy Armor | Ebony | **Ey** | Ebony |
+| Heavy Armor | Daedric | **Dc** | Daedric |
+| Heavy Armor | Dragonplate | **Dp** | Dragonplate |
 
 > **Note on Scaling:** In the example above, `74` represents the **Smithing Skill** required. The script uses this number to calculate the actual **Character Level** requirement automatically.
 
