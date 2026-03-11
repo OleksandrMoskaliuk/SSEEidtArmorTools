@@ -19,9 +19,10 @@
 UNIT: ClarityForge
 PURPOSE: Advanced Armor Sanitization and Balancing for Requiem / Skyrim AE.
 
-FILE NAMING CONVENTION (NameCode):
-Files must follow the pattern: [Name]_CF_[MaterialCode][SmithingLevel].esp
-Example: "NordicPlate_CF_Eb80.esp"
+DETECTION METHOD (MO2 Metadata):
+The script scans the 'Notes' field in your MO2 'meta.ini'. 
+The note MUST contain the NameCode: CF_[MaterialCode][SmithingLevel]
+Example MO2 Note: "My Fancy Outfit CF_En68"
 
 MATERIAL CODES:
 - Light: Lr (Leather), Sd (Scaled), En (Elven), Gs (Glass), De (Dragonscale)
@@ -29,22 +30,24 @@ MATERIAL CODES:
          Ey (Ebony), Dc (Daedric), Dp (Dragonplate)
 
 REQUIREMENT SCALING:
-- Smithing Req: Defined by filename (e.g., 80).
-- Player Level Req: Calculated as (Smithing + 20) / 2.
+- Smithing Req: Defined by the code in MO2 Notes (e.g., 68).
+- Player Level Req: Calculated from fGetCurvedPlayerLevel(Smithing Req).
 
 CORE PHILOSOPHY:
+- Metadata Driven: No need to rename .esp files; logic is handled via MO2 notes.
 - Modular Outfits: Distinguishes between Functional (AR-bearing) and Visual (Cosmetic) pieces.
-- Requirement Scaling: Armor Rating increases based on the Smithing Skill requirement.
-- Requiem Ready: Automatically manages ArmorType (Heavy/Light/Clothing) and Fists perks.
+- Requiem Ready: Automatically manages ArmorType and Fists perks.
 ================================================================================
 }
 unit ClarityForge;
 uses SK_UtilsRemake;
+uses IniFiles; //For meta.ini comments reading
 
 const
 	{========================================================}
 	{                     CONFIGURATION                      }
 	{========================================================}
+	MO2_MODS_DIR = 'D:\GAMES\Honediem\mods\';
 	FOR_FEMALE_ONLY = True;
 	BACKPACK_SLOT_ENCHANTABLE = True;
 	ADVANCED_ENCHANTMENT_PROTECTION = True;
@@ -126,13 +129,17 @@ var
 	i: Integer;
 	f: IInterface;
 	sFileName: string;
+	m_sModComment: string;
 begin
 	for i := 0 to FileCount - 1 do begin
 		f := FileByIndex(i);
 		sFileName := GetFileName(f);
+		
 		AddMessage('Initialization: Working with ' + sFileName);
-		if fIsClarityForgeApplicable(sFileName) then begin
+		m_sModComment := fGetMO2Comment(f);
+		if fIsClarityForgeApplicable(m_sModComment) then begin
 			AddMessage('>>> Valid File Found: ' + sFileName);
+			AddMessage('    Metadata: ' + m_sModComment);
 			fProcessArmorRecords(f);
 			fProcessWeaponRecords(f);
 			fNullifyOriginalRecipes(f, GlobalPatchFile);
@@ -184,43 +191,47 @@ end;
 {========================================================}
 {             CLARITY FORGE FILE DETECTION               }
 {========================================================}
-function fIsClarityForgeApplicable(m_sFileName: string): Boolean;
+function fIsClarityForgeApplicable(m_sMetadata: string): Boolean;
 var
-	sBase, sSuffix, sMat: string;
-	p, iTempLevel: Integer;
+	m_sSuffix, m_sMat: string;
+	m_p, m_iTempLevel: Integer;
 begin
 	Result := False;
 
-	sBase := ChangeFileExt(m_sFileName, '');
-	p := Pos('CF_', sBase);
-	if p = 0 then Exit;
-	
-	// Clean GlobalFileName: Trim handles spaces, then check for trailing underscore
-	GlobalFileName := Trim(Copy(sBase, 1, p - 1));
-	if (Length(GlobalFileName) > 0) and (GlobalFileName[Length(GlobalFileName)] = '_') then
-		GlobalFileName := Trim(Copy(GlobalFileName, 1, Length(GlobalFileName) - 1));
+	// 1. Look for the "CF_" code inside the MO2 Note/Comment
+	// Example Note: "H2135 Halloween CF_En68"
+	m_p := Pos('CF_', m_sMetadata);
+	if m_p = 0 then Exit;
 
-	sSuffix := Copy(sBase, p, Length(sBase));
-	if Length(sSuffix) < 6 then Exit;
+	// 2. Extract the suffix starting from CF_
+	// Result: "CF_En68"
+	m_sSuffix := Copy(m_sMetadata, m_p, Length(m_sMetadata));
+	if Length(m_sSuffix) < 6 then Exit;
 
-	sMat := Copy(sSuffix, 4, 2); 
+	// 3. Extract the Material Code (e.g., "En" for Elven)
+	m_sMat := Copy(m_sSuffix, 4, 2); 
 
-	// Validation and Assignment
-	if fAssignGlobalMaterial(sMat) then begin
-		iTempLevel := StrToIntDef(Copy(sSuffix, 6, Length(sSuffix)), -1);
+	// 4. Validate Material and Smithing Level
+	if fAssignGlobalMaterial(m_sMat) then begin
+		// Extract the number following the material code
+		m_iTempLevel := StrToIntDef(Copy(m_sSuffix, 6, Length(m_sSuffix)), -1);
 
-		if (iTempLevel >= 5) and (iTempLevel <= 100) then begin
-			GlobalSmithingReq  := iTempLevel;
-			AddMessage('SMITHING REQUIREMENT = ' + IntToStr(GlobalSmithingReq));
-			GlobalArmorBonus := GlobalSmithingReq / 15.0; // Too much ArmorRating will cause Requiem script to fail
+		if (m_iTempLevel >= 5) and (m_iTempLevel <= 100) then begin
+			GlobalSmithingReq := m_iTempLevel;
+			
+			// --- Your Original Formula Logic ---
+			GlobalArmorBonus := GlobalSmithingReq / 15.0;
 			GlobalArmorPriceBonus := Round(GlobalSmithingReq / 10.0);
 			GlobalWeaponDamageBonus := Round(GlobalSmithingReq / 40.0);
 			GlobalWeaponPriceBonus := GlobalSmithingReq;
 			GlobalWeaponWeightBonus := GlobalSmithingReq / 20.0;
-			// Final calculation for Character Level
 			GlobalPlayerLevelReq := fGetCurvedPlayerLevel(GlobalSmithingReq);
 			
-			AddMessage('   Detected: ' + GlobalFileName + ' [' + GlobalOutfitMaterial + ']');
+			AddMessage('    [ClarityForge Match]');
+			AddMessage('    Material: ' + GlobalOutfitMaterial);
+			AddMessage('    Skill Req: ' + IntToStr(GlobalSmithingReq));
+			AddMessage('    Level Req: ' + FloatToStr(GlobalPlayerLevelReq));
+			
 			Result := True;
 		end;
 	end;
@@ -3178,6 +3189,62 @@ begin
 	end else begin
 		AddMessage('Critical: Failed to create ' + m_sFileName);
 	end;
+end;
+
+
+
+function fGetMO2Comment(m_fPlugin: IInterface): string;
+var
+	m_sTargetEsp, m_sCurrentFolder, m_sIniPath: string;
+	m_srFolder: TSearchRec;
+	m_tIni: TIniFile;
+begin
+	Result := '';
+	m_sTargetEsp := ExtractFileName(GetFileName(m_fPlugin));
+
+	// 1. Safety Check: Does the path exist?
+	if not DirectoryExists(MO2_MODS_DIR) then begin
+		AddMessage('      [Error] MODS_DIR not found: ' + MO2_MODS_DIR);
+		Exit;
+	end;
+
+	// 2. Start Crawling every subfolder in 'D:\GAMES\Honediem\mods\'
+	if FindFirst(MO2_MODS_DIR + '*', faDirectory, m_srFolder) = 0 then begin
+		repeat
+			// Skip the '.' and '..' system directories
+			if (m_srFolder.Name <> '.') and (m_srFolder.Name <> '..') then begin
+				m_sCurrentFolder := MO2_MODS_DIR + m_srFolder.Name;
+				
+				// 3. Check if the specific ESP sits inside this physical folder
+				if FileExists(m_sCurrentFolder + '\' + m_sTargetEsp) then begin
+					m_sIniPath := m_sCurrentFolder + '\meta.ini';
+					
+					if FileExists(m_sIniPath) then begin
+						m_tIni := TIniFile.Create(m_sIniPath);
+						try
+							// MO2 stores the "Notes" field under [General] notes
+							Result := m_tIni.ReadString('General', 'notes', '');
+							
+							// Fallback to 'comments' if 'notes' is empty
+							if Result = '' then 
+								Result := m_tIni.ReadString('General', 'comments', '');
+							
+							if Result <> '' then
+								AddMessage('      [Success] Metadata found in: ' + m_srFolder.Name);
+							
+							Break; // Found the file, stop searching folders
+						finally
+							m_tIni.Free;
+						end;
+					end;
+				end;
+			end;
+		until FindNext(m_srFolder) <> 0;
+		FindClose(m_srFolder);
+	end;
+
+	if Result = '' then
+		AddMessage('      [Warning] No meta.ini comment found for ' + m_sTargetEsp);
 end;
 
 {========================================================}
