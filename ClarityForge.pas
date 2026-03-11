@@ -2469,21 +2469,6 @@ begin
 			Exit;
 		end;
 		
-		{ Check if armor considered as "Backpack" }
-		if ( then begin
-			addItemV2(recipeItems, GetMaterial('IngotCorundum'), 1);
-			addItemV2(recipeItems, GetMaterial('LeatherStrips'), 2);
-			addItemV2(recipeItems, GetMaterial('Leather01'), 1);
-			
-			{ Cleanup and Validation }
-			removeInvalidEntries(recipeCraft);
-			if GetElementEditValues(recipeCraft, 'COCT') = '' then begin
-				warn('No item requirements specified for: ' + Name(recipeCraft));
-			end;
-			Result := recipeCraft;
-			Exit;
-		end;
-		
 		{ -- Jewelry & Accessories Section -- }
 		if (Pos(GetFirstPersonFlags(itemRecord), 'Ring ') > 0) 
 		or (Pos(GetFirstPersonFlags(itemRecord), 'Amulet') > 0)
