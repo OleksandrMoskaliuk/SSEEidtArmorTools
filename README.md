@@ -28,7 +28,7 @@ Add the NameCode to your mod's **Notes** in the MO2 UI.
 | **Lr** | Leather | **Dp** | Dragonplate |
 | **Sd** | Scaled | **Ds** | Dragonscale |
 
-	![alt text](img/mo2_lightarmor_notes.png)
+![alt text](img/mo2_lightarmor_notes.png)
 
 > **Note on Scaling:** In the example above, `74` represents the **Smithing Skill** required. The script uses this number to calculate the actual **Character Level** requirement automatically.
 
@@ -52,7 +52,7 @@ $$PlayerLevel = 1 + (59 \times (\frac{SmithingSkill}{100})^2)$$
 | **80** | **Level 39** |
 | **100** | **Level 60** |
 
-	![alt text](img/PlayerLVRequirement.png)
+![alt text](img/PlayerLVRequirement.png)
 ---
 
 ## 🧩 Compatibility & Overhauls (3BFTweaks / Requiem)
@@ -68,7 +68,9 @@ $$PlayerLevel = 1 + (59 \times (\frac{SmithingSkill}{100})^2)$$
 1. **Global Path Configuration:**
 Set your physical MO2 mods directory in `ClarityForge.pas`:
 `const MO2_MODS_DIR = 'D:\GAMES\MO2\mods\';`
-	![alt text](img/mo2_mod_path.png)
+
+![alt text](img/mo2_mod_path.png)
+
 2. **Record Preparation (BOD2 Flags):**
 Ensure armor records have correct **First Person Flags**. This distinguishes **Gameplay Slots** (Cuirass, Boots) from **Visual Slots** (Capes, Accessories).
 	
