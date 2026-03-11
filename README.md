@@ -38,6 +38,7 @@ $$PlayerLevel = 1 + (59 \times (\frac{SmithingSkill}{100})^2)$$
 | **80** | Ebony / Glass | **Level 39** |
 | **100** | Daedric / Dragon | **Level 60** |
 
+![alt text](PlayerLVRequirement.png)
 ---
 
 ## 🧩 Compatibility & Overhauls (3BFTweaks / Requiem)
