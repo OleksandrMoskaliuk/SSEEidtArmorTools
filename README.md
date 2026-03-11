@@ -3,7 +3,7 @@
 
 ## 📜 ClarityForge: Preparation & Usage Guide
 
-**ClarityForge** is a metadata-driven balancing and sanitization engine for Skyrim SE/AE. It uses **MO2 Metadata** to determine progression and material types, allowing you to balance outfits across different mods without ever renaming your `.esp` files.
+**ClarityForge** is a metadata-driven balancing and sanitization engine for Skyrim SE/AE. It uses **MO2 Metadata** to determine progression and material types, allowing you to balance outfits across different mods.
 
 ---
 
