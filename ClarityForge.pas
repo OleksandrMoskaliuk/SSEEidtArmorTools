@@ -2048,7 +2048,7 @@ begin
 	if (itemSignature = 'BOOK') then begin
 		
 		{ 1. Construct the target EditorID }
-		currentKeywordEDID := 'CF_RecipeCraftingManual_' + GlobalOutfitMaterial + '_LV' + IntToStr(GlobalSmithingReq) + '_' + GetElementEditValues(itemRecord, 'EDID');
+		currentKeywordEDID := 'CF_RecipeCraftingManual_' + StringReplace(GlobalOutfitMaterial, 'ArmorMaterial', '', [rfReplaceAll, rfIgnoreCase]) + '_LV' + IntToStr(GlobalSmithingReq) + '_' + GetElementEditValues(itemRecord, 'EDID');
 		
 		{ 2. Search for the existing recipe in the Patch File }
 		{ GroupBySignature ensures we are only looking inside 'COBJ' records }
@@ -2079,7 +2079,7 @@ begin
 		AddMissingManualCondition(recipeCraft, GlobalCraftingManual);
 		
 		
-		SetElementEditValues(recipeCraft, 'EDID', 'CF_RecipeCraftingManual' + GetElementEditValues(itemRecord, 'EDID'));
+		SetElementEditValues(recipeCraft, 'EDID', 'CF_RecipeCraftingManual' + StringReplace(GlobalOutfitMaterial, 'ArmorMaterial', '', [rfReplaceAll, rfIgnoreCase]) + '_LV' + IntToStr(GlobalSmithingReq) + '_' + GetElementEditValues(itemRecord, 'EDID'));
 		SetElementEditValues(recipeCraft, 'BNAM', GetEditValue(getRecordByFormID(ARMOR_CRAFTING_WORKBENCH_FORM_ID)));
 		
 		
@@ -2352,7 +2352,7 @@ begin
 	if (itemSignature = 'ARMO') then begin
 		
 		if IsVisualSlot(GetFirstPersonFlags(itemRecord))then begin
-			currentKeywordEDID := 'CF_RecipeVisualSlot_' + GlobalOutfitMaterial + '_LV' + IntToStr(GlobalSmithingReq) + '_' + GetElementEditValues(itemRecord, 'EDID');
+			currentKeywordEDID := 'CF_RecipeVisualSlot_' + StringReplace(GlobalOutfitMaterial, 'ArmorMaterial', '', [rfReplaceAll, rfIgnoreCase]) + '_LV' + IntToStr(GlobalSmithingReq) + '_' + GetElementEditValues(itemRecord, 'EDID');
 			recipeCraft := MainRecordByEditorID(GroupBySignature(GlobalPatchFile, 'COBJ'), currentKeywordEDID);
 			// If found, skip creation and just return the existing record
 			if Assigned(recipeCraft) then begin
@@ -2361,7 +2361,7 @@ begin
 				Exit;
 			end;
 		end else begin
-			currentKeywordEDID := 'CF_RecipeArmor_' + GlobalOutfitMaterial + '_LV' + IntToStr(GlobalSmithingReq) + '_' + GetElementEditValues(itemRecord, 'EDID');
+			currentKeywordEDID := 'CF_RecipeArmor_' + StringReplace(GlobalOutfitMaterial, 'ArmorMaterial', '', [rfReplaceAll, rfIgnoreCase]) + '_LV' + IntToStr(GlobalSmithingReq) + '_' + GetElementEditValues(itemRecord, 'EDID');
 			recipeCraft := MainRecordByEditorID(GroupBySignature(GlobalPatchFile, 'COBJ'), currentKeywordEDID);
 			// If found, skip creation and just return the existing record
 			if Assigned(recipeCraft) then begin
@@ -2389,10 +2389,10 @@ begin
 		
 		{ Set Recipe Identity  For Visual Slot Only}
 		if IsVisualSlot(GetFirstPersonFlags(itemRecord))then begin
-			SetElementEditValues(recipeCraft, 'EDID', 'CF_RecipeVisulaSlot' + GetElementEditValues(itemRecord, 'EDID'));
+			SetElementEditValues(recipeCraft, 'EDID', 'CF_RecipeVisualSlot_' + StringReplace(GlobalOutfitMaterial, 'ArmorMaterial', '', [rfReplaceAll, rfIgnoreCase]) + '_LV' + IntToStr(GlobalSmithingReq) + '_' + GetElementEditValues(itemRecord, 'EDID'));
 			SetElementEditValues(recipeCraft, 'BNAM', GetEditValue(getRecordByFormID(ARMOR_CRAFTING_WORKBENCH_FORM_ID)));
 		end else begin
-			SetElementEditValues(recipeCraft, 'EDID', 'CF_RecipeArmor' + GetElementEditValues(itemRecord, 'EDID'));
+			SetElementEditValues(recipeCraft, 'EDID', 'CF_RecipeArmor_' + StringReplace(GlobalOutfitMaterial, 'ArmorMaterial', '', [rfReplaceAll, rfIgnoreCase]) + '_LV' + IntToStr(GlobalSmithingReq) + '_' + GetElementEditValues(itemRecord, 'EDID'));
 			SetElementEditValues(recipeCraft, 'BNAM', GetEditValue(getRecordByFormID(ARMOR_CRAFTING_WORKBENCH_FORM_ID)));
 		end;
 		{ If Armor is ony for Female actor }
