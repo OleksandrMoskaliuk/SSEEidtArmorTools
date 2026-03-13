@@ -2048,7 +2048,7 @@ begin
 	if (itemSignature = 'BOOK') then begin
 		
 		{ 1. Construct the target EditorID }
-		currentKeywordEDID := 'CF_RecipeCraftingManual_' + StringReplace(GlobalOutfitMaterial, 'ArmorMaterial', '', [rfReplaceAll, rfIgnoreCase]) + '_LV' + IntToStr(GlobalSmithingReq) + '_' + GetElementEditValues(itemRecord, 'EDID');
+		currentKeywordEDID := 'CF_' + GetElementEditValues(itemRecord, 'EDID');
 		
 		{ 2. Search for the existing recipe in the Patch File }
 		{ GroupBySignature ensures we are only looking inside 'COBJ' records }
@@ -2079,7 +2079,7 @@ begin
 		AddMissingManualCondition(recipeCraft, GlobalCraftingManual);
 		
 		
-		SetElementEditValues(recipeCraft, 'EDID', 'CF_RecipeCraftingManual' + StringReplace(GlobalOutfitMaterial, 'ArmorMaterial', '', [rfReplaceAll, rfIgnoreCase]) + '_LV' + IntToStr(GlobalSmithingReq) + '_' + GetElementEditValues(itemRecord, 'EDID'));
+		SetElementEditValues(recipeCraft, 'EDID', 'CF_' + GetElementEditValues(itemRecord, 'EDID'));
 		SetElementEditValues(recipeCraft, 'BNAM', GetEditValue(getRecordByFormID(ARMOR_CRAFTING_WORKBENCH_FORM_ID)));
 		
 		
