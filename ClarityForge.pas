@@ -87,7 +87,7 @@ begin
 
 	{ Set Global Values }
 	GlobalSmithingReq := 0; // Smithing Skill Level 0 - 100;
-	GlobalArmorBonus := GlobalSmithingReq / 15.0; // Too much ArmorRating will cause Requiem script to fail
+	GlobalArmorBonus := 0; 
 	GlobalWeaponDamageBonus := 0;
 	GlobalWeaponPriceBonus := 0;
 	GlobalArmorPriceBonus := 0;
@@ -218,8 +218,7 @@ begin
 		if (m_iTempLevel >= 5) and (m_iTempLevel <= 100) then begin
 			GlobalSmithingReq := m_iTempLevel;
 			
-			// --- Your Original Formula Logic ---
-			GlobalArmorBonus := GlobalSmithingReq / 15.0;
+			GlobalArmorBonus := GlobalSmithingReq / 30.0; // Too much ArmorRating will cause Requiem script to fail
 			GlobalArmorPriceBonus := Round(GlobalSmithingReq / 10.0);
 			GlobalWeaponDamageBonus := Round(GlobalSmithingReq / 40.0);
 			GlobalWeaponPriceBonus := GlobalSmithingReq;
@@ -2464,7 +2463,7 @@ begin
 		
 		{ -- Jewelry & Accessories Section -- }
 		if (Pos(GetFirstPersonFlags(itemRecord), 'Ring ') > 0) 
-		or (Pos(GetFirstPersonFlags(itemRecord), 'Amulet') > 0)
+		or (Pos(GetFirstPersonFlags(itemRecord), 'Amulet ') > 0)
 		or (Pos(GetFirstPersonFlags(itemRecord), 'Ears ') > 0)    
 		or (Pos(GetFirstPersonFlags(itemRecord), 'Circlet ') > 0)   
 		or (Pos(GetFirstPersonFlags(itemRecord), 'Backpack ') > 0) then begin
