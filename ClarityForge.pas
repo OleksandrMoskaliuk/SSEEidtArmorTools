@@ -218,7 +218,7 @@ begin
 		if (m_iTempLevel >= 5) and (m_iTempLevel <= 100) then begin
 			GlobalSmithingReq := m_iTempLevel;
 			
-			GlobalArmorBonus := GlobalSmithingReq / 30.0; // Too much ArmorRating will cause Requiem script to fail
+			GlobalArmorBonus := GlobalSmithingReq / 80.0; // Too much ArmorRating will cause Requiem script to fail
 			GlobalArmorPriceBonus := Round(GlobalSmithingReq / 10.0);
 			GlobalWeaponDamageBonus := Round(GlobalSmithingReq / 40.0);
 			GlobalWeaponPriceBonus := GlobalSmithingReq;
