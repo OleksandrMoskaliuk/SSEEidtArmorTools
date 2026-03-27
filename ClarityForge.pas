@@ -794,40 +794,7 @@ begin
 		
 		// Clean record from common Keywords
 		fPurgeAllMaterialKeywords(e);
-		
-		
-		{ --- REQUIEM SPECIFIC TEMPERING KEYWORDS --- }
-		if FOR_REQUIEM then begin
-			// Tempering, exclude Jewelry and Backpack
-			if (IsVisualSlot(m_Slots) = False)
-			and ((Pos('Ring ', m_Slots) > 0) = False) 
-			and ((Pos('Amulet ', m_Slots) > 0) = False)
-			and ((Pos('Ears ', m_Slots) > 0) = False )  
-			and ((Pos('Circlet ', m_Slots) > 0) = False )
-			and ((Pos('Backpack ', m_Slots) > 0) = False) then begin
-				m_sReqKW := '';
-				{ Map Vanilla Material Keywords to Requiem Tempering Keywords }
-				if GlobalOutfitMaterial = 'ArmorMaterialIron'        then m_sReqKW := 'REQ_Tempering_IronSmithing';
-				if GlobalOutfitMaterial = 'ArmorMaterialSteel'       then m_sReqKW := 'REQ_Tempering_SteelSmithing';
-				if GlobalOutfitMaterial = 'ArmorMaterialDwarven'     then m_sReqKW := 'REQ_Tempering_DwarvenSmithing';
-				if GlobalOutfitMaterial = 'ArmorMaterialOrcish'      then m_sReqKW := 'REQ_Tempering_OrcishSmithing';
-				if GlobalOutfitMaterial = 'ArmorMaterialSteelPlate'  then m_sReqKW := 'REQ_Tempering_AdvancedBlacksmithing';
-				if GlobalOutfitMaterial = 'ArmorMaterialEbony'       then m_sReqKW := 'REQ_Tempering_EbonySmithing';
-				if GlobalOutfitMaterial = 'ArmorMaterialDaedric'     then m_sReqKW := 'REQ_Tempering_DaedricSmithing';
-				{ Light Armor Mappings }
-				if GlobalOutfitMaterial = 'ArmorMaterialLeather'     then m_sReqKW := 'REQ_Tempering_LeatherSmithing';
-				if GlobalOutfitMaterial = 'ArmorMaterialScaled'     then m_sReqKW := 'REQ_Tempering_AdvancedLightArmors';
-				if GlobalOutfitMaterial = 'ArmorMaterialElven'       then m_sReqKW := 'REQ_Tempering_ElvenSmithing';
-				if GlobalOutfitMaterial = 'ArmorMaterialGlass'       then m_sReqKW := 'REQ_Tempering_GlassSmithing';
-				if (GlobalOutfitMaterial = 'ArmorMaterialDragonplate') or 
-				   (GlobalOutfitMaterial = 'ArmorMaterialDragonscale') then m_sReqKW := 'REQ_Tempering_DraconicSmithing';
-				if m_sReqKW <> '' then begin
-					kw := GetKeywordByEditorID(m_sReqKW);
-					if Assigned(kw) then addKeyword(e, kw);
-				end;
-			end;
-		end;
-		
+
 		{ Inject the one true material defined by the file name }
 		kw := GetKeywordByEditorID(GlobalOutfitMaterial);
 		if  Assigned(kw) then begin
@@ -836,7 +803,53 @@ begin
 				kw := null;
 			end;
 		end;
+		
+		{ --- REQUIEM SPECIFIC TEMPERING KEYWORDS --- }
+		if FOR_REQUIEM then begin
+			// Tempering, exclude Jewelry and Backpack
+			if (IsVisualSlot(m_Slots) = False)
+			and (Pos('Ring ', m_Slots) = 0)
+			and (Pos('Amulet ', m_Slots) = 0)
+			and (Pos('Ears ', m_Slots) = 0)
+			and (Pos('Circlet ', m_Slots) = 0)
+			and (Pos('Backpack ', m_Slots) = 0) then begin
+				
+				m_sReqKW := '';
+				
+				{ Heavy Armor Mappings - Using your verified Strings }
+				if HasKeyword(e, 'REQ_ArmorSet_Iron')         then m_sReqKW := 'REQ_Tempering_Craftsmanship';
+				if HasKeyword(e, 'REQ_ArmorSet_Steel')        then m_sReqKW := 'REQ_Tempering_Craftsmanship';
+				if HasKeyword(e, 'REQ_ArmorSet_DwarvenHeavy') then m_sReqKW := 'REQ_Tempering_DwarvenSmithing';
+				if HasKeyword(e, 'REQ_ArmorSet_OrcishHeavy')  then m_sReqKW := 'REQ_Tempering_OrcishSmithing';
+				if HasKeyword(e, 'REQ_ArmorSet_SteelPlate')   then m_sReqKW := 'REQ_Tempering_AdvancedBlacksmithing';
+				if HasKeyword(e, 'REQ_ArmorSet_Ebony')        then m_sReqKW := 'REQ_Tempering_EbonySmithing';
+				if HasKeyword(e, 'REQ_ArmorSet_Daedric')      then m_sReqKW := 'REQ_Tempering_DaedricSmithing';
+				
+				{ Light Armor Mappings }
+				if HasKeyword(e, 'REQ_ArmorSet_Leather')      then m_sReqKW := 'REQ_Tempering_Craftsmanship';
+				if HasKeyword(e, 'REQ_ArmorSet_Scale')        then m_sReqKW := 'REQ_Tempering_AdvancedLightArmors';
+				if HasKeyword(e, 'REQ_ArmorSet_Elven')        then m_sReqKW := 'REQ_Tempering_ElvenSmithing';
+				if HasKeyword(e, 'REQ_ArmorSet_Glass')        then m_sReqKW := 'REQ_Tempering_GlassSmithing';
+				
+				{ Dragon Mappings }
+				if HasKeyword(e, 'REQ_ArmorSet_Dragonplate') or 
+				   HasKeyword(e, 'REQ_ArmorSet_Dragonscale') then m_sReqKW := 'REQ_Tempering_DraconicSmithing';
 
+				{ Apply the Keyword }
+				if m_sReqKW <> '' then begin
+					kw := GetKeywordByEditorID(m_sReqKW);
+					if Assigned(kw) then begin
+						if not HasKeyword(e, m_sReqKW) then
+							if Assigned(kw) then begin
+								addKeywordV2(e, kw);
+							end else begin
+								AddMessage('!! CRITICAL: Keyword ' + m_sReqKW + ' not found. Check your Requiem version!');
+							end;
+					end;
+				end;
+			end;
+		end;
+		
 		{ SHIELD (Slot 39) }
 		if Pos('Shield ', m_Slots) > 0 then begin
 			kw := GetKeywordByEditorID('ArmorShield');
@@ -3599,6 +3612,33 @@ begin
         SetEditValue(newEntry, IntToHex(FixedFormID(keyword), 8));
         Result := 1;
     end;
+end;
+
+function addKeywordV2(itemRecord: IInterface; keyword: IInterface): Integer;
+var
+	kwCollection, newEntry: IInterface;
+begin
+	Result := 0;
+	if not Assigned(itemRecord) or not Assigned(keyword) then Exit;
+
+	{ 1. Check if the item already has this keyword }
+	if HasKeyword(itemRecord, EditorID(keyword)) then Exit;
+
+	{ 2. Get or Create the KWDA block }
+	kwCollection := ElementBySignature(itemRecord, 'KWDA');
+	if not Assigned(kwCollection) then
+		kwCollection := Add(itemRecord, 'KWDA', True);
+
+	{ 3. Add the keyword }
+	if Assigned(kwCollection) then begin
+		newEntry := ElementAssign(kwCollection, HighInteger, nil, False);
+		
+		{ USE GETLOADORDERFORMID INSTEAD OF FIXEDFORMID }
+		{ This handles the FileID mapping to your patch safely }
+		SetEditValue(newEntry, IntToHex(GetLoadOrderFormID(keyword), 8));
+		
+		Result := 1;
+	end;
 end;
 
 function GetKeywordByEditorID(aEditorID: string): IInterface;
