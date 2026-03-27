@@ -49,10 +49,12 @@ const
 	{========================================================}
 	MO2_MODS_DIR = 'D:\GAMES\Honediem\mods\';
 	FOR_FEMALE_ONLY = True;
+	FOR_REQUIEM = False;
+	USE_LEVEL_CURVE = True; 
 	CRAFTING_MANUAL_PRICE_MULTIPLIER = 50; // Book value = GlobalSmithingReq * CRAFTING_MANUAL_PRICE_MULTIPLIER
 	VISUAL_SLOT_WEIGHT = 0.1;
 	IS_PERK_REQUIRED = False;
-	sScriptVersion = '2.1.1';
+	sScriptVersion = '2.1.2';
 	sRepoUrl = 'https://github.com/OleksandrMoskaliuk/SSEEidtArmorTools';	
 
 var
@@ -110,7 +112,7 @@ begin
 	// Creating Patch file
 	GlobalVarFileName := 'ClarityForge_Patch.esp';
 	
-	GlobalPatchFile := fAddNewFile(GlobalVarFileName, true);
+	GlobalPatchFile := fAddNewFile(GlobalVarFileName, false);
 	
 	// Exit if initialization failed
 	if not Assigned(GlobalPatchFile) then begin
@@ -215,10 +217,10 @@ begin
 		// Extract the number following the material code
 		m_iTempLevel := StrToIntDef(Copy(m_sSuffix, 6, Length(m_sSuffix)), -1);
 
-		if (m_iTempLevel >= 5) and (m_iTempLevel <= 100) then begin
+		if (m_iTempLevel >= 5) and (m_iTempLevel <= 1000) then begin
 			GlobalSmithingReq := m_iTempLevel;
 			
-			GlobalArmorBonus := GlobalSmithingReq / 80.0; // Too much ArmorRating will cause Requiem script to fail
+			GlobalArmorBonus := GlobalSmithingReq / 200.0; // Too much ArmorRating will cause Requiem script to fail
 			GlobalArmorPriceBonus := Round(GlobalSmithingReq / 10.0);
 			GlobalWeaponDamageBonus := Round(GlobalSmithingReq / 40.0);
 			GlobalWeaponPriceBonus := GlobalSmithingReq;
@@ -290,7 +292,11 @@ begin
 			SetArmorType(m_NewRecord);
 			
 			// Stat Balancing
-			m_ArmorRating := GetVanillaAR(m_NewRecord, m_Slots);  
+			if FOR_REQUIEM then begin 
+				m_ArmorRating := fGetARRequiem(m_NewRecord, m_Slots);
+			end else begin
+				m_ArmorRating := GetVanillaAR(m_NewRecord, m_Slots); 
+			end;
 			SetElementEditValues(m_NewRecord, 'DNAM - Armor Rating', FloatToStr(m_ArmorRating));
 			
 			m_ArmorWeight := GetVanillaAWeight(m_NewRecord, m_Slots); 
@@ -751,18 +757,15 @@ begin
 	removeKeywordV2(e, 'ArmorMaterialDragonplate');
 	removeKeywordV2(e, 'ArmorMaterialDaedric');
 
-	{ Safety: Ensure the global material is also removed before re-adding }
-	if GlobalOutfitMaterial <> '' then
-		removeKeywordV2(e, GlobalOutfitMaterial);
 end;
 
 {========================================================}
 {                    KEYWORDS                            }
 {========================================================}
-procedure fKeywordsSetUp(e: IInterface; m_sSlots: string);
+procedure fKeywordsSetUp(e: IInterface; m_Slots: string);
 var
 	kw: IInterface;
-	m_sSig: string;
+	m_sSig, m_sReqKW: string;
 	m_bIsJewelry, m_bIsClothing: Boolean;
 begin
 	m_sSig := Signature(e);
@@ -781,7 +784,40 @@ begin
 		
 		// Clean record from common Keywords
 		fPurgeAllMaterialKeywords(e);
-
+		
+		
+		{ --- REQUIEM SPECIFIC TEMPERING KEYWORDS --- }
+		if FOR_REQUIEM then begin
+			// Tempering, exclude Jewelry and Backpack
+			if (IsVisualSlot(m_Slots) = False)
+			and ((Pos('Ring ', m_Slots) > 0) = False) 
+			and ((Pos('Amulet ', m_Slots) > 0) = False)
+			and ((Pos('Ears ', m_Slots) > 0) = False )  
+			and ((Pos('Circlet ', m_Slots) > 0) = False )
+			and ((Pos('Backpack ', m_Slots) > 0) = False) then begin
+				m_sReqKW := '';
+				{ Map Vanilla Material Keywords to Requiem Tempering Keywords }
+				if GlobalOutfitMaterial = 'ArmorMaterialIron'        then m_sReqKW := 'REQ_Tempering_IronSmithing';
+				if GlobalOutfitMaterial = 'ArmorMaterialSteel'       then m_sReqKW := 'REQ_Tempering_SteelSmithing';
+				if GlobalOutfitMaterial = 'ArmorMaterialDwarven'     then m_sReqKW := 'REQ_Tempering_DwarvenSmithing';
+				if GlobalOutfitMaterial = 'ArmorMaterialOrcish'      then m_sReqKW := 'REQ_Tempering_OrcishSmithing';
+				if GlobalOutfitMaterial = 'ArmorMaterialSteelPlate'  then m_sReqKW := 'REQ_Tempering_AdvancedBlacksmithing';
+				if GlobalOutfitMaterial = 'ArmorMaterialEbony'       then m_sReqKW := 'REQ_Tempering_EbonySmithing';
+				if GlobalOutfitMaterial = 'ArmorMaterialDaedric'     then m_sReqKW := 'REQ_Tempering_DaedricSmithing';
+				{ Light Armor Mappings }
+				if GlobalOutfitMaterial = 'ArmorMaterialLeather'     then m_sReqKW := 'REQ_Tempering_LeatherSmithing';
+				if GlobalOutfitMaterial = 'ArmorMaterialScaled'     then m_sReqKW := 'REQ_Tempering_AdvancedLightArmors';
+				if GlobalOutfitMaterial = 'ArmorMaterialElven'       then m_sReqKW := 'REQ_Tempering_ElvenSmithing';
+				if GlobalOutfitMaterial = 'ArmorMaterialGlass'       then m_sReqKW := 'REQ_Tempering_GlassSmithing';
+				if (GlobalOutfitMaterial = 'ArmorMaterialDragonplate') or 
+				   (GlobalOutfitMaterial = 'ArmorMaterialDragonscale') then m_sReqKW := 'REQ_Tempering_DraconicSmithing';
+				if m_sReqKW <> '' then begin
+					kw := GetKeywordByEditorID(m_sReqKW);
+					if Assigned(kw) then addKeyword(e, kw);
+				end;
+			end;
+		end;
+		
 		{ Inject the one true material defined by the file name }
 		kw := GetKeywordByEditorID(GlobalOutfitMaterial);
 		if  Assigned(kw) then begin
@@ -792,28 +828,28 @@ begin
 		end;
 
 		{ SHIELD (Slot 39) }
-		if Pos('Shield ', m_sSlots) > 0 then begin
+		if Pos('Shield ', m_Slots) > 0 then begin
 			kw := GetKeywordByEditorID('ArmorShield');
 			if Assigned(kw) then addKeyword(e, kw);
 			Exit;
 		end;
 
 		{ BODY }
-		if Pos('Body ', m_sSlots) > 0 then begin
+		if Pos('Body ', m_Slots) > 0 then begin
 			kw := GetKeywordByEditorID('ArmorCuirass');
 			if Assigned(kw) then addKeyword(e, kw);
 			Exit;
 		end;
 
 		{ HEAD / HAIR }
-		if (Pos('Head ', m_sSlots) > 0) or (Pos('Hair ', m_sSlots) > 0) then begin
+		if (Pos('Head ', m_Slots) > 0) or (Pos('Hair ', m_Slots) > 0) then begin
 			kw := GetKeywordByEditorID('ArmorHelmet');
 			if Assigned(kw) then addKeyword(e, kw);
 			Exit;
 		end;
 
 		{ HANDS / FOREARMS }
-		if (Pos('Hands ', m_sSlots) > 0) then begin
+		if (Pos('Hands ', m_Slots) > 0) then begin
 			kw := GetKeywordByEditorID('ArmorGauntlets');
 			if Assigned(kw) then addKeyword(e, kw);
 			AddFistKeywords(e);
@@ -821,7 +857,7 @@ begin
 		end;
 
 		{ FEET }
-		if Pos('Feet ', m_sSlots) > 0 then begin
+		if Pos('Feet ', m_Slots) > 0 then begin
 			kw := GetKeywordByEditorID('ArmorBoots');
 			if Assigned(kw) then addKeyword(e, kw);
 			Exit;
@@ -1396,6 +1432,125 @@ begin
 	end;
 end;
 {========================================================}
+{                REQUIEM ARMOR RATINGS                   }
+{========================================================}
+function fGetARRequiem(e: IInterface; m_Slots: string): Float;
+var
+	m_fVanillaAR: Float;
+begin
+	Result := 0;
+	m_fVanillaAR := GetVanillaAR(e, m_Slots);
+
+	if m_fVanillaAR <= 0 then Exit;
+
+	{ ==================== HEAVY ARMOR ==================== }
+	if HasKeyword(e, 'ArmorMaterialIron') then begin
+		if HasKeyword(e, 'ArmorCuirass') then begin Result := (m_fVanillaAR * 6.200) + 55.0; Exit; end;
+		if HasKeyword(e, 'ArmorShield')  then begin Result := (m_fVanillaAR * 6.500); Exit; end;
+		if HasKeyword(e, 'ArmorHelmet')   then begin Result := (m_fVanillaAR * 4.666) + 15.0; Exit; end;
+		if HasKeyword(e, 'ArmorGauntlets') or HasKeyword(e, 'ArmorBoots') then begin Result := (m_fVanillaAR * 5.000) + 15.0; Exit; end;
+		Exit;
+	end;
+
+	if HasKeyword(e, 'ArmorMaterialSteel') then begin
+		if HasKeyword(e, 'ArmorCuirass') then begin Result := (m_fVanillaAR * 7.258) + 55.0; Exit; end;
+		if HasKeyword(e, 'ArmorShield')  then begin Result := (m_fVanillaAR * 6.666); Exit; end;
+		if HasKeyword(e, 'ArmorHelmet')   then begin Result := (m_fVanillaAR * 5.588) + 15.0; Exit; end;
+		if HasKeyword(e, 'ArmorGauntlets') or HasKeyword(e, 'ArmorBoots') then begin Result := (m_fVanillaAR * 5.833) + 15.0; Exit; end;
+		Exit;
+	end;
+
+	if HasKeyword(e, 'ArmorMaterialDwarven') then begin
+		if HasKeyword(e, 'ArmorCuirass') then begin Result := (m_fVanillaAR * 10.147) + 55.0; Exit; end;
+		if HasKeyword(e, 'ArmorShield')  then begin Result := (m_fVanillaAR * 9.231); Exit; end;
+		if HasKeyword(e, 'ArmorHelmet')   then begin Result := (m_fVanillaAR * 8.056) + 15.0; Exit; end;
+		if HasKeyword(e, 'ArmorGauntlets') or HasKeyword(e, 'ArmorBoots') then begin Result := (m_fVanillaAR * 8.077) + 15.0; Exit; end;
+		Exit;
+	end;
+
+	if HasKeyword(e, 'ArmorMaterialOrcish') then begin
+		if HasKeyword(e, 'ArmorCuirass') then begin Result := (m_fVanillaAR * 7.125) + 55.0; Exit; end;
+		if HasKeyword(e, 'ArmorShield')  then begin Result := (m_fVanillaAR * 7.000); Exit; end;
+		if HasKeyword(e, 'ArmorHelmet')   then begin Result := (m_fVanillaAR * 6.500) + 15.0; Exit; end;
+		if HasKeyword(e, 'ArmorGauntlets') or HasKeyword(e, 'ArmorBoots') then begin Result := (m_fVanillaAR * 6.000) + 15.0; Exit; end;
+		Exit;
+	end;
+
+	if HasKeyword(e, 'ArmorMaterialSteelPlate') then begin
+		if HasKeyword(e, 'ArmorCuirass') then begin Result := (m_fVanillaAR * 7.500) + 55.0; Exit; end;
+		if HasKeyword(e, 'ArmorShield')  then begin Result := (m_fVanillaAR * 6.800); Exit; end;
+		if HasKeyword(e, 'ArmorHelmet')   then begin Result := (m_fVanillaAR * 6.842) + 15.0; Exit; end;
+		if HasKeyword(e, 'ArmorGauntlets') or HasKeyword(e, 'ArmorBoots') then begin Result := (m_fVanillaAR * 6.429) + 15.0; Exit; end;
+		Exit;
+	end;
+
+	if HasKeyword(e, 'ArmorMaterialEbony') then begin
+		if HasKeyword(e, 'ArmorCuirass') then begin Result := (m_fVanillaAR * 8.837) + 55.0; Exit; end;
+		if HasKeyword(e, 'ArmorShield')  then begin Result := (m_fVanillaAR * 8.438); Exit; end;
+		if HasKeyword(e, 'ArmorHelmet')   then begin Result := (m_fVanillaAR * 7.619) + 15.0; Exit; end;
+		if HasKeyword(e, 'ArmorGauntlets') or HasKeyword(e, 'ArmorBoots') then begin Result := (m_fVanillaAR * 7.688) + 15.0; Exit; end;
+		Exit;
+	end;
+
+	if HasKeyword(e, 'ArmorMaterialDragonplate') then begin
+		if HasKeyword(e, 'ArmorCuirass') then begin Result := (m_fVanillaAR * 9.674) + 55.0; Exit; end;
+		if HasKeyword(e, 'ArmorShield')  then begin Result := (m_fVanillaAR * 8.824); Exit; end;
+		if HasKeyword(e, 'ArmorHelmet')   then begin Result := (m_fVanillaAR * 8.409) + 15.0; Exit; end;
+		if HasKeyword(e, 'ArmorGauntlets') or HasKeyword(e, 'ArmorBoots') then begin Result := (m_fVanillaAR * 7.941) + 15.0; Exit; end;
+		Exit;
+	end;
+
+	if HasKeyword(e, 'ArmorMaterialDaedric') then begin
+		if HasKeyword(e, 'ArmorCuirass') then begin Result := (m_fVanillaAR * 11.122) + 55.0; Exit; end;
+		if HasKeyword(e, 'ArmorShield')  then begin Result := (m_fVanillaAR * 10.000); Exit; end;
+		if HasKeyword(e, 'ArmorHelmet')   then begin Result := (m_fVanillaAR * 9.783) + 15.0; Exit; end;
+		if HasKeyword(e, 'ArmorGauntlets') or HasKeyword(e, 'ArmorBoots') then begin Result := (m_fVanillaAR * 9.167) + 15.0; Exit; end;
+		Exit;
+	end;
+
+	{ ==================== LIGHT ARMOR ==================== }
+	if HasKeyword(e, 'ArmorMaterialLeather') then begin
+		if HasKeyword(e, 'ArmorCuirass') then begin Result := (m_fVanillaAR * 3.725) + 55.0; Exit; end;
+		if HasKeyword(e, 'ArmorShield')  then begin Result := (m_fVanillaAR * 4.5); Exit; end;
+		if HasKeyword(e, 'ArmorHelmet')   then begin Result := (m_fVanillaAR * 3.546) + 15.0; Exit; end;
+		if HasKeyword(e, 'ArmorGauntlets') or HasKeyword(e, 'ArmorBoots') then begin Result := (m_fVanillaAR * 3.725) + 15.0; Exit; end;
+		Exit;
+	end;
+
+	if HasKeyword(e, 'ArmorMaterialScaled') then begin
+		if HasKeyword(e, 'ArmorCuirass') then begin Result := (m_fVanillaAR * 3.625) + 55.0; Exit; end;
+		if HasKeyword(e, 'ArmorShield')  then begin Result := (m_fVanillaAR * 4.75); Exit; end;
+		if HasKeyword(e, 'ArmorHelmet')   then begin Result := (m_fVanillaAR * 3.5023) + 15.0; Exit; end;
+		if HasKeyword(e, 'ArmorGauntlets') or HasKeyword(e, 'ArmorBoots') then begin Result := (m_fVanillaAR * 3.605) + 15.0; Exit; end;
+		Exit;
+	end;
+
+	if HasKeyword(e, 'ArmorMaterialElven') then begin
+		if HasKeyword(e, 'ArmorCuirass') then begin Result := (m_fVanillaAR * 3.668) + 55.0; Exit; end;
+		if HasKeyword(e, 'ArmorShield')  then begin Result := (m_fVanillaAR * 5.0); Exit; end;
+		if HasKeyword(e, 'ArmorHelmet')   then begin Result := (m_fVanillaAR * 3.5158) + 15.0; Exit; end;
+		if HasKeyword(e, 'ArmorGauntlets') or HasKeyword(e, 'ArmorBoots') then begin Result := (m_fVanillaAR * 3.6374) + 15.0; Exit; end;
+		Exit;
+	end;
+
+	if HasKeyword(e, 'ArmorMaterialGlass') then begin
+		if HasKeyword(e, 'ArmorCuirass') then begin Result := (m_fVanillaAR * 3.582) + 55.0; Exit; end;
+		if HasKeyword(e, 'ArmorShield')  then begin Result := (m_fVanillaAR * 5.37); Exit; end;
+		if HasKeyword(e, 'ArmorHelmet')   then begin Result := (m_fVanillaAR * 3.4765) + 15.0; Exit; end;
+		if HasKeyword(e, 'ArmorGauntlets') or HasKeyword(e, 'ArmorBoots') then begin Result := (m_fVanillaAR * 3.55) + 15.0; Exit; end;
+		Exit;
+	end;
+
+	if HasKeyword(e, 'ArmorMaterialDragonscale') then begin
+		if HasKeyword(e, 'ArmorCuirass') then begin Result := (m_fVanillaAR * 3.561) + 55.0; Exit; end;
+		if HasKeyword(e, 'ArmorShield')  then begin Result := (m_fVanillaAR * 5.75); Exit; end;
+		if HasKeyword(e, 'ArmorHelmet')   then begin Result := (m_fVanillaAR * 3.4658) + 15.0; Exit; end;
+		if HasKeyword(e, 'ArmorGauntlets') or HasKeyword(e, 'ArmorBoots') then begin Result := (m_fVanillaAR * 3.529) + 15.0; Exit; end;
+		Exit;
+	end;
+end;
+
+{========================================================}
 { GET VANILLA ARMOR WEIGHT (ENCUMBRANCE)                 }
 {========================================================}
 function GetVanillaAWeight(e: IInterface; Slots: string): Float;
@@ -1814,33 +1969,36 @@ procedure fAddPlayerLevelCondition(m_recipe: IInterface; m_iLevel: Integer);
 var
 	conditions, cond: IInterface;
 begin
-	if m_iLevel <= 0 then Exit;
-
-	// 1. Get or create the Conditions list
-	conditions := ElementByPath(m_recipe, 'Conditions');
 	
-	if not Assigned(conditions) then begin
-		// Create the list and the first entry [0]
-		Add(m_recipe, 'Conditions', True);
+	if USE_LEVEL_CURVE then begin
+		if m_iLevel <= 0 then Exit;
+
+		// 1. Get or create the Conditions list
 		conditions := ElementByPath(m_recipe, 'Conditions');
-		cond := ElementByIndex(conditions, 0);
-	end else begin
-		// Append a new condition to the existing list
-		cond := ElementAssign(conditions, HighInteger, nil, False);
-	end;
+		
+		if not Assigned(conditions) then begin
+			// Create the list and the first entry [0]
+			Add(m_recipe, 'Conditions', True);
+			conditions := ElementByPath(m_recipe, 'Conditions');
+			cond := ElementByIndex(conditions, 0);
+		end else begin
+			// Append a new condition to the existing list
+			cond := ElementAssign(conditions, HighInteger, nil, False);
+		end;
 
-	// 2. Set the Logic: Greater than or Equal to (GE)
-	// '11000000' = Comparison: GE / Flags: Run on Subject
-	SetElementEditValues(cond, 'CTDA\Type', '11000000'); 
-	
-	// 3. Set the Level Value
-	SetElementEditValues(cond, 'CTDA\Comparison Value', IntToStr(m_iLevel));
-	
-	// 4. Set the Function to GetLevel
-	SetElementEditValues(cond, 'CTDA\Function', 'GetLevel');
-	
-	// 5. Parameter #1 is not needed for GetLevel, so we ensure it is empty/null
-	SetElementEditValues(cond, 'CTDA\Parameter #1', '00 00 00 00');
+		// 2. Set the Logic: Greater than or Equal to (GE)
+		// '11000000' = Comparison: GE / Flags: Run on Subject
+		SetElementEditValues(cond, 'CTDA\Type', '11000000'); 
+		
+		// 3. Set the Level Value
+		SetElementEditValues(cond, 'CTDA\Comparison Value', IntToStr(m_iLevel));
+		
+		// 4. Set the Function to GetLevel
+		SetElementEditValues(cond, 'CTDA\Function', 'GetLevel');
+		
+		// 5. Parameter #1 is not needed for GetLevel, so we ensure it is empty/null
+		SetElementEditValues(cond, 'CTDA\Parameter #1', '00 00 00 00');
+	end;
 end;
 
 procedure addFemaleCondition(recipe: IInterface);
@@ -2071,16 +2229,14 @@ begin
 		{ 6. Process Material Keywords for Perk requirements }
 		tmpKeywordsCollection := ElementBySignature(itemRecord, 'KWDA');
 		
-		{ 7. Add your global skill requirement condition (e.g. Smithing 25) }
+		{ 7. Add your global requirement condition }
 		addSkillCondition(recipeCraft, GlobalSmithingReq);
 		fAddPlayerLevelCondition(recipeCraft, GlobalPlayerLevelReq);
 		addFemaleCondition(recipeCraft);
 		AddMissingManualCondition(recipeCraft, GlobalCraftingManual);
 		
-		
 		SetElementEditValues(recipeCraft, 'EDID', 'CF_' + GetElementEditValues(itemRecord, 'EDID'));
 		SetElementEditValues(recipeCraft, 'BNAM', GetEditValue(getRecordByFormID(ARMOR_CRAFTING_WORKBENCH_FORM_ID)));
-		
 		
 		// Materials
 		addItemV2(recipeItems, GetMaterial('Leather01'), 1);
@@ -2205,7 +2361,7 @@ begin
 			end;
 		end;
 		
-				{ --- STEEL MATERIAL WEAPONS --- }
+		{ --- STEEL MATERIAL WEAPONS --- }
 		if HasKeyword(itemRecord, 'WeapMaterialSteel') then begin
 			if HasKeyword(itemRecord, 'WeapTypeDagger') then begin
 				addItemV2(recipeItems, GetMaterial('IngotSteel'), 1);
@@ -2394,6 +2550,7 @@ begin
 			SetElementEditValues(recipeCraft, 'EDID', 'CF_RecipeArmor_' + StringReplace(GlobalOutfitMaterial, 'ArmorMaterial', '', [rfReplaceAll, rfIgnoreCase]) + '_LV' + IntToStr(GlobalSmithingReq) + '_' + GetElementEditValues(itemRecord, 'EDID'));
 			SetElementEditValues(recipeCraft, 'BNAM', GetEditValue(getRecordByFormID(ARMOR_CRAFTING_WORKBENCH_FORM_ID)));
 		end;
+		
 		{ If Armor is ony for Female actor }
 		addFemaleCondition(recipeCraft);
 		AddManualCondition(recipeCraft, GlobalCraftingManual);
@@ -2683,6 +2840,22 @@ begin
 		{ HEAVY ARMOR SETS                                       }
 		{========================================================}
 
+		{ --- IRON ARMOR --- }
+		if HasKeyword(itemRecord, 'ArmorMaterialIron') then begin
+			addItemV2(recipeItems, GetMaterial('IngotIron'), 1);
+			addItemV2(recipeItems, GetMaterial('Leather01'), 1);
+			if HasKeyword(itemRecord, 'ArmorCuirass') then 
+				addItemV2(recipeItems, GetMaterial('IngotIron'), 3);
+			if HasKeyword(itemRecord, 'ArmorHelmet') then 
+				addItemV2(recipeItems, GetMaterial('IngotIron'), 2);
+			if HasKeyword(itemRecord, 'ArmorBoots') then 
+				addItemV2(recipeItems, GetMaterial('IngotIron'), 2);
+			if HasKeyword(itemRecord, 'ArmorGauntlets') then 
+				addItemV2(recipeItems, GetMaterial('IngotIron'), 2);
+			if HasKeyword(itemRecord, 'ArmorShield') then 
+				addItemV2(recipeItems, GetMaterial('IngotIron'), 2);
+		end;
+		
 		{ --- STEEL ARMOR --- }
 		if HasKeyword(itemRecord, 'ArmorMaterialSteel') then begin
 			addItemV2(recipeItems, GetMaterial('IngotIron'), 1);
@@ -3218,7 +3391,10 @@ begin
 		// Add necessary base masters
 		AddMasterIfMissing(m_FileHandle, 'Skyrim.esm');
 		//AddMasterIfMissing(m_FileHandle, 'Update.esm');
-		
+		if FOR_REQUIEM then begin
+			AddMasterIfMissing(m_FileHandle, 'Requiem.esp');
+			//AddMasterIfMissing(m_FileHandle, 'Requiem for the Indifferent.esp');
+		end;
 		AddMessage('Success: ' + m_sFileName + ' initialized with base masters.');
 		Result := m_FileHandle;
 	end else begin
