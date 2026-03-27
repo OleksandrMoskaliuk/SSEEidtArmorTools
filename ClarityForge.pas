@@ -50,7 +50,7 @@ const
 	MO2_MODS_DIR = 'D:\GAMES\Honediem\mods\';
 	FOR_FEMALE_ONLY = True;
 	FOR_REQUIEM = True;
-	USE_LEVEL_CURVE = True; 
+	USE_LEVEL_CURVE = False; 
 	CRAFTING_MANUAL_PRICE_MULTIPLIER = 50; // Book value = GlobalSmithingReq * CRAFTING_MANUAL_PRICE_MULTIPLIER
 	VISUAL_SLOT_WEIGHT = 0.1;
 	IS_PERK_REQUIRED = False;
@@ -220,9 +220,9 @@ begin
 		if (m_iTempLevel >= 5) and (m_iTempLevel <= 1000) then begin
 			GlobalSmithingReq := m_iTempLevel;
 			
-			GlobalArmorBonus := GlobalSmithingReq / 15.0;
+			GlobalArmorBonus := GlobalSmithingReq / 25.0;
 			GlobalArmorPriceBonus := Round(GlobalSmithingReq / 2.0);
-			GlobalWeaponDamageBonus := Round(GlobalSmithingReq / 40.0);
+			GlobalWeaponDamageBonus := Round(GlobalSmithingReq / 15.0);
 			GlobalWeaponPriceBonus := GlobalSmithingReq;
 			GlobalWeaponWeightBonus := GlobalSmithingReq / 20.0;
 			GlobalPlayerLevelReq := fGetCurvedPlayerLevel(GlobalSmithingReq);
@@ -1030,6 +1030,70 @@ begin
 		Result := Result + GlobalWeaponDamageBonus;
 	end;
 end;
+
+{========================================================}
+{            GET REQUIEM WEAPON DAMAGE                   }
+{========================================================}
+function GetRequiemWDamage(e: IInterface): Integer;
+var
+	m_Template: IInterface;
+	m_BaseWithBonus: Integer;
+	m_Mult: Float;
+	m_MaterialOffset: Integer;
+	m_IsDagger, m_IsSword, m_IsWarAxe, m_IsMace, m_IsGreatsword, m_IsBattleaxe, m_IsWarhammer: Boolean;
+begin
+	Result := 0;
+	m_Mult := 0;
+	m_BaseWithBonus := 0;
+	m_MaterialOffset := 0;
+
+	{ 1. Follow Template (CNAM) }
+	m_Template := LinksTo(ElementBySignature(e, 'CNAM'));
+	if Assigned(m_Template) then e := m_Template;
+
+	{ 2. Pre-cache types }
+	m_IsDagger		:= HasKeyword(e, 'WeapTypeDagger');
+	m_IsSword		:= HasKeyword(e, 'WeapTypeSword');
+	m_IsWarAxe		:= HasKeyword(e, 'WeapTypeWarAxe');
+	m_IsMace		:= HasKeyword(e, 'WeapTypeMace');
+	m_IsGreatsword	:= HasKeyword(e, 'WeapTypeGreatsword');
+	m_IsBattleaxe	:= HasKeyword(e, 'WeapTypeBattleaxe');
+	m_IsWarhammer	:= HasKeyword(e, 'WeapTypeWarhammer');
+
+	{ 3. Define Hardcoded Vanilla Base + Global Bonus }
+	{ This ensures we CORRECT the damage even if the mod author set it wrong }
+	if m_IsDagger		then m_BaseWithBonus := 4  + GlobalWeaponDamageBonus;
+	if m_IsSword		then m_BaseWithBonus := 7  + GlobalWeaponDamageBonus;
+	if m_IsWarAxe		then m_BaseWithBonus := 8  + GlobalWeaponDamageBonus;
+	if m_IsMace			then m_BaseWithBonus := 9  + GlobalWeaponDamageBonus;
+	if m_IsGreatsword	then m_BaseWithBonus := 15 + GlobalWeaponDamageBonus;
+	if m_IsBattleaxe	then m_BaseWithBonus := 16 + GlobalWeaponDamageBonus;
+	if m_IsWarhammer	then m_BaseWithBonus := 18 + GlobalWeaponDamageBonus;
+
+	{ 4. Define Requiem Multiplier (Geometry) }
+	if m_IsDagger		then m_Mult := 3.75; { 15 / 4 }
+	if m_IsSword		then m_Mult := 5.57; { 39 / 7 }
+	if m_IsWarAxe		then m_Mult := 5.62; { 45 / 8 }
+	if m_IsMace			then m_Mult := 5.66; { 51 / 9 }
+	if m_IsGreatsword	then m_Mult := 5.80; { 87 / 15 }
+	if m_IsBattleaxe	then m_Mult := 5.81; { 93 / 16 }
+	if m_IsWarhammer	then m_Mult := 5.83; { 105 / 18 }
+
+	{ 5. Define Material Offset }
+	if      HasKeyword(e, 'WeapMaterialSteel')           then m_MaterialOffset := 6
+	else if HasKeyword(e, 'WeapMaterialElven')           then m_MaterialOffset := 15
+	else if HasKeyword(e, 'WeapMaterialDwarven')         then m_MaterialOffset := 24
+	else if HasKeyword(e, 'WeapMaterialGlass')           then m_MaterialOffset := 36
+	else if HasKeyword(e, 'WeapMaterialEbony')           then m_MaterialOffset := 39
+	else if HasKeyword(e, 'DLC2WeaponMaterialDragonbone') then m_MaterialOffset := 45
+	else if HasKeyword(e, 'WeapMaterialDaedric')         then m_MaterialOffset := 51;
+
+	{ 6. Final Calculation }
+	if (m_BaseWithBonus > 0) and (m_Mult > 0) then begin
+		Result := Round(m_BaseWithBonus * m_Mult) + m_MaterialOffset;
+	end;
+end;
+
 {========================================================}
 { GET VANILLA WEAPON WEIGHT                              }
 {========================================================}
