@@ -221,10 +221,10 @@ begin
 			GlobalSmithingReq := m_iTempLevel;
 			
 			GlobalArmorBonus := GlobalSmithingReq / 25.0;
-			GlobalArmorPriceBonus := Round(GlobalSmithingReq / 2.0);
+			GlobalArmorPriceBonus := 1 + Round(GlobalSmithingReq / 45.0);
 			GlobalWeaponDamageBonus := Round(GlobalSmithingReq / 15.0);
-			GlobalWeaponPriceBonus := GlobalSmithingReq * 10;
-			GlobalWeaponWeightBonus := GlobalSmithingReq / 20.0;
+			GlobalWeaponPriceBonus := 1 + Round(GlobalSmithingReq / 60.0);
+			GlobalWeaponWeightBonus := GlobalSmithingReq / 25.0;
 			GlobalPlayerLevelReq := fGetCurvedPlayerLevel(GlobalSmithingReq);
 			
 			AddMessage('    [ClarityForge Match]');
@@ -1248,7 +1248,7 @@ begin
 	end;
 	
 	{ 10. Apply Final Bonus }
-	if (Result > GlobalWeaponWeightBonus + 1.0) and (GlobalWeaponWeightBonus > 0.0) then begin
+	if (Result - GlobalWeaponWeightBonus > 1.0) and (GlobalWeaponWeightBonus > 0.0) then begin
 		Result := Result - GlobalWeaponWeightBonus;
 	end;
 end;
@@ -1641,7 +1641,7 @@ begin
 
 	{ 4. Apply Global Bonus }
 	if (Result > 0) and (GlobalWeaponPriceBonus <> 0) then begin
-		Result := Result + GlobalWeaponPriceBonus;
+		Result := Result * GlobalWeaponPriceBonus;
 	end;
 end;
 
@@ -2443,7 +2443,7 @@ function GetVanillaAPrice(e: IInterface; Slots: string): Float;
 begin
 	Result := 0.0;
 	if HasKeyword(e, 'ArmorClothing') or (GetElementEditValues(e, 'BOD2\Armor Type') = 'Clothing') then begin
-		Result := 25 + GlobalArmorPriceBonus;
+		Result := 35 * GlobalArmorPriceBonus;
 		Exit;
 	end;
 
@@ -2458,7 +2458,7 @@ begin
 			if GlobalDisableForearmsARBonus then Result := 0 else Result := 25;
 		end;
 		
-		if Result > 0 then Result := Result + GlobalArmorPriceBonus;
+		if Result > 0 then Result := Result * GlobalArmorPriceBonus;
 		Exit;
 	end;
 
@@ -2472,7 +2472,7 @@ begin
 			if GlobalDisableForearmsARBonus then Result := 0 else Result := 55;
 		end;
 
-		if Result > 0 then Result := Result + GlobalArmorPriceBonus;
+		if Result > 0 then Result := Result * GlobalArmorPriceBonus;
 		Exit;
 	end;
 
@@ -2486,7 +2486,7 @@ begin
 			if GlobalDisableForearmsARBonus then Result := 0 else Result := 85;
 		end;
 
-		if Result > 0 then Result := Result + GlobalArmorPriceBonus;
+		if Result > 0 then Result := Result * GlobalArmorPriceBonus;
 		Exit;
 	end;
 
@@ -2500,7 +2500,7 @@ begin
 			if GlobalDisableForearmsARBonus then Result := 0 else Result := 200;
 		end;
 
-		if Result > 0 then Result := Result + GlobalArmorPriceBonus;
+		if Result > 0 then Result := Result * GlobalArmorPriceBonus;
 		Exit;
 	end;
 
@@ -2514,7 +2514,7 @@ begin
 			if GlobalDisableForearmsARBonus then Result := 0 else Result := 125;
 		end;
 
-		if Result > 0 then Result := Result + GlobalArmorPriceBonus;
+		if Result > 0 then Result := Result * GlobalArmorPriceBonus;
 		Exit;
 	end;
 
@@ -2528,7 +2528,7 @@ begin
 			if GlobalDisableForearmsARBonus then Result := 0 else Result := 275;
 		end;
 
-		if Result > 0 then Result := Result + GlobalArmorPriceBonus;
+		if Result > 0 then Result := Result * GlobalArmorPriceBonus;
 		Exit;
 	end;
 
@@ -2542,7 +2542,7 @@ begin
 			if GlobalDisableForearmsARBonus then Result := 0 else Result := 625;
 		end;
 
-		if Result > 0 then Result := Result + GlobalArmorPriceBonus;
+		if Result > 0 then Result := Result * GlobalArmorPriceBonus;
 		Exit;
 	end;
 
@@ -2556,7 +2556,7 @@ begin
 			if GlobalDisableForearmsARBonus then Result := 0 else Result := 425;
 		end;
 
-		if Result > 0 then Result := Result + GlobalArmorPriceBonus;
+		if Result > 0 then Result := Result * GlobalArmorPriceBonus;
 		Exit;
 	end;
 
@@ -2571,7 +2571,7 @@ begin
 			if GlobalDisableForearmsARBonus then Result := 0 else Result := 25;
 		end;
 
-		if Result > 0 then Result := Result + GlobalArmorPriceBonus;
+		if Result > 0 then Result := Result * GlobalArmorPriceBonus;
 		Exit;
 	end;
 
@@ -2585,7 +2585,7 @@ begin
 			if GlobalDisableForearmsARBonus then Result := 0 else Result := 70;
 		end;
 
-		if Result > 0 then Result := Result + GlobalArmorPriceBonus;
+		if Result > 0 then Result := Result * GlobalArmorPriceBonus;
 		Exit;
 	end;
 
@@ -2599,7 +2599,7 @@ begin
 			if GlobalDisableForearmsARBonus then Result := 0 else Result := 45;
 		end;
 
-		if Result > 0 then Result := Result + GlobalArmorPriceBonus;
+		if Result > 0 then Result := Result * GlobalArmorPriceBonus;
 		Exit;
 	end;
 
@@ -2613,7 +2613,7 @@ begin
 			if GlobalDisableForearmsARBonus then Result := 0 else Result := 190;
 		end;
 
-		if Result > 0 then Result := Result + GlobalArmorPriceBonus;
+		if Result > 0 then Result := Result * GlobalArmorPriceBonus;
 		Exit;
 	end;
 
@@ -2627,7 +2627,7 @@ begin
 			if GlobalDisableForearmsARBonus then Result := 0 else Result := 300;
 		end;
 
-		if Result > 0 then Result := Result + GlobalArmorPriceBonus;
+		if Result > 0 then Result := Result * GlobalArmorPriceBonus;
 		Exit;
 	end;
 end;
@@ -2641,7 +2641,7 @@ begin
 
 	{ Clothing Handling }
 	if HasKeyword(e, 'ArmorClothing') or (GetElementEditValues(e, 'BOD2\Armor Type') = 'Clothing') then begin
-		Result := 20 + GlobalArmorPriceBonus;
+		Result := 45 * GlobalArmorPriceBonus;
 		Exit;
 	end;
 
@@ -2653,7 +2653,7 @@ begin
 		else if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', m_Slots) > 0) then Result := 60
 		else if HasKeyword(e, 'ArmorGauntlets') or HasKeyword(e, 'ArmorBoots') then Result := 25;
 		
-		if Result > 0 then Result := Result + GlobalArmorPriceBonus;
+		if Result > 0 then Result := Result * GlobalArmorPriceBonus;
 		Exit;
 	end;
 
@@ -2663,7 +2663,7 @@ begin
 		else if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', m_Slots) > 0) then Result := 125
 		else if HasKeyword(e, 'ArmorGauntlets') or HasKeyword(e, 'ArmorBoots') then Result := 55;
 
-		if Result > 0 then Result := Result + GlobalArmorPriceBonus;
+		if Result > 0 then Result := Result * GlobalArmorPriceBonus;
 		Exit;
 	end;
 
@@ -2673,7 +2673,7 @@ begin
 		else if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', m_Slots) > 0) then Result := 200
 		else if HasKeyword(e, 'ArmorGauntlets') or HasKeyword(e, 'ArmorBoots') then Result := 85;
 
-		if Result > 0 then Result := Result + GlobalArmorPriceBonus;
+		if Result > 0 then Result := Result * GlobalArmorPriceBonus;
 		Exit;
 	end;
 
@@ -2683,7 +2683,7 @@ begin
 		else if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', m_Slots) > 0) then Result := 500
 		else if HasKeyword(e, 'ArmorGauntlets') or HasKeyword(e, 'ArmorBoots') then Result := 200;
 
-		if Result > 0 then Result := Result + GlobalArmorPriceBonus;
+		if Result > 0 then Result := Result * GlobalArmorPriceBonus;
 		Exit;
 	end;
 
@@ -2693,7 +2693,7 @@ begin
 		else if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', m_Slots) > 0) then Result := 300
 		else if HasKeyword(e, 'ArmorGauntlets') or HasKeyword(e, 'ArmorBoots') then Result := 125;
 
-		if Result > 0 then Result := Result + GlobalArmorPriceBonus;
+		if Result > 0 then Result := Result * GlobalArmorPriceBonus;
 		Exit;
 	end;
 
@@ -2703,7 +2703,7 @@ begin
 		else if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', m_Slots) > 0) then Result := 750
 		else if HasKeyword(e, 'ArmorGauntlets') or HasKeyword(e, 'ArmorBoots') then Result := 275;
 
-		if Result > 0 then Result := Result + GlobalArmorPriceBonus;
+		if Result > 0 then Result := Result * GlobalArmorPriceBonus;
 		Exit;
 	end;
 
@@ -2713,7 +2713,7 @@ begin
 		else if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', m_Slots) > 0) then Result := 1600
 		else if HasKeyword(e, 'ArmorGauntlets') or HasKeyword(e, 'ArmorBoots') then Result := 625;
 
-		if Result > 0 then Result := Result + GlobalArmorPriceBonus;
+		if Result > 0 then Result := Result * GlobalArmorPriceBonus;
 		Exit;
 	end;
 
@@ -2723,7 +2723,7 @@ begin
 		else if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', m_Slots) > 0) then Result := 1050
 		else if HasKeyword(e, 'ArmorGauntlets') or HasKeyword(e, 'ArmorBoots') then Result := 425;
 
-		if Result > 0 then Result := Result + GlobalArmorPriceBonus;
+		if Result > 0 then Result := Result * GlobalArmorPriceBonus;
 		Exit;
 	end;
 
@@ -2735,7 +2735,7 @@ begin
 		else if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', m_Slots) > 0) then Result := 60
 		else if HasKeyword(e, 'ArmorGauntlets') or HasKeyword(e, 'ArmorBoots') then Result := 25;
 
-		if Result > 0 then Result := Result + GlobalArmorPriceBonus;
+		if Result > 0 then Result := Result * GlobalArmorPriceBonus;
 		Exit;
 	end;
 
@@ -2745,7 +2745,7 @@ begin
 		else if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', m_Slots) > 0) then Result := 175
 		else if HasKeyword(e, 'ArmorGauntlets') or HasKeyword(e, 'ArmorBoots') then Result := 70;
 
-		if Result > 0 then Result := Result + GlobalArmorPriceBonus;
+		if Result > 0 then Result := Result * GlobalArmorPriceBonus;
 		Exit;
 	end;
 
@@ -2755,7 +2755,7 @@ begin
 		else if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', m_Slots) > 0) then Result := 110
 		else if HasKeyword(e, 'ArmorGauntlets') or HasKeyword(e, 'ArmorBoots') then Result := 45;
 
-		if Result > 0 then Result := Result + GlobalArmorPriceBonus;
+		if Result > 0 then Result := Result * GlobalArmorPriceBonus;
 		Exit;
 	end;
 
@@ -2765,7 +2765,7 @@ begin
 		else if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', m_Slots) > 0) then Result := 450
 		else if HasKeyword(e, 'ArmorGauntlets') or HasKeyword(e, 'ArmorBoots') then Result := 190;
 
-		if Result > 0 then Result := Result + GlobalArmorPriceBonus;
+		if Result > 0 then Result := Result * GlobalArmorPriceBonus;
 		Exit;
 	end;
 
@@ -2775,7 +2775,7 @@ begin
 		else if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', m_Slots) > 0) then Result := 750
 		else if HasKeyword(e, 'ArmorGauntlets') or HasKeyword(e, 'ArmorBoots') then Result := 300;
 
-		if Result > 0 then Result := Result + GlobalArmorPriceBonus;
+		if Result > 0 then Result := Result * GlobalArmorPriceBonus;
 		Exit;
 	end;
 end;
@@ -4203,44 +4203,47 @@ begin
 	end;
 end;
 
-function fOverrideRecordToPatch(m_SourceRecord: IInterface; m_TargetFile: IInterface; m_sPrefix: string): IInterface;
+function fOverrideRecordToPatch(m_SourceRecord: IInterface; m_TargetFile: IInterface; m_Prefix: string): IInterface;
 var
-	sNewName, sCurrentName: string;
-	fSourceFile: IInterface;
+	m_NewName, m_CurrentName: string;
+	m_SourceFile: IInterface;
+	m_i: Integer;
 begin
 	Result := nil;
 
-	// 1. Master Handling
-	fSourceFile := GetFile(m_SourceRecord);
-	AddMasterIfMissing(m_TargetFile, 'Skyrim.esm');
+	{ 1. Force Master Synchronization }
+	m_SourceFile := GetFile(m_SourceRecord);
 	
-	// Ensure the source file is a master of our patch
-	if not Equals(fSourceFile, m_TargetFile) then
-		AddMasterIfMissing(m_TargetFile, GetFileName(fSourceFile));
+	{ Add the immediate source file }
+	AddMasterIfMissing(m_TargetFile, GetFileName(m_SourceFile));
 
-	// 2. Copy as Override
-	// Third parameter 'False' = Override (Maintains link to original FormID/EditorID)
-	Result := wbCopyElementToFile(m_SourceRecord, m_TargetFile, False, True);
+	for m_i := 0 to MasterCount(m_SourceFile) - 1 do begin
+		AddMasterIfMissing(m_TargetFile, GetFileName(MasterByIndex(m_SourceFile, m_i)));
+	end;
+
+	{ 2. Copy as Override }
+	try
+		{ Using 'True' for the final parameter is vital here to map those FileIDs }
+		Result := wbCopyElementToFile(m_SourceRecord, m_TargetFile, False, True);
+	except
+		on E: Exception do begin
+			AddMessage('    [Critical Error] wbCopyElementToFile failed on ' + EditorID(m_SourceRecord) + ': ' + E.Message);
+			Exit;
+		end;
+	end;
 	
 	if Assigned(Result) then begin
-		// 3. Update Display Name (FULL)
-		sCurrentName := GetElementEditValues(m_SourceRecord, 'FULL');
+		{ 3. Update Display Name (FULL) }
+		m_CurrentName := GetElementEditValues(Result, 'FULL');
+		if m_CurrentName = '' then m_CurrentName := EditorID(Result);
 		
-		// Fallback to EditorID if the name is empty
-		if sCurrentName = '' then sCurrentName := EditorID(m_SourceRecord);
+		m_NewName := '[' + m_Prefix + '] ' + m_CurrentName;
+		m_NewName := StringReplace(m_NewName, 'CF_', '', [rfReplaceAll]);
+		m_NewName := StringReplace(m_NewName, '_', '', [rfReplaceAll]);
 		
-		// Create the [Tag] prefix (e.g., [Ey80])
-		sNewName := '[' + m_sPrefix + '] ' + sCurrentName;
+		SetElementEditValues(Result, 'FULL', m_NewName);
 		
-		// Clean the tag for the display name display
-		sNewName := StringReplace(sNewName, 'CF_', '', [rfReplaceAll]);
-		sNewName := StringReplace(sNewName, '_', '', [rfReplaceAll]);
-		
-		SetElementEditValues(Result, 'FULL', sNewName);
-		
-		AddMessage('   [' + Signature(Result) + ' Override] ' + EditorID(Result) + ' -> ' + sNewName);
-	end else begin
-		AddMessage('   [Error] Failed to override ' + Signature(m_SourceRecord) + ': ' + EditorID(m_SourceRecord));
+		AddMessage('    [' + Signature(Result) + ' Override] ' + EditorID(Result));
 	end;
 end;
 
