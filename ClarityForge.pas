@@ -774,119 +774,147 @@ end;
 {========================================================}
 procedure fKeywordsSetUp(e: IInterface; m_Slots: string);
 var
-	kw: IInterface;
-	m_sSig, m_sReqKW: string;
-	m_bIsJewelry, m_bIsClothing: Boolean;
+	m_Keyword: IInterface;
+	m_Signature, m_RequiemKeyword: string;
 begin
-	m_sSig := Signature(e);
+	m_Signature := Signature(e);
 
 	{ 1. WEAPON LOGIC }
-	if m_sSig = 'WEAP' then begin
+	if m_Signature = 'WEAP' then begin
+		
 		if not HasKeyword(e, 'VendorItemWeapon') then begin
-			kw := GetKeywordByEditorID('VendorItemWeapon');
-			if Assigned(kw) then addKeyword(e, kw);
+			m_Keyword := GetKeywordByEditorID('VendorItemWeapon');
+			if Assigned(m_Keyword) then addKeyword(e, m_Keyword);
 		end;
-		Exit;
+		
+		if FOR_REQUIEM then begin
+			m_RequiemKeyword := '';
+
+			// --- Materials & Tempering Perks ---
+			if      HasKeyword(e, 'WeapMaterialIron')       then m_RequiemKeyword := 'REQ_Tempering_Craftsmanship'
+			else if HasKeyword(e, 'WeapMaterialSteel')      then m_RequiemKeyword := 'REQ_Tempering_Craftsmanship'
+			else if HasKeyword(e, 'WeapMaterialElven')      then m_RequiemKeyword := 'REQ_Tempering_ElvenSmithing'
+			else if HasKeyword(e, 'WeapMaterialDwarven')    then m_RequiemKeyword := 'REQ_Tempering_DwarvenSmithing'
+			else if HasKeyword(e, 'WeapMaterialOrcish')     then m_RequiemKeyword := 'REQ_Tempering_OrcishSmithing'
+			else if HasKeyword(e, 'WeapMaterialGlass')      then m_RequiemKeyword := 'REQ_Tempering_GlassSmithing'
+			else if HasKeyword(e, 'WeapMaterialEbony')      then m_RequiemKeyword := 'REQ_Tempering_EbonySmithing'
+			else if HasKeyword(e, 'WeapMaterialDragonbone') then m_RequiemKeyword := 'REQ_Tempering_DraconicSmithing'
+			else if HasKeyword(e, 'WeapMaterialDaedric')    then m_RequiemKeyword := 'REQ_Tempering_DaedricSmithing';
+
+			if (m_RequiemKeyword <> '') and not HasKeyword(e, m_RequiemKeyword) then begin
+				m_Keyword := GetKeywordByEditorID(m_RequiemKeyword);
+				if Assigned(m_Keyword) then addKeywordV2(e, m_Keyword);
+			end;
+
+			// --- Weapon Damage Types ---
+			m_RequiemKeyword := '';
+			if      HasKeyword(e, 'WeapTypeDagger')     then m_RequiemKeyword := 'REQ_DamageType_Pierce'
+			else if HasKeyword(e, 'WeapTypeSword')      then m_RequiemKeyword := 'REQ_DamageType_Slash'
+			else if HasKeyword(e, 'WeapTypeWarAxe')     then m_RequiemKeyword := 'REQ_DamageType_Slash'
+			else if HasKeyword(e, 'WeapTypeMace')       then m_RequiemKeyword := 'REQ_DamageType_Blunt'
+			else if HasKeyword(e, 'WeapTypeGreatsword') then m_RequiemKeyword := 'REQ_DamageType_Slash'
+			else if HasKeyword(e, 'WeapTypeBattleaxe')  then m_RequiemKeyword := 'REQ_DamageType_Slash'
+			else if HasKeyword(e, 'WeapTypeWarhammer')  then m_RequiemKeyword := 'REQ_DamageType_Blunt'
+			else if HasKeyword(e, 'WeapTypeBow')        then m_RequiemKeyword := 'REQ_DamageType_Ranged';
+
+			if (m_RequiemKeyword <> '') and not HasKeyword(e, m_RequiemKeyword) then begin
+				m_Keyword := GetKeywordByEditorID(m_RequiemKeyword);
+				if Assigned(m_Keyword) then addKeywordV2(e, m_Keyword);
+			end;
+				
+		end; // if FOR_REQUIEM
 	end;
 
 	{ 2. ARMOR LOGIC }
-	if m_sSig = 'ARMO' then begin
+	if m_Signature = 'ARMO' then begin
 		
-		// Clean record from common Keywords
 		fPurgeAllMaterialKeywords(e);
 
-		{ Inject the one true material defined by the file name }
-		kw := GetKeywordByEditorID(GlobalOutfitMaterial);
-		if  Assigned(kw) then begin
+		m_Keyword := GetKeywordByEditorID(GlobalOutfitMaterial);
+		if Assigned(m_Keyword) then begin
 			if not IsVisualSlot(GetFirstPersonFlags(e)) then begin
-				addKeyword(e, kw);
-				kw := null;
+				addKeyword(e, m_Keyword);
+				m_Keyword := nil;
 			end;
 		end;
 		
-		{ --- REQUIEM SPECIFIC TEMPERING KEYWORDS --- }
 		if FOR_REQUIEM then begin
-			// Tempering, exclude Jewelry and Backpack
-			if (IsVisualSlot(m_Slots) = False)
+			// Tempering, exclude Jewelry and Accessories
+			if (not IsVisualSlot(m_Slots))
 			and (Pos('Ring ', m_Slots) = 0)
 			and (Pos('Amulet ', m_Slots) = 0)
 			and (Pos('Ears ', m_Slots) = 0)
 			and (Pos('Circlet ', m_Slots) = 0)
 			and (Pos('Backpack ', m_Slots) = 0) then begin
 				
-				m_sReqKW := '';
+				m_RequiemKeyword := '';
 				
-				{ Heavy Armor Mappings - Using your verified Strings }
-				if HasKeyword(e, 'REQ_ArmorSet_Iron')         then m_sReqKW := 'REQ_Tempering_Craftsmanship';
-				if HasKeyword(e, 'REQ_ArmorSet_Steel')        then m_sReqKW := 'REQ_Tempering_Craftsmanship';
-				if HasKeyword(e, 'REQ_ArmorSet_DwarvenHeavy') then m_sReqKW := 'REQ_Tempering_DwarvenSmithing';
-				if HasKeyword(e, 'REQ_ArmorSet_OrcishHeavy')  then m_sReqKW := 'REQ_Tempering_OrcishSmithing';
-				if HasKeyword(e, 'REQ_ArmorSet_SteelPlate')   then m_sReqKW := 'REQ_Tempering_AdvancedBlacksmithing';
-				if HasKeyword(e, 'REQ_ArmorSet_Ebony')        then m_sReqKW := 'REQ_Tempering_EbonySmithing';
-				if HasKeyword(e, 'REQ_ArmorSet_Daedric')      then m_sReqKW := 'REQ_Tempering_DaedricSmithing';
+				{ Heavy Armor Mappings }
+				if      HasKeyword(e, 'REQ_ArmorSet_Iron')        then m_RequiemKeyword := 'REQ_Tempering_Craftsmanship'
+				else if HasKeyword(e, 'REQ_ArmorSet_Steel')       then m_RequiemKeyword := 'REQ_Tempering_Craftsmanship'
+				else if HasKeyword(e, 'REQ_ArmorSet_DwarvenHeavy') then m_RequiemKeyword := 'REQ_Tempering_DwarvenSmithing'
+				else if HasKeyword(e, 'REQ_ArmorSet_OrcishHeavy')  then m_RequiemKeyword := 'REQ_Tempering_OrcishSmithing'
+				else if HasKeyword(e, 'REQ_ArmorSet_SteelPlate')   then m_RequiemKeyword := 'REQ_Tempering_AdvancedBlacksmithing'
+				else if HasKeyword(e, 'REQ_ArmorSet_Ebony')        then m_RequiemKeyword := 'REQ_Tempering_EbonySmithing'
+				else if HasKeyword(e, 'REQ_ArmorSet_Daedric')      then m_RequiemKeyword := 'REQ_Tempering_DaedricSmithing'
 				
 				{ Light Armor Mappings }
-				if HasKeyword(e, 'REQ_ArmorSet_Leather')      then m_sReqKW := 'REQ_Tempering_Craftsmanship';
-				if HasKeyword(e, 'REQ_ArmorSet_Scale')        then m_sReqKW := 'REQ_Tempering_AdvancedLightArmors';
-				if HasKeyword(e, 'REQ_ArmorSet_Elven')        then m_sReqKW := 'REQ_Tempering_ElvenSmithing';
-				if HasKeyword(e, 'REQ_ArmorSet_Glass')        then m_sReqKW := 'REQ_Tempering_GlassSmithing';
+				else if HasKeyword(e, 'REQ_ArmorSet_Leather')     then m_RequiemKeyword := 'REQ_Tempering_Craftsmanship'
+				else if HasKeyword(e, 'REQ_ArmorSet_Scale')       then m_RequiemKeyword := 'REQ_Tempering_AdvancedLightArmors'
+				else if HasKeyword(e, 'REQ_ArmorSet_Elven')       then m_RequiemKeyword := 'REQ_Tempering_ElvenSmithing'
+				else if HasKeyword(e, 'REQ_ArmorSet_Glass')       then m_RequiemKeyword := 'REQ_Tempering_GlassSmithing'
 				
 				{ Dragon Mappings }
-				if HasKeyword(e, 'REQ_ArmorSet_Dragonplate') or 
-				   HasKeyword(e, 'REQ_ArmorSet_Dragonscale') then m_sReqKW := 'REQ_Tempering_DraconicSmithing';
+				else if HasKeyword(e, 'REQ_ArmorSet_Dragonplate') or 
+				        HasKeyword(e, 'REQ_ArmorSet_Dragonscale') then m_RequiemKeyword := 'REQ_Tempering_DraconicSmithing';
 
-				{ Apply the Keyword }
-				if m_sReqKW <> '' then begin
-					kw := GetKeywordByEditorID(m_sReqKW);
-					if Assigned(kw) then begin
-						if not HasKeyword(e, m_sReqKW) then
-							if Assigned(kw) then begin
-								addKeywordV2(e, kw);
-							end else begin
-								AddMessage('!! CRITICAL: Keyword ' + m_sReqKW + ' not found. Check your Requiem version!');
-							end;
+				{ Apply Requiem Keyword }
+				if m_RequiemKeyword <> '' then begin
+					if not HasKeyword(e, m_RequiemKeyword) then begin
+						m_Keyword := GetKeywordByEditorID(m_RequiemKeyword);
+						if Assigned(m_Keyword) then 
+							addKeywordV2(e, m_Keyword)
+						else
+							AddMessage('!! CRITICAL: Keyword ' + m_RequiemKeyword + ' not found. Check your Requiem version!');
 					end;
 				end;
 			end;
 		end;
 		
-		{ SHIELD (Slot 39) }
+		{ Standard Armor Part Keywords }
 		if Pos('Shield ', m_Slots) > 0 then begin
-			kw := GetKeywordByEditorID('ArmorShield');
-			if Assigned(kw) then addKeyword(e, kw);
+			m_Keyword := GetKeywordByEditorID('ArmorShield');
+			if Assigned(m_Keyword) then addKeyword(e, m_Keyword);
 			Exit;
 		end;
 
-		{ BODY }
 		if Pos('Body ', m_Slots) > 0 then begin
-			kw := GetKeywordByEditorID('ArmorCuirass');
-			if Assigned(kw) then addKeyword(e, kw);
+			m_Keyword := GetKeywordByEditorID('ArmorCuirass');
+			if Assigned(m_Keyword) then addKeyword(e, m_Keyword);
 			Exit;
 		end;
 
-		{ HEAD / HAIR }
 		if (Pos('Head ', m_Slots) > 0) or (Pos('Hair ', m_Slots) > 0) then begin
-			kw := GetKeywordByEditorID('ArmorHelmet');
-			if Assigned(kw) then addKeyword(e, kw);
+			m_Keyword := GetKeywordByEditorID('ArmorHelmet');
+			if Assigned(m_Keyword) then addKeyword(e, m_Keyword);
 			Exit;
 		end;
 
-		{ HANDS / FOREARMS }
 		if (Pos('Hands ', m_Slots) > 0) then begin
-			kw := GetKeywordByEditorID('ArmorGauntlets');
-			if Assigned(kw) then addKeyword(e, kw);
+			m_Keyword := GetKeywordByEditorID('ArmorGauntlets');
+			if Assigned(m_Keyword) then addKeyword(e, m_Keyword);
 			AddFistKeywords(e);
 			Exit;
 		end;
 
-		{ FEET }
 		if Pos('Feet ', m_Slots) > 0 then begin
-			kw := GetKeywordByEditorID('ArmorBoots');
-			if Assigned(kw) then addKeyword(e, kw);
+			m_Keyword := GetKeywordByEditorID('ArmorBoots');
+			if Assigned(m_Keyword) then addKeyword(e, m_Keyword);
 			Exit;
 		end;
 	end;
 end;
+
 {========================================================}
 {               ADD FIST KEYWORDS                        }
 {========================================================}
@@ -1040,7 +1068,7 @@ var
 	m_BaseWithBonus: Integer;
 	m_Mult: Float;
 	m_MaterialOffset: Integer;
-	m_IsDagger, m_IsSword, m_IsWarAxe, m_IsMace, m_IsGreatsword, m_IsBattleaxe, m_IsWarhammer: Boolean;
+	m_IsDagger, m_IsSword, m_IsWarAxe, m_IsMace, m_IsGreatsword, m_IsBattleaxe, m_IsWarhammer, m_IsBow: Boolean;
 begin
 	Result := 0;
 	m_Mult := 0;
@@ -1059,6 +1087,7 @@ begin
 	m_IsGreatsword	:= HasKeyword(e, 'WeapTypeGreatsword');
 	m_IsBattleaxe	:= HasKeyword(e, 'WeapTypeBattleaxe');
 	m_IsWarhammer	:= HasKeyword(e, 'WeapTypeWarhammer');
+	m_IsBow         := HasKeyword(e, 'WeapTypeBow');
 
 	{ 3. Define Hardcoded Vanilla Base + Global Bonus }
 	{ This ensures we CORRECT the damage even if the mod author set it wrong }
@@ -1069,6 +1098,7 @@ begin
 	if m_IsGreatsword	then m_BaseWithBonus := 15 + GlobalWeaponDamageBonus;
 	if m_IsBattleaxe	then m_BaseWithBonus := 16 + GlobalWeaponDamageBonus;
 	if m_IsWarhammer	then m_BaseWithBonus := 18 + GlobalWeaponDamageBonus;
+	if m_IsBow			then m_BaseWithBonus := 6  + GlobalWeaponDamageBonus;
 
 	{ 4. Define Requiem Multiplier (Geometry) }
 	if m_IsDagger		then m_Mult := 3.75; { 15 / 4 }
@@ -1078,7 +1108,8 @@ begin
 	if m_IsGreatsword	then m_Mult := 5.80; { 87 / 15 }
 	if m_IsBattleaxe	then m_Mult := 5.81; { 93 / 16 }
 	if m_IsWarhammer	then m_Mult := 5.83; { 105 / 18 }
-
+	if m_IsBow			then m_Mult := 6.66; { 40 / 6 }
+	
 	{ 5. Define Material Offset }
 	if      HasKeyword(e, 'WeapMaterialSteel')           then m_MaterialOffset := 6
 	else if HasKeyword(e, 'WeapMaterialElven')           then m_MaterialOffset := 15
@@ -1209,8 +1240,145 @@ begin
 		Result := Result - GlobalWeaponWeightBonus;
 	end;
 end;
+
 {========================================================}
-{ GET VANILLA WEAPON PRICE                               }
+{            GET REQUIEM WEAPON WEIGHT                   }
+{========================================================}
+function GetRequiemWWeight(e: IInterface): Float;
+var
+	m_Template: IInterface;
+	m_IsDagger, m_IsSword, m_IsWarAxe, m_IsMace, m_IsGreatsword, m_IsBattleaxe, m_IsWarhammer, m_IsBow: Boolean;
+begin
+	Result := 0.0;
+
+	{ 1. Follow Template (CNAM) }
+	m_Template := LinksTo(ElementBySignature(e, 'CNAM'));
+	if Assigned(m_Template) then e := m_Template;
+
+	{ 2. Pre-cache types }
+	m_IsDagger		:= HasKeyword(e, 'WeapTypeDagger');
+	m_IsSword		:= HasKeyword(e, 'WeapTypeSword');
+	m_IsWarAxe		:= HasKeyword(e, 'WeapTypeWarAxe');
+	m_IsMace		:= HasKeyword(e, 'WeapTypeMace');
+	m_IsGreatsword	:= HasKeyword(e, 'WeapTypeGreatsword');
+	m_IsBattleaxe	:= HasKeyword(e, 'WeapTypeBattleaxe');
+	m_IsWarhammer	:= HasKeyword(e, 'WeapTypeWarhammer');
+	m_IsBow			:= HasKeyword(e, 'WeapTypeBow');
+
+	{ 3. Manual Data Placement by Material }
+	
+	{ --- IRON (Ir) --- }
+	if HasKeyword(e, 'WeapMaterialIron') then begin
+		if m_IsDagger		then Result := 1.5;
+		if m_IsSword		then Result := 9.0;
+		if m_IsWarAxe		then Result := 12.0;
+		if m_IsMace			then Result := 14.0;
+		if m_IsGreatsword	then Result := 16.0;
+		if m_IsBattleaxe	then Result := 20.0;
+		if m_IsWarhammer	then Result := 24.0;
+		if m_IsBow			then Result := 8.0;
+	end
+	
+	{ --- STEEL (St) --- }
+	else if HasKeyword(e, 'WeapMaterialSteel') then begin
+		if m_IsDagger		then Result := 2.5;
+		if m_IsSword		then Result := 10.0;
+		if m_IsWarAxe		then Result := 13.0;
+		if m_IsMace			then Result := 15.0;
+		if m_IsGreatsword	then Result := 17.0;
+		if m_IsBattleaxe	then Result := 21.0;
+		if m_IsWarhammer	then Result := 25.0;
+		if m_IsBow			then Result := 9.0;
+	end
+
+	{ --- ELVEN (Ev) --- }
+	else if HasKeyword(e, 'WeapMaterialElven') then begin
+		if m_IsDagger		then Result := 0.5;
+		if m_IsSword		then Result := 8.0;
+		if m_IsWarAxe		then Result := 11.0;
+		if m_IsMace			then Result := 13.0;
+		if m_IsGreatsword	then Result := 15.0;
+		if m_IsBattleaxe	then Result := 19.0;
+		if m_IsWarhammer	then Result := 23.0;
+		if m_IsBow			then Result := 4.0;
+	end
+
+	{ --- DWARVEN (Dw) --- }
+	else if HasKeyword(e, 'WeapMaterialDwarven') then begin
+		if m_IsDagger		then Result := 3.5;
+		if m_IsSword		then Result := 12.0;
+		if m_IsWarAxe		then Result := 14.0;
+		if m_IsMace			then Result := 16.0;
+		if m_IsGreatsword	then Result := 19.0;
+		if m_IsBattleaxe	then Result := 23.0;
+		if m_IsWarhammer	then Result := 27.0;
+		if m_IsBow			then Result := 9.0;
+	end
+	
+	{ --- ORCISH (Or) --- }
+	else if HasKeyword(e, 'WeapMaterialOrcish') then begin
+		if m_IsDagger		then Result := 4.0;
+		if m_IsSword		then Result := 13.0;
+		if m_IsWarAxe		then Result := 15.0;
+		if m_IsMace			then Result := 17.0;
+		if m_IsGreatsword	then Result := 20.0;
+		if m_IsBattleaxe	then Result := 24.0;
+		if m_IsWarhammer	then Result := 28.0;
+		if m_IsBow			then Result := 10.0;
+	end
+
+	{ --- GLASS (Gl) --- }
+	else if HasKeyword(e, 'WeapMaterialGlass') then begin
+		if m_IsDagger		then Result := 2.0;
+		if m_IsSword		then Result := 9.0;
+		if m_IsWarAxe		then Result := 11.0;
+		if m_IsMace			then Result := 13.0;
+		if m_IsGreatsword	then Result := 16.0;
+		if m_IsBattleaxe	then Result := 20.0;
+		if m_IsWarhammer	then Result := 24.0;
+		if m_IsBow			then Result := 8.0;
+	end
+
+	{ --- EBONY (Eb) --- }
+	else if HasKeyword(e, 'WeapMaterialEbony') then begin
+		if m_IsDagger		then Result := 5.0;
+		if m_IsSword		then Result := 15.0;
+		if m_IsWarAxe		then Result := 17.0;
+		if m_IsMace			then Result := 19.0;
+		if m_IsGreatsword	then Result := 22.0;
+		if m_IsBattleaxe	then Result := 26.0;
+		if m_IsWarhammer	then Result := 30.0;
+		if m_IsBow			then Result := 16.0;
+	end
+
+	{ --- DAEDRIC (Dd) --- }
+	else if HasKeyword(e, 'WeapMaterialDaedric') then begin
+		if m_IsDagger		then Result := 6.0;
+		if m_IsSword		then Result := 17.0;
+		if m_IsWarAxe		then Result := 18.0;
+		if m_IsMace			then Result := 19.0;
+		if m_IsGreatsword	then Result := 24.0;
+		if m_IsBattleaxe	then Result := 28.0;
+		if m_IsWarhammer	then Result := 32.0;
+		if m_IsBow			then Result := 21.0;
+	end
+
+	{ --- DRAGONBONE (Db) --- }
+	else if HasKeyword(e, 'WeapMaterialDragonbone') then begin
+		if m_IsDagger		then Result := 5.5;
+		if m_IsSword		then Result := 15.0;
+		if m_IsWarAxe		then Result := 18.0;
+		if m_IsMace			then Result := 20.0;
+		if m_IsGreatsword	then Result := 27.0;
+		if m_IsBattleaxe	then Result := 30.0;
+		if m_IsWarhammer	then Result := 33.0;
+		if m_IsBow			then Result := 20.0;
+	end;
+
+end;
+
+{========================================================}
+{          GET VANILLA WEAPON PRICE                      }
 {========================================================}
 function GetVanillaWPrice(e: IInterface): Integer;
 var
@@ -1324,6 +1492,147 @@ begin
 		Result := Result + GlobalWeaponPriceBonus;
 	end;
 end;
+
+{========================================================}
+{            GET REQUIEM WEAPON PRICE                    }
+{========================================================}
+function GetRequiemWPrice(e: IInterface): Integer;
+var
+	m_Template: IInterface;
+	m_IsDagger, m_IsSword, m_IsWarAxe, m_IsMace, m_IsGreatsword, m_IsBattleaxe, m_IsWarhammer, m_IsBow: Boolean;
+begin
+	Result := 0;
+
+	{ 1. Follow Template (CNAM) }
+	m_Template := LinksTo(ElementBySignature(e, 'CNAM'));
+	if Assigned(m_Template) then e := m_Template;
+
+	{ 2. Pre-cache types }
+	m_IsDagger		:= HasKeyword(e, 'WeapTypeDagger');
+	m_IsSword		:= HasKeyword(e, 'WeapTypeSword');
+	m_IsWarAxe		:= HasKeyword(e, 'WeapTypeWarAxe');
+	m_IsMace		:= HasKeyword(e, 'WeapTypeMace');
+	m_IsGreatsword	:= HasKeyword(e, 'WeapTypeGreatsword');
+	m_IsBattleaxe	:= HasKeyword(e, 'WeapTypeBattleaxe');
+	m_IsWarhammer	:= HasKeyword(e, 'WeapTypeWarhammer');
+	m_IsBow			:= HasKeyword(e, 'WeapTypeBow');
+
+	{ 3. Manual Price Placement by Material }
+	
+	{ --- IRON (Ir) --- }
+	if HasKeyword(e, 'WeapMaterialIron') then begin
+		if m_IsDagger		then Result := 10;
+		if m_IsSword		then Result := 25;
+		if m_IsWarAxe		then Result := 30;
+		if m_IsMace			then Result := 35;
+		if m_IsGreatsword	then Result := 50;
+		if m_IsBattleaxe	then Result := 55;
+		if m_IsWarhammer	then Result := 60;
+		if m_IsBow			then Result := 60;
+	end
+	
+	{ --- STEEL (St) --- }
+	else if HasKeyword(e, 'WeapMaterialSteel') then begin
+		if m_IsDagger		then Result := 20;
+		if m_IsSword		then Result := 45;
+		if m_IsWarAxe		then Result := 55;
+		if m_IsMace			then Result := 65;
+		if m_IsGreatsword	then Result := 90;
+		if m_IsBattleaxe	then Result := 100;
+		if m_IsWarhammer	then Result := 110;
+		if m_IsBow			then Result := 90;
+	end
+
+	{ --- ELVEN (Ev) --- }
+	else if HasKeyword(e, 'WeapMaterialElven') then begin
+		if m_IsDagger		then Result := 55;
+		if m_IsSword		then Result := 135;
+		if m_IsWarAxe		then Result := 165;
+		if m_IsMace			then Result := 195;
+		if m_IsGreatsword	then Result := 270;
+		if m_IsBattleaxe	then Result := 300;
+		if m_IsWarhammer	then Result := 330;
+		if m_IsBow			then Result := 470;
+	end
+
+	{ --- DWARVEN (Dw) --- }
+	else if HasKeyword(e, 'WeapMaterialDwarven') then begin
+		if m_IsDagger		then Result := 70;
+		if m_IsSword		then Result := 180;
+		if m_IsWarAxe		then Result := 220;
+		if m_IsMace			then Result := 260;
+		if m_IsGreatsword	then Result := 360;
+		if m_IsBattleaxe	then Result := 400;
+		if m_IsWarhammer	then Result := 440;
+		if m_IsBow			then Result := 270;
+	end
+	
+	{ --- ORCISH (Or) --- }
+	else if HasKeyword(e, 'WeapMaterialOrcish') then begin
+		if m_IsDagger		then Result := 90;
+		if m_IsSword		then Result := 225;
+		if m_IsWarAxe		then Result := 275;
+		if m_IsMace			then Result := 325;
+		if m_IsGreatsword	then Result := 450;
+		if m_IsBattleaxe	then Result := 500;
+		if m_IsWarhammer	then Result := 550;
+		if m_IsBow			then Result := 300;
+	end
+
+	{ --- GLASS (Gl) --- }
+	else if HasKeyword(e, 'WeapMaterialGlass') then begin
+		if m_IsDagger		then Result := 450;
+		if m_IsSword		then Result := 1125;
+		if m_IsWarAxe		then Result := 1375;
+		if m_IsMace			then Result := 1625;
+		if m_IsGreatsword	then Result := 2250;
+		if m_IsBattleaxe	then Result := 2500;
+		if m_IsWarhammer	then Result := 2750;
+		if m_IsBow			then Result := 1900;
+	end
+
+	{ --- EBONY (Eb) --- }
+	else if HasKeyword(e, 'WeapMaterialEbony') then begin
+		if m_IsDagger		then Result := 750;
+		if m_IsSword		then Result := 1800;
+		if m_IsWarAxe		then Result := 2200;
+		if m_IsMace			then Result := 2600;
+		if m_IsGreatsword	then Result := 3600;
+		if m_IsBattleaxe	then Result := 4000;
+		if m_IsWarhammer	then Result := 4400;
+		if m_IsBow			then Result := 2950;
+	end
+
+	{ --- DAEDRIC (Dd) --- }
+	else if HasKeyword(e, 'WeapMaterialDaedric') then begin
+		if m_IsDagger		then Result := 1800;
+		if m_IsSword		then Result := 4500;
+		if m_IsWarAxe		then Result := 5500;
+		if m_IsMace			then Result := 6500;
+		if m_IsGreatsword	then Result := 9000;
+		if m_IsBattleaxe	then Result := 10000;
+		if m_IsWarhammer	then Result := 11000;
+		if m_IsBow			then Result := 9000;
+	end
+
+	{ --- DRAGONBONE (Db) --- }
+	else if HasKeyword(e, 'WeapMaterialDragonbone') then begin
+		if m_IsDagger		then Result := 1440;
+		if m_IsSword		then Result := 3600;
+		if m_IsWarAxe		then Result := 4400;
+		if m_IsMace			then Result := 5200;
+		if m_IsGreatsword	then Result := 7200;
+		if m_IsBattleaxe	then Result := 8000;
+		if m_IsWarhammer	then Result := 8800;
+		if m_IsBow			then Result := 7000;
+	end;
+
+	{ 4. Apply Global Bonus }
+	if (Result > 0) and (GlobalWeaponPriceBonus <> 0) then begin
+		Result := Result + GlobalWeaponPriceBonus;
+	end;
+end;
+
 {========================================================}
 { VANILLA ARMOR RATINGS WITH FOREARMS LOGIC              }
 {========================================================}
