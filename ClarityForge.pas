@@ -54,7 +54,7 @@ const
 	CRAFTING_MANUAL_PRICE_MULTIPLIER = 50; // Book value = GlobalSmithingReq * CRAFTING_MANUAL_PRICE_MULTIPLIER
 	VISUAL_SLOT_WEIGHT = 0.1;
 	IS_PERK_REQUIRED = False;
-	sScriptVersion = '2.1.3';
+	sScriptVersion = '2.1.4';
 	sRepoUrl = 'https://github.com/OleksandrMoskaliuk/SSEEidtArmorTools';	
 
 var
