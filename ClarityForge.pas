@@ -756,7 +756,7 @@ begin
 end;
 
 {========================================================}
-{            PURGE ALL POTENTIAL MATERIAL TAGS           }
+{        PURGE ALL POTENTIAL MATERIAL TAGS               }
 {========================================================}
 procedure fPurgeAllMaterialKeywords(e: IInterface);
 begin
@@ -770,12 +770,38 @@ begin
 	removeKeywordV2(e, 'ArmorLight');
 	removeKeywordV2(e, 'ArmorClothing');
 	
+	{ --- VANILLA & COMMON MATERIALS --- }
+	removeKeywordV2(e, 'ArmorMaterialLeather');
+	removeKeywordV2(e, 'ArmorMaterialScaled');
+	removeKeywordV2(e, 'ArmorMaterialElven');
+	removeKeywordV2(e, 'ArmorMaterialElvenGilded');
+	removeKeywordV2(e, 'ArmorMaterialGlass');
+	removeKeywordV2(e, 'ArmorMaterialDragonscale');
+	removeKeywordV2(e, 'ArmorMaterialIron');
+	removeKeywordV2(e, 'ArmorMaterialIronBanded');
+	removeKeywordV2(e, 'ArmorMaterialSteel');
+	removeKeywordV2(e, 'ArmorMaterialDwarven');
+	removeKeywordV2(e, 'ArmorMaterialSteelPlate');
+	removeKeywordV2(e, 'ArmorMaterialOrcish');
+	removeKeywordV2(e, 'ArmorMaterialEbony');
+	removeKeywordV2(e, 'ArmorMaterialDragonplate');
+	removeKeywordV2(e, 'ArmorMaterialDaedric');
+	
+	{ Unarmed / Fist Perk Keywords }
+	removeKeywordV2(e, 'PerkFistsIron');
+	removeKeywordV2(e, 'PerkFistsSteel');
+	removeKeywordV2(e, 'PerkFistsDwarven');
+	removeKeywordV2(e, 'PerkFistsOrcish');
+	removeKeywordV2(e, 'PerkFistsEbony');
+	removeKeywordV2(e, 'PerkFistsDaedric');
+	removeKeywordV2(e, 'PerkFistsDragonplate');
+
 	{ DLC's }
 	removeKeywordV2(e, 'DLC2ArmorMaterialNordicHeavy');
+	removeKeywordV2(e, 'ArmorMaterialHide');
 	
 	if FOR_REQUIEM then begin
 		{ --- REQUIEM MATERIAL PURGE --- }
-		{ Stripped faction keywords to prevent "Deep Search" warnings }
 		
 		{ Heavy }
 		removeKeywordV2(e, 'REQ_ArmorSet_Iron');
@@ -795,25 +821,6 @@ begin
 		removeKeywordV2(e, 'REQ_ArmorSet_Glass');
 		removeKeywordV2(e, 'REQ_ArmorSet_Dragonscale');
 		
-		
-		
-	end else begin
-		{ --- VANILLA & COMMON MATERIALS --- }
-		removeKeywordV2(e, 'ArmorMaterialLeather');
-		removeKeywordV2(e, 'ArmorMaterialScaled');
-		removeKeywordV2(e, 'ArmorMaterialElven');
-		removeKeywordV2(e, 'ArmorMaterialElvenGilded');
-		removeKeywordV2(e, 'ArmorMaterialGlass');
-		removeKeywordV2(e, 'ArmorMaterialDragonscale');
-		removeKeywordV2(e, 'ArmorMaterialIron');
-		removeKeywordV2(e, 'ArmorMaterialIronBanded');
-		removeKeywordV2(e, 'ArmorMaterialSteel');
-		removeKeywordV2(e, 'ArmorMaterialDwarven');
-		removeKeywordV2(e, 'ArmorMaterialSteelPlate');
-		removeKeywordV2(e, 'ArmorMaterialOrcish');
-		removeKeywordV2(e, 'ArmorMaterialEbony');
-		removeKeywordV2(e, 'ArmorMaterialDragonplate');
-		removeKeywordV2(e, 'ArmorMaterialDaedric');
 	end;
 end;
 
@@ -964,7 +971,7 @@ begin
 end;
 
 {========================================================}
-{               ADD FIST KEYWORDS                        }
+{                ADD FIST KEYWORDS                       }
 {========================================================}
 procedure AddFistKeywords(e: IInterface);
 var
@@ -974,7 +981,54 @@ begin
 	if not HasKeyword(e, 'ArmorGauntlets') then Exit;
 
 	kwName := '';
-	if HasKeyword(e, 'ArmorMaterialSteel') or HasKeyword(e, 'ArmorMaterialSteelPlate') then
+
+	{ Iron }
+	if HasKeyword(e, 'ArmorMaterialIron') or HasKeyword(e, 'REQ_ArmorSet_Iron') then
+		kwName := 'PerkFistsIron'
+
+	{ Steel / Plate }
+	else if HasKeyword(e, 'ArmorMaterialSteel') or HasKeyword(e, 'ArmorMaterialSteelPlate') or 
+			HasKeyword(e, 'REQ_ArmorSet_Steel') or HasKeyword(e, 'REQ_ArmorSet_SteelPlate') then
+		kwName := 'PerkFistsSteel'
+
+	{ Dwarven }
+	else if HasKeyword(e, 'ArmorMaterialDwarven') or HasKeyword(e, 'REQ_ArmorSet_DwarvenHeavy') then
+		kwName := 'PerkFistsDwarven'
+
+	{ Orcish }
+	else if HasKeyword(e, 'ArmorMaterialOrcish') or HasKeyword(e, 'REQ_ArmorSet_OrcishHeavy') then
+		kwName := 'PerkFistsOrcish'
+
+	{ Ebony }
+	else if HasKeyword(e, 'ArmorMaterialEbony') or HasKeyword(e, 'REQ_ArmorSet_Ebony') then
+		kwName := 'PerkFistsEbony'
+
+	{ Daedric }
+	else if HasKeyword(e, 'ArmorMaterialDaedric') or HasKeyword(e, 'REQ_ArmorSet_Daedric') then
+		kwName := 'PerkFistsDaedric'
+
+	{ Dragonplate }
+	else if HasKeyword(e, 'ArmorMaterialDragonplate') or HasKeyword(e, 'REQ_ArmorSet_Dragonplate') then
+		kwName := 'PerkFistsDragonplate';
+
+	if kwName <> '' then
+		addKeyword(e, GetKeywordByEditorID(kwName));
+end;
+
+{========================================================}
+{            ADD REQUIEM FIST KEYWORDS                   }
+{========================================================}
+procedure fAddRequiemFistKeywords(e: IInterface);
+var
+	kwName: string;
+begin
+	{ Only apply to items that act as real Gauntlets }
+	if not HasKeyword(e, 'ArmorGauntlets') then Exit;
+
+	kwName := '';
+	if HasKeyword(e, 'ArmorMaterialIron') then
+		kwName := 'PerkFistsIron'
+	else if HasKeyword(e, 'ArmorMaterialSteel') or HasKeyword(e, 'ArmorMaterialSteelPlate') then
 		kwName := 'PerkFistsSteel'
 	else if HasKeyword(e, 'ArmorMaterialDwarven') then
 		kwName := 'PerkFistsDwarven'
