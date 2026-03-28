@@ -54,7 +54,7 @@ const
 	CRAFTING_MANUAL_PRICE_MULTIPLIER = 50; // Book value = GlobalSmithingReq * CRAFTING_MANUAL_PRICE_MULTIPLIER
 	VISUAL_SLOT_WEIGHT = 0.1;
 	IS_PERK_REQUIRED = False;
-	sScriptVersion = '2.1.2';
+	sScriptVersion = '2.1.3';
 	sRepoUrl = 'https://github.com/OleksandrMoskaliuk/SSEEidtArmorTools';	
 
 var
@@ -1944,8 +1944,8 @@ begin
 		Exit;
 	end;
 
-	{ Ebony - REQ_ArmorSet_ebony [KYWD:0006BBD8] }
-	if HasKeyword(e, 'REQ_ArmorSet_ebony') then begin
+	{ Ebony - REQ_ArmorSet_Ebony [KYWD:0006BBD8] }
+	if HasKeyword(e, 'REQ_ArmorSet_Ebony') then begin
 		if HasKeyword(e, 'ArmorCuirass') then begin
 			m_fBaseAR := 43 + GlobalArmorBonus;
 			Result := (m_fBaseAR * 8.837) + 55.0;
@@ -1980,8 +1980,8 @@ begin
 		Exit;
 	end;
 
-	{ Daedric - REQ_ArmorSet_daedric [KYWD:0006BBD4] }
-	if HasKeyword(e, 'REQ_ArmorSet_daedric') then begin
+	{ Daedric - REQ_ArmorSet_Daedric [KYWD:0006BBD4] }
+	if HasKeyword(e, 'REQ_ArmorSet_Daedric') then begin
 		if HasKeyword(e, 'ArmorCuirass') then begin
 			m_fBaseAR := 49 + GlobalArmorBonus;
 			Result := (m_fBaseAR * 11.122) + 55.0;
@@ -2345,7 +2345,7 @@ begin
 		Exit;
 	end;
 
-	if HasKeyword(e, 'REQ_ArmorSet_ebony') then begin
+	if HasKeyword(e, 'REQ_ArmorSet_Ebony') then begin
 		if HasKeyword(e, 'ArmorCuirass') then Result := 38 - m_WeightReduceHeavy
 		else if HasKeyword(e, 'ArmorShield') then Result := 14
 		else if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', m_Slots) > 0) then Result := 10
@@ -2367,7 +2367,7 @@ begin
 		Exit;
 	end;
 
-	if HasKeyword(e, 'REQ_ArmorSet_daedric') then begin
+	if HasKeyword(e, 'REQ_ArmorSet_Daedric') then begin
 		if HasKeyword(e, 'ArmorCuirass') then Result := 50 - m_WeightReduceHeavy
 		else if HasKeyword(e, 'ArmorShield') then Result := 15
 		else if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', m_Slots) > 0) then Result := 10
@@ -2697,7 +2697,7 @@ begin
 		Exit;
 	end;
 
-	if HasKeyword(e, 'REQ_ArmorSet_ebony') then begin
+	if HasKeyword(e, 'REQ_ArmorSet_Ebony') then begin
 		if HasKeyword(e, 'ArmorCuirass') then Result := 1500
 		else if HasKeyword(e, 'ArmorShield') then Result := 750
 		else if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', m_Slots) > 0) then Result := 750
@@ -2707,7 +2707,7 @@ begin
 		Exit;
 	end;
 
-	if HasKeyword(e, 'REQ_ArmorSet_daedric') then begin
+	if HasKeyword(e, 'REQ_ArmorSet_Daedric') then begin
 		if HasKeyword(e, 'ArmorCuirass') then Result := 3200
 		else if HasKeyword(e, 'ArmorShield') then Result := 1600
 		else if HasKeyword(e, 'ArmorHelmet') or (Pos('Hair ', m_Slots) > 0) then Result := 1600
@@ -3171,7 +3171,7 @@ begin
 		
 		{ 4. Add your condition (e.g. Smithing 25) }
 		addSkillCondition(recipeCraft, GlobalSmithingReq);
-		AddManualCondition(recipeCraft, GlobalCraftingManual);
+		//AddManualCondition(recipeCraft, GlobalCraftingManual);
 		
 		{ 5. Add Player Level  condition }
 		fAddPlayerLevelCondition(recipeCraft, GlobalPlayerLevelReq);
