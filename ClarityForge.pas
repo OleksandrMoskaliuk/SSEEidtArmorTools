@@ -319,7 +319,11 @@ begin
 			fAddEnchProtection(m_NewRecord, m_DummyEnch);
 			
 			// Crafting
-			MakeCraftableV2(m_NewRecord);
+			if FOR_REQUIEM then begin 
+				MakeCraftableV3Requiem(m_NewRecord);
+			end else begin 
+				MakeCraftableV2(m_NewRecord);
+			end;
 			
 			// Tempering, exclude Jewelry and Backpack
 			if (IsVisualSlot(m_Slots) = False)
@@ -328,7 +332,11 @@ begin
 			and ((Pos('Ears ', m_Slots) > 0) = False )  
 			and ((Pos('Circlet ', m_Slots) > 0) = False )
 			and ((Pos('Backpack ', m_Slots) > 0) = False) then begin
-				fMakeTemperable(m_NewRecord);
+				if FOR_REQUIEM then begin
+					fMakeTemperableV2Requiem(m_NewRecord);	
+				end else begin
+					fMakeTemperable(m_NewRecord);	
+				end;
 			end;
 			
 		end;
@@ -392,7 +400,11 @@ begin
 			SetElementEditValues(m_NewRecord, 'DATA\Weight', FloatToStr(m_WeaponWeight));
 				
 			MakeCraftableV2(m_NewRecord);
-			fMakeTemperable(m_NewRecord);	
+			if FOR_REQUIEM then begin
+				fMakeTemperableV2Requiem(m_NewRecord);	
+			end else begin
+				fMakeTemperable(m_NewRecord);	
+			end;
 				
 		end;
 	end else begin
@@ -3048,7 +3060,7 @@ end;
 {========================================================}
 function MakeCraftableV2(itemRecord: IInterface): IInterface;
 var
-	recipeCraft, recipeItems, tmpKeywordsCollection, tmp: IInterface;
+	recipeCraft, recipeItems, tmpKeywordsCollection: IInterface;
 	itemSignature, currentKeywordEDID: string;
 	amountOfMainComponent, amountOfAdditionalComponent, amountOfLeatherComponent, i: integer;
 begin
@@ -3908,6 +3920,679 @@ begin
 end;
 
 {========================================================}
+{ CREATE CRAFTING RECIPE (COBJ) REQUIEM                  }
+{========================================================}
+function MakeCraftableV3Requiem(itemRecord: IInterface): IInterface;
+var
+	recipeCraft, recipeItems, tmpKeywordsCollection: IInterface;
+	itemSignature, currentKeywordEDID: string;
+	amountOfMainComponent, amountOfAdditionalComponent, amountOfLeatherComponent, i: integer;
+begin
+	itemSignature := Signature(itemRecord);
+
+	{--- CRAFTING MANUAL ---}
+	if (itemSignature = 'BOOK') then begin
+		
+		{ 1. Construct the target EditorID }
+		currentKeywordEDID := 'CF_' + GetElementEditValues(itemRecord, 'EDID');
+		
+		{ 2. Search for the existing recipe in the Patch File }
+		{ GroupBySignature ensures we are only looking inside 'COBJ' records }
+		recipeCraft := MainRecordByEditorID(GroupBySignature(GlobalPatchFile, 'COBJ'), currentKeywordEDID);
+		
+		{ 3. If found, skip creation and just return the existing record }
+		if Assigned(recipeCraft) then begin
+			AddMessage('Record exists, skipping creation: ' + currentKeywordEDID);
+			Result := recipeCraft;
+			Exit;
+		end;
+		
+		{ 4. Create the base COBJ record }
+		recipeCraft := createRecipe(itemRecord);
+		if not Assigned(recipeCraft) then Exit;
+
+		{ 5. Initialize Required Items list }
+		Add(recipeCraft, 'items', True);
+		recipeItems := ElementByPath(recipeCraft, 'items');
+		
+		{ 6. Process Material Keywords for Perk requirements }
+		tmpKeywordsCollection := ElementBySignature(itemRecord, 'KWDA');
+		
+		{ 7. Add your global requirement condition }
+		addSkillCondition(recipeCraft, GlobalSmithingReq);
+		fAddPlayerLevelCondition(recipeCraft, GlobalPlayerLevelReq);
+		addFemaleCondition(recipeCraft);
+		AddMissingManualCondition(recipeCraft, GlobalCraftingManual);
+		
+		SetElementEditValues(recipeCraft, 'EDID', 'CF_' + GetElementEditValues(itemRecord, 'EDID'));
+		SetElementEditValues(recipeCraft, 'BNAM', GetEditValue(getRecordByFormID(ARMOR_CRAFTING_WORKBENCH_FORM_ID)));
+		
+		// Materials
+		addItemV2(recipeItems, GetMaterial('Leather01'), 1);
+		addItemV2(recipeItems, GetMaterial('LeatherStrips'), 1);
+		addItemV2(recipeItems, GetMaterial('Gold001'), GlobalSmithingReq * CRAFTING_MANUAL_PRICE_MULTIPLIER);
+		
+		if (IS_PERK_REQUIRED) then begin
+			{ Loop keywords to assign Perks }
+			for i := 0 to ElementCount(tmpKeywordsCollection) - 1 do begin
+				currentKeywordEDID := GlobalOutfitMaterial;
+				
+				{ Requiem: Leather and Steel both require Steel Smithing perk }
+				if ((currentKeywordEDID = 'ArmorMaterialSteel') or (currentKeywordEDID = 'ArmorMaterialLeather') or
+					(currentKeywordEDID = 'DLC2ArmorMaterialBonemoldLight') or (currentKeywordEDID = 'ArmorMaterialImperialHeavy') or 
+					(currentKeywordEDID = 'ArmorMaterialStormcloak') or (currentKeywordEDID = 'DLC1ArmorMaterialDawnguard')) then begin
+					addPerkCondition(recipeCraft, getRecordByFormID('000CB40D')); // Steel Smithing
+					Break;
+
+				end else if ((currentKeywordEDID = 'ArmorMaterialScaled') or (currentKeywordEDID = 'ArmorMaterialSteelPlate') or 
+					(currentKeywordEDID = 'DLC2ArmorMaterialNordicHeavy')) then begin
+					addPerkCondition(recipeCraft, getRecordByFormID('000CB414')); // Advanced Armors
+					Break;
+
+				end else if (currentKeywordEDID = 'ArmorMaterialDwarven') then begin
+					addPerkCondition(recipeCraft, getRecordByFormID('000CB40E')); // Dwarven Smithing
+					Break;
+
+				end else if (currentKeywordEDID = 'ArmorMaterialEbony') or (currentKeywordEDID = 'DLC2ArmorMaterialStalhrimHeavy') then begin
+					addPerkCondition(recipeCraft, getRecordByFormID('000CB412')); // Ebony Smithing
+					Break;
+
+				end else if (currentKeywordEDID = 'ArmorMaterialDaedric') then begin
+					addPerkCondition(recipeCraft, getRecordByFormID('000CB413')); // Daedric Smithing
+					Break;
+
+				end else if (currentKeywordEDID = 'ArmorMaterialOrcish') then begin
+					addPerkCondition(recipeCraft, getRecordByFormID('000CB410')); // Orcish Smithing
+					Break;
+
+				end else if (currentKeywordEDID = 'ArmorMaterialGlass') then begin
+					addPerkCondition(recipeCraft, getRecordByFormID('000CB411')); // Glass Smithing
+					Break;
+
+				end else if (currentKeywordEDID = 'ArmorMaterialDragonscale') or (currentKeywordEDID = 'ArmorMaterialDragonplate') then begin
+					addPerkCondition(recipeCraft, getRecordByFormID('00052190')); // Dragon Armor
+					Break;
+
+				end else if (currentKeywordEDID = 'ArmorMaterialElven') or (currentKeywordEDID = 'DLC2ArmorMaterialChitinLight') then begin
+					addPerkCondition(recipeCraft, getRecordByFormID('000CB40F')); // Elven Smithing
+					Break;
+				end;
+			end;
+		end;
+		
+		// Cleanup and Validation
+		removeInvalidEntries(recipeCraft);
+		
+		if GetElementEditValues(recipeCraft, 'COCT') = '' then begin
+			warn('No item requirements specified for: ' + Name(recipeCraft));
+		end;
+
+		Result := recipeCraft;
+		Exit;
+		
+	end; // if (itemSignature = 'BOOK')
+	
+	{ --- ARMOR LOGIC --- }
+	if (itemSignature = 'ARMO') then begin
+		
+		if IsVisualSlot(GetFirstPersonFlags(itemRecord))then begin
+			currentKeywordEDID := 'CF_RecipeVisualSlot_' + StringReplace(GlobalOutfitMaterial, 'ArmorMaterial', '', [rfReplaceAll, rfIgnoreCase]) + '_LV' + IntToStr(GlobalSmithingReq) + '_' + GetElementEditValues(itemRecord, 'EDID');
+			recipeCraft := MainRecordByEditorID(GroupBySignature(GlobalPatchFile, 'COBJ'), currentKeywordEDID);
+			// If found, skip creation and just return the existing record
+			if Assigned(recipeCraft) then begin
+				AddMessage('Record exists, skipping creation: ' + currentKeywordEDID);
+				Result := recipeCraft;
+				Exit;
+			end;
+		end else begin
+			currentKeywordEDID := 'CF_RecipeArmor_' + StringReplace(GlobalOutfitMaterial, 'ArmorMaterial', '', [rfReplaceAll, rfIgnoreCase]) + '_LV' + IntToStr(GlobalSmithingReq) + '_' + GetElementEditValues(itemRecord, 'EDID');
+			recipeCraft := MainRecordByEditorID(GroupBySignature(GlobalPatchFile, 'COBJ'), currentKeywordEDID);
+			// If found, skip creation and just return the existing record
+			if Assigned(recipeCraft) then begin
+				AddMessage('Record exists, skipping creation: ' + currentKeywordEDID);
+				Result := recipeCraft;
+				Exit;
+			end;
+		end;
+		
+		{ 1. Create the base COBJ record }
+		recipeCraft := createRecipe(itemRecord);
+		if not Assigned(recipeCraft) then Exit;
+
+		{ 2. Initialize Required Items list }
+		Add(recipeCraft, 'items', True);
+		recipeItems := ElementByPath(recipeCraft, 'items');
+		
+		{ 3. Process Material Keywords for Perk requirements }
+		tmpKeywordsCollection := ElementBySignature(itemRecord, 'KWDA');
+		
+		{ 4. Add your global skill requirement condition (e.g. Smithing 25) }
+		if GlobalSmithingReq > 0 then begin
+			addSkillCondition(recipeCraft, GlobalSmithingReq);
+		end;
+		
+		{ Set Recipe Identity  For Visual Slot Only}
+		if IsVisualSlot(GetFirstPersonFlags(itemRecord))then begin
+			SetElementEditValues(recipeCraft, 'EDID', 'CF_RecipeVisualSlot_' + StringReplace(GlobalOutfitMaterial, 'ArmorMaterial', '', [rfReplaceAll, rfIgnoreCase]) + '_LV' + IntToStr(GlobalSmithingReq) + '_' + GetElementEditValues(itemRecord, 'EDID'));
+			SetElementEditValues(recipeCraft, 'BNAM', GetEditValue(getRecordByFormID(ARMOR_CRAFTING_WORKBENCH_FORM_ID)));
+		end else begin
+			SetElementEditValues(recipeCraft, 'EDID', 'CF_RecipeArmor_' + StringReplace(GlobalOutfitMaterial, 'ArmorMaterial', '', [rfReplaceAll, rfIgnoreCase]) + '_LV' + IntToStr(GlobalSmithingReq) + '_' + GetElementEditValues(itemRecord, 'EDID'));
+			SetElementEditValues(recipeCraft, 'BNAM', GetEditValue(getRecordByFormID(ARMOR_CRAFTING_WORKBENCH_FORM_ID)));
+		end;
+		
+		{ If Armor is ony for Female actor }
+		addFemaleCondition(recipeCraft);
+		AddManualCondition(recipeCraft, GlobalCraftingManual);
+		
+		if (IS_PERK_REQUIRED) then begin
+			{ Loop keywords to assign Perks }
+			for i := 0 to ElementCount(tmpKeywordsCollection) - 1 do begin
+				currentKeywordEDID := GetElementEditValues(LinksTo(ElementByIndex(tmpKeywordsCollection, i)), 'EDID');
+
+				{ Requiem: Leather and Steel both require Steel Smithing perk }
+				if (currentKeywordEDID = 'REQ_ArmorSet_Steel') 
+				or (currentKeywordEDID = 'REQ_ArmorSet_Iron')
+				or (currentKeywordEDID = 'REQ_ArmorSet_Leather') 
+				or (currentKeywordEDID = 'DLC2ArmorMaterialBonemoldLight') 
+				or (currentKeywordEDID = 'ArmorMaterialImperialHeavy') 
+				or (currentKeywordEDID = 'ArmorMaterialStormcloak') 
+				or (currentKeywordEDID = 'DLC1ArmorMaterialDawnguard') then begin
+					addPerkCondition(recipeCraft, getRecordByFormID('000CB40D')); // Steel Smithing
+					Break;
+
+				end else if (currentKeywordEDID = 'REQ_ArmorSet_Scale') 
+				or (currentKeywordEDID = 'REQ_ArmorSet_SteelPlate') 
+				or (currentKeywordEDID = 'DLC2ArmorMaterialNordicHeavy') then begin
+					addPerkCondition(recipeCraft, getRecordByFormID('000CB414')); // Advanced Armors
+					Break;
+
+				end else if (currentKeywordEDID = 'REQ_ArmorSet_DwarvenHeavy') then begin
+					addPerkCondition(recipeCraft, getRecordByFormID('000CB40E')); // Dwarven Smithing
+					Break;
+
+				end else if (currentKeywordEDID = 'REQ_ArmorSet_Ebony') 
+				or (currentKeywordEDID = 'DLC2ArmorMaterialStalhrimHeavy') then begin
+					addPerkCondition(recipeCraft, getRecordByFormID('000CB412')); // Ebony Smithing
+					Break;
+
+				end else if (currentKeywordEDID = 'REQ_ArmorSet_Daedric') then begin
+					addPerkCondition(recipeCraft, getRecordByFormID('000CB413')); // Daedric Smithing
+					Break;
+
+				end else if (currentKeywordEDID = 'REQ_ArmorSet_OrcishHeavy') then begin
+					addPerkCondition(recipeCraft, getRecordByFormID('000CB410')); // Orcish Smithing
+					Break;
+
+				end else if (currentKeywordEDID = 'REQ_ArmorSet_Glass') then begin
+					addPerkCondition(recipeCraft, getRecordByFormID('000CB411')); // Glass Smithing
+					Break;
+
+				end else if (currentKeywordEDID = 'REQ_ArmorSet_Dragonplate') 
+				or (currentKeywordEDID = 'REQ_ArmorSet_Dragonscale') then begin
+					addPerkCondition(recipeCraft, getRecordByFormID('00052190')); // Dragon Armor
+					Break;
+
+				end else if (currentKeywordEDID = 'REQ_ArmorSet_Elven') 
+				or (currentKeywordEDID = 'DLC2ArmorMaterialChitinLight') then begin
+					addPerkCondition(recipeCraft, getRecordByFormID('000CB40F')); // Elven Smithing
+					Break;
+				end;
+			end;
+		end;
+		
+		{========================================================}
+		{                   CLOTHING & JEWELRY                   }
+		{========================================================}
+		
+		{ Check if armor considered as "Visual Armor Slot" }
+		if IsVisualSlot(GetFirstPersonFlags(itemRecord))then begin
+			addItemV2(recipeItems, GetMaterial('Leather01'), 1);
+			addItemV2(recipeItems, GetMaterial('LeatherStrips'), 1);
+			addItemV2(recipeItems, GetMaterial('IngotIron'), 1);
+			
+			{ Cleanup and Validation }
+			removeInvalidEntries(recipeCraft);
+			if GetElementEditValues(recipeCraft, 'COCT') = '' then begin
+				warn('No item requirements specified for: ' + Name(recipeCraft));
+			end;
+			Result := recipeCraft;
+			Exit;
+		end;
+		
+		{ -- Jewelry & Accessories Section -- }
+		if (Pos(GetFirstPersonFlags(itemRecord), 'Ring ') > 0) 
+		or (Pos(GetFirstPersonFlags(itemRecord), 'Amulet ') > 0)
+		or (Pos(GetFirstPersonFlags(itemRecord), 'Ears ') > 0)    
+		or (Pos(GetFirstPersonFlags(itemRecord), 'Circlet ') > 0)   
+		or (Pos(GetFirstPersonFlags(itemRecord), 'Backpack ') > 0) then begin
+			
+			{ Generic Base for all Jewelry/Backpacks }
+			addItemV2(recipeItems, GetMaterial('LeatherStrips'), 2);
+			
+			{ - LIGHT MATERIALS - }
+			if HasKeyword(itemRecord, 'REQ_ArmorSet_Leather') then begin 
+				addItemV2(recipeItems, GetMaterial('Leather01'), 1);
+				addItemV2(recipeItems, GetMaterial('IngotSteel'), 1);
+			end;
+			if HasKeyword(itemRecord, 'REQ_ArmorSet_Scale') then begin 
+				addItemV2(recipeItems, GetMaterial('IngotCorundum'), 1);
+			end;
+			if HasKeyword(itemRecord, 'REQ_ArmorSet_Elven') then begin 
+				addItemV2(recipeItems, GetMaterial('IngotRefinedMoonstone'), 1);
+			end;
+			if HasKeyword(itemRecord, 'REQ_ArmorSet_Glass') then begin 
+				addItemV2(recipeItems, GetMaterial('IngotRefinedMalachite'), 1);
+			end;
+			if HasKeyword(itemRecord, 'REQ_ArmorSet_Dragonscale') then begin 
+				addItemV2(recipeItems, GetMaterial('DragonScales'), 1);
+				addItemV2(recipeItems, GetMaterial('IngotSteel'), 1);
+			end;
+
+			{ - HEAVY MATERIALS - }
+			if HasKeyword(itemRecord, 'REQ_ArmorSet_Iron') then begin
+				addItemV2(recipeItems, GetMaterial('IngotIron'), 1);
+			end;
+			if HasKeyword(itemRecord, 'REQ_ArmorSet_Steel') then begin
+				addItemV2(recipeItems, GetMaterial('IngotSteel'), 1);
+			end;
+			if HasKeyword(itemRecord, 'REQ_ArmorSet_SteelPlate') then begin
+				addItemV2(recipeItems, GetMaterial('IngotCorundum'), 1);
+			end;
+			if HasKeyword(itemRecord, 'REQ_ArmorSet_DwarvenHeavy') then begin
+				addItemV2(recipeItems, GetMaterial('IngotDwarven'), 1);
+			end;
+			if HasKeyword(itemRecord, 'REQ_ArmorSet_OrcishHeavy') then begin
+				addItemV2(recipeItems, GetMaterial('IngotOrichalcum'), 1);
+			end;
+			if HasKeyword(itemRecord, 'REQ_ArmorSet_Ebony') then begin
+				addItemV2(recipeItems, GetMaterial('IngotEbony'), 1);
+			end;
+			if HasKeyword(itemRecord, 'REQ_ArmorSet_Daedric') then begin
+				addItemV2(recipeItems, GetMaterial('IngotEbony'), 1);
+				addItemV2(recipeItems, GetMaterial('DaedraHeart'), 1);
+			end;
+			if HasKeyword(itemRecord, 'REQ_ArmorSet_Dragonplate') then begin
+				addItemV2(recipeItems, GetMaterial('DragonBone'), 1);
+				addItemV2(recipeItems, GetMaterial('IngotSteel'), 1);
+			end;
+
+			{ Special Case: Backpacks always need extra Leather }
+			if (Pos(GetFirstPersonFlags(itemRecord), 'Backpack ') > 0) then begin
+				addItemV2(recipeItems, GetMaterial('Leather01'), 2);
+			end;
+
+			{ Cleanup and Validation }
+			removeInvalidEntries(recipeCraft);
+			if GetElementEditValues(recipeCraft, 'COCT') = '' then begin
+				AddMessage('Warning: No item requirements specified for Jewelry/Backpack: ' + Name(itemRecord));
+			end;
+			Result := recipeCraft;
+			Exit;
+			
+		end;
+		
+		{========================================================}
+		{ LIGHT ARMOR SETS                                       }
+		{========================================================}
+
+		{ --- LEATHER ARMOR --- }
+		if HasKeyword(itemRecord, 'REQ_ArmorSet_Leather') then begin
+			addItemV2(recipeItems, GetMaterial('IngotIron'), 1);
+			if HasKeyword(itemRecord, 'ArmorCuirass') then begin
+				addItemV2(recipeItems, GetMaterial('Leather01'), 4);
+				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 3);
+			end;
+			if HasKeyword(itemRecord, 'ArmorHelmet') then begin
+				addItemV2(recipeItems, GetMaterial('Leather01'), 2);
+				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 1);
+			end; 
+			if HasKeyword(itemRecord, 'ArmorBoots') then begin
+				addItemV2(recipeItems, GetMaterial('Leather01'), 2);
+				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 2);
+			end;
+			if HasKeyword(itemRecord, 'ArmorGauntlets') then begin
+				addItemV2(recipeItems, GetMaterial('Leather01'), 1);
+				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 2);
+			end;
+			if HasKeyword(itemRecord, 'ArmorShield') then begin
+				addItemV2(recipeItems, GetMaterial('Leather01'), 4);
+				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 2);
+			end;
+		end;
+		
+		{ --- SCALED ARMOR --- }
+		if HasKeyword(itemRecord, 'REQ_ArmorSet_Scale') then begin
+			if HasKeyword(itemRecord, 'ArmorCuirass') then begin
+				addItemV2(recipeItems, GetMaterial('Leather01'), 4);
+				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 3);
+				addItemV2(recipeItems, GetMaterial('IngotCorundum'), 2);
+				addItemV2(recipeItems, GetMaterial('IngotSteel'), 3);
+			end;
+			if HasKeyword(itemRecord, 'ArmorHelmet') then begin
+				addItemV2(recipeItems, GetMaterial('Leather01'), 2);
+				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 1);
+				addItemV2(recipeItems, GetMaterial('IngotCorundum'), 1);
+				addItemV2(recipeItems, GetMaterial('IngotSteel'), 2);
+			end;
+			if HasKeyword(itemRecord, 'ArmorBoots') then begin
+				addItemV2(recipeItems, GetMaterial('Leather01'), 2);
+				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 2);
+				addItemV2(recipeItems, GetMaterial('IngotCorundum'), 1);
+				addItemV2(recipeItems, GetMaterial('IngotSteel'), 2);
+			end; 
+			if HasKeyword(itemRecord, 'ArmorGauntlets') then begin
+				addItemV2(recipeItems, GetMaterial('Leather01'), 1);
+				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 2);
+				addItemV2(recipeItems, GetMaterial('IngotCorundum'), 1);
+				addItemV2(recipeItems, GetMaterial('IngotSteel'), 1);
+			end;
+			if HasKeyword(itemRecord, 'ArmorShield') then begin
+				addItemV2(recipeItems, GetMaterial('Leather01'), 2);
+				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 3);
+				addItemV2(recipeItems, GetMaterial('IngotCorundum'), 2);
+				addItemV2(recipeItems, GetMaterial('IngotSteel'), 3);
+			end;
+		end;
+
+		{ --- ELVEN ARMOR --- }
+		if HasKeyword(itemRecord, 'REQ_ArmorSet_Elven') then begin
+			addItemV2(recipeItems, GetMaterial('IngotIron'), 1);
+			addItemV2(recipeItems, GetMaterial('Leather01'), 1);
+			if HasKeyword(itemRecord, 'ArmorCuirass') then begin
+				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 3);
+				addItemV2(recipeItems, GetMaterial('IngotRefinedMoonstone'), 4);
+			end;
+			if HasKeyword(itemRecord, 'ArmorHelmet') then begin
+				addItemV2(recipeItems, GetMaterial('IngotRefinedMoonstone'), 2);
+				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 1);
+			end;
+			if HasKeyword(itemRecord, 'ArmorBoots') then begin
+				addItemV2(recipeItems, GetMaterial('IngotRefinedMoonstone'), 2);
+				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 2);
+			end;
+			if HasKeyword(itemRecord, 'ArmorGauntlets') then begin
+				addItemV2(recipeItems, GetMaterial('IngotRefinedMoonstone'), 1);
+				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 2);
+			end;
+			if HasKeyword(itemRecord, 'ArmorShield') then begin
+				addItemV2(recipeItems, GetMaterial('IngotRefinedMoonstone'), 4);
+				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 2);
+			end;		
+		end;
+
+		{ --- GLASS ARMOR --- }
+		if HasKeyword(itemRecord, 'REQ_ArmorSet_Glass') then begin
+			addItemV2(recipeItems, GetMaterial('Leather01'), 1);
+			if HasKeyword(itemRecord, 'ArmorCuirass') then begin
+				addItemV2(recipeItems, GetMaterial('IngotRefinedMalachite'), 4);
+				addItemV2(recipeItems, GetMaterial('IngotRefinedMoonstone'), 2);
+				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 2);
+			end;
+			if HasKeyword(itemRecord, 'ArmorHelmet') then begin
+				addItemV2(recipeItems, GetMaterial('IngotRefinedMalachite'), 2);
+				addItemV2(recipeItems, GetMaterial('IngotRefinedMoonstone'), 1);
+				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 1);
+			end; 
+			if HasKeyword(itemRecord, 'ArmorBoots') then begin
+				addItemV2(recipeItems, GetMaterial('IngotRefinedMalachite'), 2);
+				addItemV2(recipeItems, GetMaterial('IngotRefinedMoonstone'), 1);
+				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 2);
+			end;
+			if HasKeyword(itemRecord, 'ArmorGauntlets') then begin
+				addItemV2(recipeItems, GetMaterial('IngotRefinedMalachite'), 1);
+				addItemV2(recipeItems, GetMaterial('IngotRefinedMoonstone'), 1);
+				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 2);
+			end;
+			if HasKeyword(itemRecord, 'ArmorShield') then begin
+				addItemV2(recipeItems, GetMaterial('IngotRefinedMalachite'), 4);
+				addItemV2(recipeItems, GetMaterial('IngotRefinedMoonstone'), 1);
+				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 2);
+			end;
+		end;
+		
+		{ --- DRAGONSCALE ARMOR --- }
+		if HasKeyword(itemRecord, 'REQ_ArmorSet_Dragonscale') then begin
+			addItemV2(recipeItems, GetMaterial('IngotIron'), 1);
+			addItemV2(recipeItems, GetMaterial('Leather01'), 1);
+			if HasKeyword(itemRecord, 'ArmorCuirass') then begin
+				addItemV2(recipeItems, GetMaterial('DragonScales'), 4);
+				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 3);
+			end;
+			if HasKeyword(itemRecord, 'ArmorHelmet') then begin
+				addItemV2(recipeItems, GetMaterial('DragonScales'), 2);
+				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 2);
+			end;
+			if HasKeyword(itemRecord, 'ArmorBoots') then begin
+				addItemV2(recipeItems, GetMaterial('DragonScales'), 3);
+				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 2);
+			end;
+			if HasKeyword(itemRecord, 'ArmorGauntlets') then begin
+				addItemV2(recipeItems, GetMaterial('DragonScales'), 2);
+				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 2);
+			end;
+			if HasKeyword(itemRecord, 'ArmorShield') then begin
+				addItemV2(recipeItems, GetMaterial('DragonScales'), 4);
+				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 2);
+			end;
+		end;
+		
+		{========================================================}
+		{ HEAVY ARMOR SETS                                       }
+		{========================================================}
+
+		{ --- IRON ARMOR --- }
+		if HasKeyword(itemRecord, 'REQ_ArmorSet_Iron') then begin
+			addItemV2(recipeItems, GetMaterial('IngotIron'), 1);
+			addItemV2(recipeItems, GetMaterial('Leather01'), 1);
+			if HasKeyword(itemRecord, 'ArmorCuirass') then 
+				addItemV2(recipeItems, GetMaterial('IngotIron'), 3);
+			if HasKeyword(itemRecord, 'ArmorHelmet') then 
+				addItemV2(recipeItems, GetMaterial('IngotIron'), 2);
+			if HasKeyword(itemRecord, 'ArmorBoots') then 
+				addItemV2(recipeItems, GetMaterial('IngotIron'), 2);
+			if HasKeyword(itemRecord, 'ArmorGauntlets') then 
+				addItemV2(recipeItems, GetMaterial('IngotIron'), 2);
+			if HasKeyword(itemRecord, 'ArmorShield') then 
+				addItemV2(recipeItems, GetMaterial('IngotIron'), 2);
+		end;
+		
+		{ --- STEEL ARMOR --- }
+		if HasKeyword(itemRecord, 'REQ_ArmorSet_Steel') then begin
+			addItemV2(recipeItems, GetMaterial('IngotIron'), 1);
+			addItemV2(recipeItems, GetMaterial('Leather01'), 1);
+			if HasKeyword(itemRecord, 'ArmorCuirass') then 
+				addItemV2(recipeItems, GetMaterial('IngotSteel'), 3);
+			if HasKeyword(itemRecord, 'ArmorHelmet') then 
+				addItemV2(recipeItems, GetMaterial('IngotSteel'), 2);
+			if HasKeyword(itemRecord, 'ArmorBoots') then 
+				addItemV2(recipeItems, GetMaterial('IngotSteel'), 2);
+			if HasKeyword(itemRecord, 'ArmorGauntlets') then 
+				addItemV2(recipeItems, GetMaterial('IngotSteel'), 2);
+			if HasKeyword(itemRecord, 'ArmorShield') then 
+				addItemV2(recipeItems, GetMaterial('IngotSteel'), 2);
+		end;
+
+		{ --- DWARVEN ARMOR --- }
+		if HasKeyword(itemRecord, 'REQ_ArmorSet_DwarvenHeavy') then begin
+			addItemV2(recipeItems, GetMaterial('IngotSteel'), 1);
+			addItemV2(recipeItems, GetMaterial('IngotIron'), 1);
+			addItemV2(recipeItems, GetMaterial('Leather01'), 1);
+			if HasKeyword(itemRecord, 'ArmorCuirass') then begin
+				addItemV2(recipeItems, GetMaterial('IngotDwarven'), 4);
+				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 3);
+			end;	
+			if HasKeyword(itemRecord, 'ArmorHelmet') then begin
+				addItemV2(recipeItems, GetMaterial('IngotDwarven'), 2);
+				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 2);
+			end;
+			if HasKeyword(itemRecord, 'ArmorBoots') then begin
+				addItemV2(recipeItems, GetMaterial('IngotDwarven'), 3);
+				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 2);
+			end;
+			if HasKeyword(itemRecord, 'ArmorGauntlets') then begin
+				addItemV2(recipeItems, GetMaterial('IngotDwarven'), 2);
+				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 2);
+			end;
+			if HasKeyword(itemRecord, 'ArmorShield') then begin
+				addItemV2(recipeItems, GetMaterial('IngotDwarven'), 2);
+				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 1);
+			end;
+		end;
+		
+		{ --- ORCISH ARMOR --- }
+		if HasKeyword(itemRecord, 'REQ_ArmorSet_OrcishHeavy') then begin
+			addItemV2(recipeItems, GetMaterial('IngotIron'), 1);
+			if HasKeyword(itemRecord, 'ArmorCuirass') then begin
+				addItemV2(recipeItems, GetMaterial('IngotOrichalcum'), 3);
+				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 3);
+				addItemV2(recipeItems, GetMaterial('Leather01'), 2);
+			end;
+			if HasKeyword(itemRecord, 'ArmorHelmet') then begin
+				addItemV2(recipeItems, GetMaterial('IngotOrichalcum'), 1);
+				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 1);
+				addItemV2(recipeItems, GetMaterial('Leather01'), 1);
+			end;
+			if HasKeyword(itemRecord, 'ArmorBoots') then begin
+				addItemV2(recipeItems, GetMaterial('IngotOrichalcum'), 2);
+				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 2);
+				addItemV2(recipeItems, GetMaterial('Leather01'), 1);
+			end;
+			if HasKeyword(itemRecord, 'ArmorGauntlets') then begin
+				addItemV2(recipeItems, GetMaterial('IngotOrichalcum'), 1);
+				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 2);
+				addItemV2(recipeItems, GetMaterial('Leather01'), 1);
+			end;
+			if HasKeyword(itemRecord, 'ArmorShield') then begin
+				addItemV2(recipeItems, GetMaterial('IngotOrichalcum'), 4);
+				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 1);
+				addItemV2(recipeItems, GetMaterial('Leather01'), 1);
+			end;
+		end;
+
+		{ --- STEEL PLATE ARMOR --- }
+		if HasKeyword(itemRecord, 'REQ_ArmorSet_SteelPlate') then begin
+			addItemV2(recipeItems, GetMaterial('IngotIron'), 1);
+			addItemV2(recipeItems, GetMaterial('Leather01'), 1);
+			if HasKeyword(itemRecord, 'ArmorCuirass') then begin
+				addItemV2(recipeItems, GetMaterial('IngotSteel'), 4);
+				addItemV2(recipeItems, GetMaterial('IngotCorundum'), 1);
+				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 3);
+			end;
+			if HasKeyword(itemRecord, 'ArmorHelmet') then begin
+				addItemV2(recipeItems, GetMaterial('IngotSteel'), 2);
+				addItemV2(recipeItems, GetMaterial('IngotCorundum'), 1);
+				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 1);
+			end;
+			if HasKeyword(itemRecord, 'ArmorBoots') then begin
+				addItemV2(recipeItems, GetMaterial('IngotSteel'), 3);
+				addItemV2(recipeItems, GetMaterial('IngotCorundum'), 1);
+				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 2);
+			end;
+			if HasKeyword(itemRecord, 'ArmorGauntlets') then begin
+				addItemV2(recipeItems, GetMaterial('IngotSteel'), 2);
+				addItemV2(recipeItems, GetMaterial('IngotCorundum'), 1);
+				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 2);
+			end;
+			if HasKeyword(itemRecord, 'ArmorShield') then begin
+				addItemV2(recipeItems, GetMaterial('IngotSteel'), 2);
+				addItemV2(recipeItems, GetMaterial('IngotIron'), 1);
+			end;
+		end;
+
+		{ --- EBONY ARMOR --- }
+		if HasKeyword(itemRecord, 'REQ_ArmorSet_Ebony') then begin
+			addItemV2(recipeItems, GetMaterial('Leather01'), 1);
+			if HasKeyword(itemRecord, 'ArmorCuirass') then begin
+				addItemV2(recipeItems, GetMaterial('IngotEbony'), 4);
+				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 3);
+			end;
+			if HasKeyword(itemRecord, 'ArmorHelmet') then begin
+				addItemV2(recipeItems, GetMaterial('IngotEbony'), 2);
+				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 2);
+			end;
+			if HasKeyword(itemRecord, 'ArmorBoots') then begin
+				addItemV2(recipeItems, GetMaterial('IngotEbony'), 2);
+				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 2);
+			end;
+			if HasKeyword(itemRecord, 'ArmorGauntlets') then begin
+				addItemV2(recipeItems, GetMaterial('IngotEbony'), 1);
+				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 2);
+			end;
+			if HasKeyword(itemRecord, 'ArmorShield') then begin
+				addItemV2(recipeItems, GetMaterial('IngotEbony'), 2);
+				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 1);
+			end;
+		end;
+
+		{ --- DAEDRIC ARMOR --- }
+		if HasKeyword(itemRecord, 'REQ_ArmorSet_Daedric') then begin
+			addItemV2(recipeItems, GetMaterial('LeatherStrips'), 2);
+			addItemV2(recipeItems, GetMaterial('DaedraHeart'), 1);
+			addItemV2(recipeItems, GetMaterial('IngotSteel'), 1);
+			if HasKeyword(itemRecord, 'ArmorCuirass') then begin
+				addItemV2(recipeItems, GetMaterial('IngotEbony'), 4);
+				addItemV2(recipeItems, GetMaterial('Leather01'), 2);
+			end;
+			if HasKeyword(itemRecord, 'ArmorHelmet') then begin
+				addItemV2(recipeItems, GetMaterial('IngotEbony'), 2);
+				addItemV2(recipeItems, GetMaterial('Leather01'), 1);
+			end;
+			if HasKeyword(itemRecord, 'ArmorBoots') then begin
+				addItemV2(recipeItems, GetMaterial('IngotEbony'), 2);
+				addItemV2(recipeItems, GetMaterial('Leather01'), 1);
+			end;
+			if HasKeyword(itemRecord, 'ArmorGauntlets') then begin
+				addItemV2(recipeItems, GetMaterial('IngotEbony'), 2);
+				addItemV2(recipeItems, GetMaterial('Leather01'), 1);
+			end;
+			if HasKeyword(itemRecord, 'ArmorShield') then begin
+				addItemV2(recipeItems, GetMaterial('IngotEbony'), 2);
+				addItemV2(recipeItems, GetMaterial('Leather01'), 1);
+			end;
+		end;
+
+		{ --- DRAGONPLATE ARMOR --- }
+		if HasKeyword(itemRecord, 'REQ_ArmorSet_Dragonplate') then begin
+			addItemV2(recipeItems, GetMaterial('LeatherStrips'), 2);
+			addItemV2(recipeItems, GetMaterial('IngotIron'), 1);
+			if HasKeyword(itemRecord, 'ArmorCuirass') then begin
+				addItemV2(recipeItems, GetMaterial('DragonBone'), 3);
+				addItemV2(recipeItems, GetMaterial('DragonScales'), 2);
+				addItemV2(recipeItems, GetMaterial('Leather01'), 2);
+			end;
+			if HasKeyword(itemRecord, 'ArmorHelmet') then begin
+				addItemV2(recipeItems, GetMaterial('DragonBone'), 1);
+				addItemV2(recipeItems, GetMaterial('DragonScales'), 2);
+				addItemV2(recipeItems, GetMaterial('Leather01'), 1);
+			end;
+			if HasKeyword(itemRecord, 'ArmorBoots') then begin
+				addItemV2(recipeItems, GetMaterial('DragonBone'), 1);
+				addItemV2(recipeItems, GetMaterial('DragonScales'), 3);
+				addItemV2(recipeItems, GetMaterial('Leather01'), 1);
+			end;
+			if HasKeyword(itemRecord, 'ArmorGauntlets') then begin
+				addItemV2(recipeItems, GetMaterial('DragonBone'), 1);
+				addItemV2(recipeItems, GetMaterial('DragonScales'), 2);
+				addItemV2(recipeItems, GetMaterial('Leather01'), 1);
+			end;
+			if HasKeyword(itemRecord, 'ArmorShield') then begin
+				addItemV2(recipeItems, GetMaterial('DragonBone'), 1);
+				addItemV2(recipeItems, GetMaterial('DragonScales'), 1);
+			end;
+		end;
+		
+	end;
+	// Cleanup and Validation
+	removeInvalidEntries(recipeCraft);
+
+	if GetElementEditValues(recipeCraft, 'COCT') = '' then begin
+		warn('No item requirements specified for: ' + Name(recipeCraft));
+	end;
+
+	Result := recipeCraft;
+end;
+
+{========================================================}
 { CREATE TEMPERING RECIPE                                }
 {========================================================}
 function fMakeTemperable(itemRecord: IInterface): IInterface;
@@ -3975,6 +4660,73 @@ end;
 Result := recipeTemper;
 end;
 
+{========================================================}
+{ CREATE REQUIEM TEMPERING RECIPE                        }
+{========================================================}
+function fMakeTemperableV2Requiem(itemRecord: IInterface): IInterface;
+var
+	recipeTemper, recipeConditions, recipeItems : IInterface;
+	currentMaterial: string;
+begin
+	recipeTemper := createRecipe(itemRecord);
+	currentMaterial := GlobalOutfitMaterial;
+
+	{ 1. SETUP CONDITIONS (PERKS & ENCHANTMENTS) }
+	if IS_PERK_REQUIRED then begin
+		if not Assigned(ElementByPath(recipeTemper, 'Conditions')) then
+			Add(recipeTemper, 'Conditions', true);
+		
+		recipeConditions := ElementByPath(recipeTemper, 'Conditions');
+
+		{ Standard Requiem/Vanilla Enchantment check }
+		// addArcaneBlacksmithCondition(recipeConditions); 
+	end;
+	
+	{ 2. SETUP WORKBENCH & EDID }
+	Add(recipeTemper, 'items', true);
+	recipeItems := ElementByPath(recipeTemper, 'items');
+
+	if Signature(itemRecord) = 'WEAP' then begin
+		SetElementEditValues(recipeTemper, 'EDID', 'CF_REQ_Temper_WEAP_' + GetElementEditValues(itemRecord, 'EDID'));
+		SetElementEditValues(recipeTemper, 'BNAM', 'CraftingSmithingSharpeningWheel [KYWD:00088108]');
+	end else if Signature(itemRecord) = 'ARMO' then begin
+		SetElementEditValues(recipeTemper, 'EDID', 'CF_REQ_Temper_ARMO_' + GetElementEditValues(itemRecord, 'EDID'));
+		SetElementEditValues(recipeTemper, 'BNAM', 'CraftingSmithingArmorTable [KYWD:000ADB78]');
+	end;
+
+	{ 3. ASSIGN 1x BASE COMPONENT BASED ON MATERIAL }
+	if (currentMaterial = 'ArmorMaterialIron') then
+		addItemV2(recipeItems, GetMaterial('IngotIron'), 1)
+	else if (currentMaterial = 'ArmorMaterialSteel') or (currentMaterial = 'ArmorMaterialSteelPlate') then
+		addItemV2(recipeItems, GetMaterial('IngotSteel'), 1)
+	else if (currentMaterial = 'ArmorMaterialLeather') then
+		addItemV2(recipeItems, GetMaterial('Leather01'), 1)
+	else if (currentMaterial = 'ArmorMaterialDwarven') then
+		addItemV2(recipeItems, GetMaterial('IngotDwarven'), 1)
+	else if (currentMaterial = 'ArmorMaterialOrcish') then
+		addItemV2(recipeItems, GetMaterial('IngotOrichalcum'), 1)
+	else if (currentMaterial = 'ArmorMaterialEbony') or (currentMaterial = 'ArmorMaterialDaedric') then
+		addItemV2(recipeItems, GetMaterial('IngotEbony'), 1)
+	else if (currentMaterial = 'ArmorMaterialElven') then
+		addItemV2(recipeItems, GetMaterial('IngotRefinedMoonstone'), 1)
+	else if (currentMaterial = 'ArmorMaterialGlass') then
+		addItemV2(recipeItems, GetMaterial('IngotRefinedMalachite'), 1)
+	else if (currentMaterial = 'ArmorMaterialDragonscale') then
+		addItemV2(recipeItems, GetMaterial('DragonScales'), 1)
+	else if (currentMaterial = 'ArmorMaterialDragonplate') then
+		addItemV2(recipeItems, GetMaterial('DragonBone'), 1)
+	else if (currentMaterial = 'ArmorMaterialScaled') then
+		addItemV2(recipeItems, GetMaterial('IngotCorundum'), 1);
+
+	{ 4. CLEANUP }
+	removeInvalidEntries(recipeTemper);
+
+	if GetElementEditValues(recipeTemper, 'COCT') = '' then begin
+		AddMessage('Warning: No material assigned for tempering: ' + Name(itemRecord));
+	end;
+
+	Result := recipeTemper;
+end;
 {========================================================}
 {                       UTILITY                          }
 {========================================================}
