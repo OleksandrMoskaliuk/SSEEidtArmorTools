@@ -223,7 +223,7 @@ begin
 			GlobalArmorBonus := GlobalSmithingReq / 25.0;
 			GlobalArmorPriceBonus := Round(GlobalSmithingReq / 2.0);
 			GlobalWeaponDamageBonus := Round(GlobalSmithingReq / 15.0);
-			GlobalWeaponPriceBonus := GlobalSmithingReq;
+			GlobalWeaponPriceBonus := GlobalSmithingReq * 10;
 			GlobalWeaponWeightBonus := GlobalSmithingReq / 20.0;
 			GlobalPlayerLevelReq := fGetCurvedPlayerLevel(GlobalSmithingReq);
 			
@@ -369,14 +369,26 @@ begin
 			//Standardize Weapon Keywords (VendorItemWeapon, etc.)
 			fKeywordsSetUp(m_NewRecord, '');
 			
-			m_WeaponDamage := GetVanillaWDamage(m_NewRecord);
+			if FOR_REQUIEM then begin
+				m_WeaponDamage := GetRequiemWDamage(m_NewRecord);
+			end else begin 
+				m_WeaponDamage := GetVanillaWDamage(m_NewRecord);
+			end;
 			SetElementEditValues(m_NewRecord, 'DATA\Damage', IntToStr(m_WeaponDamage));
 			//AddMessage(Name(selectedRecord) + ' TOTAL DAMAGE = ' + FloatToStr(GetVanillaWDamage(selectedRecord)));
 			
-			m_WeaponPrice := GetVanillaWPrice(m_NewRecord);
+			if FOR_REQUIEM then begin
+				m_WeaponPrice := GetRequiemWPrice(m_NewRecord);
+			end else begin 
+				m_WeaponPrice := GetVanillaWPrice(m_NewRecord);
+			end;
 			SetElementEditValues(m_NewRecord, 'DATA\Value', IntToStr(m_WeaponPrice));
-
-			m_WeaponWeight := GetVanillaWWeight(m_NewRecord);
+			
+			if FOR_REQUIEM then begin
+				m_WeaponWeight := GetRequiemWWeight(m_NewRecord);
+			end else begin 
+				m_WeaponWeight := GetVanillaWWeight(m_NewRecord);
+			end;
 			SetElementEditValues(m_NewRecord, 'DATA\Weight', FloatToStr(m_WeaponWeight));
 				
 			MakeCraftableV2(m_NewRecord);
@@ -3030,6 +3042,7 @@ begin
 	{ Enchantment charge / amount (vanilla = 1) }
 	SetElementEditValues(e, 'EAMT', '1');
 end;
+
 {========================================================}
 { CREATE CRAFTING RECIPE (COBJ)                          }
 {========================================================}
@@ -3156,8 +3169,9 @@ begin
 		{ 3. Process Material Keywords for Perk requirements }
 		tmpKeywordsCollection := ElementBySignature(itemRecord, 'KWDA');
 		
-		{ 4. Add your global skill requirement condition (e.g. Smithing 25) }
+		{ 4. Add your condition (e.g. Smithing 25) }
 		addSkillCondition(recipeCraft, GlobalSmithingReq);
+		AddManualCondition(recipeCraft, GlobalCraftingManual);
 		
 		{ 5. Add Player Level  condition }
 		fAddPlayerLevelCondition(recipeCraft, GlobalPlayerLevelReq);
