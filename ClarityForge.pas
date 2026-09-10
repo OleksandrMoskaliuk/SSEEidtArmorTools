@@ -947,9 +947,127 @@ begin
 		if Pos('Body ', m_Slots) > 0 then begin
 			m_Keyword := GetKeywordByEditorID('ArmorCuirass');
 			if FOR_RFAD then begin
-				// Adding RFAD body/cuirass armor keywords here
-				// Check material
-				// Add tags based on material
+				// --- LIGHT ARMOR MATERIALS ---
+				if GlobalOutfitMaterial = 'ArmorMaterialLeather' then begin
+					AddKeywordV2(e, GetKeywordByEditorID('WAF_ArmorMatchingSetLeather'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Armor_Resistance_Ranged_Tier1'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Armor_Resistance_Blunt_None'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Armor_Resistance_Pierce_None'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Armor_Resistance_Slash_Tier1'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Tempering_Craftsmanship'));
+				end
+				else if GlobalOutfitMaterial = 'ArmorMaterialScaled' then begin
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_ArmorSet_Hide'));
+					AddKeywordV2(e, GetKeywordByEditorID('SPIKEArmorScaleShiny'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Armor_Resistance_Ranged_Tier1'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Armor_Resistance_Ranged_None'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Armor_Resistance_Blunt_Tier3'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Armor_Resistance_Blunt_None'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Armor_Resistance_Pierce_Tier3'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Armor_Resistance_Pierce_None'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Armor_Resistance_Slash_None'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Tempering_Craftsmanship'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Tempering_AdvancedLightArmors'));
+				end
+				else if GlobalOutfitMaterial = 'ArmorMaterialElven' then begin
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Armor_Resistance_Ranged_Tier2'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Armor_Resistance_Blunt_None'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Armor_Resistance_Pierce_None'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Armor_Resistance_Slash_Tier3'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Tempering_ElvenSmithing'));
+				end
+				else if GlobalOutfitMaterial = 'ArmorMaterialGlass' then begin
+					AddKeywordV2(e, GetKeywordByEditorID('Survival_ArmorWarm'));
+					AddKeywordV2(e, GetKeywordByEditorID('WAF_VisuallyVeryBrightArmor'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Armor_Resistance_Ranged_Tier3'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Armor_Resistance_Blunt_None'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Armor_Resistance_Pierce_None'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Armor_Resistance_Slash_Tier2'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Tempering_GlassSmithing'));
+				end
+				else if GlobalOutfitMaterial = 'ArmorMaterialDragonscale' then begin
+					AddKeywordV2(e, GetKeywordByEditorID('Survival_ArmorWarm'));
+					AddKeywordV2(e, GetKeywordByEditorID('SPIKEArmorDragonScale'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Armor_Resistance_Ranged_Tier4'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Armor_Resistance_Blunt_Tier2'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Armor_Resistance_Pierce_None'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Armor_Resistance_Slash_Tier3'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Tempering_DraconicSmithing'));
+				end
+
+				// --- HEAVY ARMOR MATERIALS ---
+				else if GlobalOutfitMaterial = 'ArmorMaterialIron' then begin
+					AddKeywordV2(e, GetKeywordByEditorID('Survival_ArmorCold'));
+					AddKeywordV2(e, GetKeywordByEditorID('SPIKEArmorIron'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Armor_Resistance_Ranged_Tier4'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Armor_Resistance_Blunt_None'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Armor_Resistance_Pierce_None'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Armor_Resistance_Slash_None'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Tempering_Craftsmanship'));
+				end
+				else if GlobalOutfitMaterial = 'ArmorMaterialSteel' then begin
+					AddKeywordV2(e, GetKeywordByEditorID('Survival_ArmorWarm'));
+					AddKeywordV2(e, GetKeywordByEditorID('SPIKEArmorSteel'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Armor_Resistance_Ranged_Tier4'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Armor_Resistance_Blunt_None'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Armor_Resistance_Pierce_Tier3'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Armor_Resistance_Slash_None'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Tempering_Craftsmanship'));
+				end
+				else if GlobalOutfitMaterial = 'ArmorMaterialDwarven' then begin
+					AddKeywordV2(e, GetKeywordByEditorID('SPIKEArmorDwarven'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Armor_Resistance_Ranged_Tier3'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Armor_Resistance_Blunt_Tier2'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Armor_Resistance_Slash_Tier3'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Armor_Resistance_Pierce_Tier5'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Tempering_DwarvenSmithing'));
+				end
+				else if GlobalOutfitMaterial = 'ArmorMaterialOrcish' then begin
+					AddKeywordV2(e, GetKeywordByEditorID('Survival_ArmorWarm'));
+					AddKeywordV2(e, GetKeywordByEditorID('SPIKEArmorOrcish'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Armor_Resistance_Ranged_Tier3'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Armor_Resistance_Blunt_None'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Armor_Resistance_Pierce_Tier4'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Armor_Resistance_Slash_Tier5'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Tempering_OrcishSmithing'));
+				end
+				else if GlobalOutfitMaterial = 'ArmorMaterialSteelPlate' then begin
+					AddKeywordV2(e, GetKeywordByEditorID('SPIKEArmorSteel'));
+					AddKeywordV2(e, GetKeywordByEditorID('SPIKEArmorSteelPlate'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Armor_Resistance_Blunt_None'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Armor_Resistance_Slash_Tier3'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Armor_Resistance_Ranged_Tier5'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Armor_Resistance_Pierce_Tier5'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Tempering_AdvancedBlacksmithing'));
+				end
+				else if GlobalOutfitMaterial = 'ArmorMaterialEbony' then begin
+					AddKeywordV2(e, GetKeywordByEditorID('Survival_ArmorWarm'));
+					AddKeywordV2(e, GetKeywordByEditorID('WAF_VisuallyDarkArmor'));
+					AddKeywordV2(e, GetKeywordByEditorID('SPIKEArmorEbony'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Armor_Resistance_Ranged_Tier4'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Armor_Resistance_Blunt_None'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Armor_Resistance_Slash_Tier5'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Armor_Resistance_Pierce_Tier5'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Tempering_EbonySmithing'));
+				end
+				else if GlobalOutfitMaterial = 'ArmorMaterialDragonplate' then begin
+					AddKeywordV2(e, GetKeywordByEditorID('Survival_ArmorWarm'));
+					AddKeywordV2(e, GetKeywordByEditorID('SPIKEArmorDragonBone'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Armor_Resistance_Blunt_Tier2'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Armor_Resistance_Slash_Tier4'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Armor_Resistance_Ranged_Tier5'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Armor_Resistance_Pierce_Tier5'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Tempering_DraconicSmithing'));
+				end
+				else if GlobalOutfitMaterial = 'ArmorMaterialDaedric' then begin
+					AddKeywordV2(e, GetKeywordByEditorID('Survival_ArmorWarm'));
+					AddKeywordV2(e, GetKeywordByEditorID('SPIKEArmorFancyBlack'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Armor_Resistance_Blunt_Tier3'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Armor_Resistance_Slash_Tier4'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Armor_Resistance_Ranged_Tier5'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Armor_Resistance_Pierce_Tier5'));
+					AddKeywordV2(e, GetKeywordByEditorID('REQ_Tempering_DaedricSmithing'));
+				end;
 			end;
 			if Assigned(m_Keyword) then addKeyword(e, m_Keyword);
 			Exit;
@@ -4969,6 +5087,7 @@ begin
 			//AddMasterIfMissing(m_FileHandle, 'Requiem for the Indifferent.esp');
 			if FOR_RFAD then begin
 				AddMasterIfMissing(m_FileHandle, 'Fozars_Dragonborn_-_Requiem_Patch.esp');
+				AddMasterIfMissing(m_FileHandle, 'Update.esm');
 			end;
 		end;
 		
