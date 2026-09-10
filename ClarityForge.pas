@@ -807,8 +807,8 @@ begin
 		removeKeywordV2(e, 'REQ_ArmorSet_Iron');
 		removeKeywordV2(e, 'REQ_ArmorSet_Steel');
 		removeKeywordV2(e, 'REQ_ArmorSet_SteelPlate');
-		removeKeywordV2(e, 'REQ_ArmorSet_DwarvenHeavy');
-		removeKeywordV2(e, 'REQ_ArmorSet_OrcishHeavy');
+		removeKeywordV2(e, 'REQ_ArmorSet_Dwarven');
+		removeKeywordV2(e, 'REQ_ArmorSet_Orcish');
 		removeKeywordV2(e, 'REQ_ArmorSet_Ebony');
 		removeKeywordV2(e, 'REQ_ArmorSet_Daedric');
 		removeKeywordV2(e, 'REQ_ArmorSet_Dragonplate');
@@ -817,7 +817,7 @@ begin
 		removeKeywordV2(e, 'REQ_ArmorSet_Leather');
 		removeKeywordV2(e, 'REQ_ArmorSet_Scale');
 		removeKeywordV2(e, 'REQ_ArmorSet_Elven');
-		removeKeywordV2(e, 'REQ_ArmorSet_Quicksilver');
+		//removeKeywordV2(e, 'REQ_ArmorSet_Quicksilver');
 		removeKeywordV2(e, 'REQ_ArmorSet_Glass');
 		removeKeywordV2(e, 'REQ_ArmorSet_Dragonscale');
 		
@@ -907,8 +907,8 @@ begin
 				{ Heavy Armor Mappings }
 				if      HasKeyword(e, 'REQ_ArmorSet_Iron')        then m_RequiemKeyword := 'REQ_Tempering_Craftsmanship'
 				else if HasKeyword(e, 'REQ_ArmorSet_Steel')       then m_RequiemKeyword := 'REQ_Tempering_Craftsmanship'
-				else if HasKeyword(e, 'REQ_ArmorSet_DwarvenHeavy') then m_RequiemKeyword := 'REQ_Tempering_DwarvenSmithing'
-				else if HasKeyword(e, 'REQ_ArmorSet_OrcishHeavy')  then m_RequiemKeyword := 'REQ_Tempering_OrcishSmithing'
+				else if HasKeyword(e, 'REQ_ArmorSet_Dwarven') then m_RequiemKeyword := 'REQ_Tempering_DwarvenSmithing'
+				else if HasKeyword(e, 'REQ_ArmorSet_Orcish')  then m_RequiemKeyword := 'REQ_Tempering_OrcishSmithing'
 				else if HasKeyword(e, 'REQ_ArmorSet_SteelPlate')   then m_RequiemKeyword := 'REQ_Tempering_AdvancedBlacksmithing'
 				else if HasKeyword(e, 'REQ_ArmorSet_Ebony')        then m_RequiemKeyword := 'REQ_Tempering_EbonySmithing'
 				else if HasKeyword(e, 'REQ_ArmorSet_Daedric')      then m_RequiemKeyword := 'REQ_Tempering_DaedricSmithing'
@@ -992,11 +992,11 @@ begin
 		kwName := 'PerkFistsSteel'
 
 	{ Dwarven }
-	else if HasKeyword(e, 'ArmorMaterialDwarven') or HasKeyword(e, 'REQ_ArmorSet_DwarvenHeavy') then
+	else if HasKeyword(e, 'ArmorMaterialDwarven') or HasKeyword(e, 'REQ_ArmorSet_Dwarven') then
 		kwName := 'PerkFistsDwarven'
 
 	{ Orcish }
-	else if HasKeyword(e, 'ArmorMaterialOrcish') or HasKeyword(e, 'REQ_ArmorSet_OrcishHeavy') then
+	else if HasKeyword(e, 'ArmorMaterialOrcish') or HasKeyword(e, 'REQ_ArmorSet_Orcish') then
 		kwName := 'PerkFistsOrcish'
 
 	{ Ebony }
@@ -1928,8 +1928,8 @@ begin
 		Exit;
 	end;
 
-	{ Dwarven - REQ_ArmorSet_DwarvenHeavy }
-	if HasKeyword(e, 'REQ_ArmorSet_DwarvenHeavy') then begin
+	{ Dwarven - REQ_ArmorSet_Dwarven }
+	if HasKeyword(e, 'REQ_ArmorSet_Dwarven') then begin
 		if HasKeyword(e, 'ArmorCuirass') then begin
 			m_fBaseAR := 34 + GlobalArmorBonus;
 			Result := (m_fBaseAR * 10.147) + 55.0;
@@ -1946,8 +1946,8 @@ begin
 		Exit;
 	end;
 
-	{ Orcish - REQ_ArmorSet_OrcishHeavy }
-	if HasKeyword(e, 'REQ_ArmorSet_OrcishHeavy') then begin
+	{ Orcish - REQ_ArmorSet_Orcish }
+	if HasKeyword(e, 'REQ_ArmorSet_Orcish') then begin
 		if HasKeyword(e, 'ArmorCuirass') then begin
 			m_fBaseAR := 40 + GlobalArmorBonus;
 			Result := (m_fBaseAR * 7.125) + 55.0;
@@ -2272,7 +2272,7 @@ begin
 		Exit;
 	end;
 
-	if HasKeyword(e, 'REQ_ArmorSet_DwarvenHeavy') then begin
+	if HasKeyword(e, 'REQ_ArmorSet_Dwarven') then begin
 		if      HasKeyword(e, 'ArmorCuirass')   then Result := 45
 		else if HasKeyword(e, 'ArmorShield')    then Result := 15
 		else if HasKeyword(e, 'ArmorHelmet')    then Result := 12
@@ -2280,7 +2280,7 @@ begin
 		Exit;
 	end;
 
-	if HasKeyword(e, 'REQ_ArmorSet_OrcishHeavy') then begin
+	if HasKeyword(e, 'REQ_ArmorSet_Orcish') then begin
 		if      HasKeyword(e, 'ArmorCuirass')   then Result := 35
 		else if HasKeyword(e, 'ArmorShield')    then Result := 14
 		else if HasKeyword(e, 'ArmorHelmet')    then Result := 8
@@ -2543,7 +2543,7 @@ begin
 		Exit;
 	end;
 
-	if HasKeyword(e, 'REQ_ArmorSet_DwarvenHeavy') then begin
+	if HasKeyword(e, 'REQ_ArmorSet_Dwarven') then begin
 		if      HasKeyword(e, 'ArmorCuirass')   then Result := 400
 		else if HasKeyword(e, 'ArmorShield')    then Result := 225
 		else if HasKeyword(e, 'ArmorHelmet')    then Result := 200
@@ -2553,7 +2553,7 @@ begin
 		Exit;
 	end;
 
-	if HasKeyword(e, 'REQ_ArmorSet_OrcishHeavy') then begin
+	if HasKeyword(e, 'REQ_ArmorSet_Orcish') then begin
 		if      HasKeyword(e, 'ArmorCuirass')   then Result := 1000
 		else if HasKeyword(e, 'ArmorShield')    then Result := 500
 		else if HasKeyword(e, 'ArmorHelmet')    then Result := 500
@@ -3497,7 +3497,7 @@ begin
 						addPerkCondition(recipeCraft, getRecordByFormID('000CB414')); // Advanced Armors
 						Break;
 
-					end else if (currentKeywordEDID = 'REQ_ArmorSet_DwarvenHeavy') then begin
+					end else if (currentKeywordEDID = 'REQ_ArmorSet_Dwarven') then begin
 						addPerkCondition(recipeCraft, getRecordByFormID('000CB40E')); // Dwarven Smithing
 						Break;
 
@@ -3510,7 +3510,7 @@ begin
 						addPerkCondition(recipeCraft, getRecordByFormID('000CB413')); // Daedric Smithing
 						Break;
 
-					end else if (currentKeywordEDID = 'REQ_ArmorSet_OrcishHeavy') then begin
+					end else if (currentKeywordEDID = 'REQ_ArmorSet_Orcish') then begin
 						addPerkCondition(recipeCraft, getRecordByFormID('000CB410')); // Orcish Smithing
 						Break;
 
@@ -3589,10 +3589,10 @@ begin
 				if HasKeyword(itemRecord, 'REQ_ArmorSet_SteelPlate') then begin
 					addItemV2(recipeItems, GetMaterial('IngotCorundum'), 1);
 				end;
-				if HasKeyword(itemRecord, 'REQ_ArmorSet_DwarvenHeavy') then begin
+				if HasKeyword(itemRecord, 'REQ_ArmorSet_Dwarven') then begin
 					addItemV2(recipeItems, GetMaterial('IngotDwarven'), 1);
 				end;
-				if HasKeyword(itemRecord, 'REQ_ArmorSet_OrcishHeavy') then begin
+				if HasKeyword(itemRecord, 'REQ_ArmorSet_Orcish') then begin
 					addItemV2(recipeItems, GetMaterial('IngotOrichalcum'), 1);
 				end;
 				if HasKeyword(itemRecord, 'REQ_ArmorSet_Ebony') then begin
@@ -3804,7 +3804,7 @@ begin
 			end;
 
 			{ --- DWARVEN ARMOR --- }
-			if HasKeyword(itemRecord, 'REQ_ArmorSet_DwarvenHeavy') then begin
+			if HasKeyword(itemRecord, 'REQ_ArmorSet_Dwarven') then begin
 				addItemV2(recipeItems, GetMaterial('IngotSteel'), 1);
 				addItemV2(recipeItems, GetMaterial('IngotIron'), 1);
 				addItemV2(recipeItems, GetMaterial('Leather01'), 1);
@@ -3831,7 +3831,7 @@ begin
 			end;
 			
 			{ --- ORCISH ARMOR --- }
-			if HasKeyword(itemRecord, 'REQ_ArmorSet_OrcishHeavy') then begin
+			if HasKeyword(itemRecord, 'REQ_ArmorSet_Orcish') then begin
 				addItemV2(recipeItems, GetMaterial('IngotIron'), 1);
 				if HasKeyword(itemRecord, 'ArmorCuirass') then begin
 					addItemV2(recipeItems, GetMaterial('IngotOrichalcum'), 3);
