@@ -50,6 +50,7 @@ const
 	MO2_MODS_DIR = 'D:\GAMES\RfaD SE\MO2\mods\';
 	FOR_FEMALE_ONLY = True;
 	FOR_REQUIEM = True;
+	FOR_RFAD = True;
 	USE_LEVEL_CURVE = True; 
 	CRAFTING_MANUAL_PRICE_MULTIPLIER = 25; // Book value = GlobalSmithingReq * CRAFTING_MANUAL_PRICE_MULTIPLIER
 	VISUAL_SLOT_WEIGHT = 0.1;
@@ -945,6 +946,11 @@ begin
 
 		if Pos('Body ', m_Slots) > 0 then begin
 			m_Keyword := GetKeywordByEditorID('ArmorCuirass');
+			if FOR_RFAD then begin
+				// Adding RFAD body/cuirass armor keywords here
+				// Check material
+				// Add tags based on material
+			end;
 			if Assigned(m_Keyword) then addKeyword(e, m_Keyword);
 			Exit;
 		end;
@@ -4961,7 +4967,11 @@ begin
 		if FOR_REQUIEM then begin
 			AddMasterIfMissing(m_FileHandle, 'Requiem.esp');
 			//AddMasterIfMissing(m_FileHandle, 'Requiem for the Indifferent.esp');
+			if FOR_RFAD then begin
+				AddMasterIfMissing(m_FileHandle, 'Fozars_Dragonborn_-_Requiem_Patch.esp');
+			end;
 		end;
+		
 		AddMessage('Success: ' + m_sFileName + ' initialized with base masters.');
 		Result := m_FileHandle;
 	end else begin
