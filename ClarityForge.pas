@@ -47,11 +47,11 @@ const
 	{========================================================}
 	{                     CONFIGURATION                      }
 	{========================================================}
-	MO2_MODS_DIR = 'D:\GAMES\Honediem\mods\';
+	MO2_MODS_DIR = 'D:\GAMES\RfaD SE\MO2\mods\';
 	FOR_FEMALE_ONLY = True;
 	FOR_REQUIEM = True;
-	USE_LEVEL_CURVE = False; 
-	CRAFTING_MANUAL_PRICE_MULTIPLIER = 50; // Book value = GlobalSmithingReq * CRAFTING_MANUAL_PRICE_MULTIPLIER
+	USE_LEVEL_CURVE = True; 
+	CRAFTING_MANUAL_PRICE_MULTIPLIER = 25; // Book value = GlobalSmithingReq * CRAFTING_MANUAL_PRICE_MULTIPLIER
 	VISUAL_SLOT_WEIGHT = 0.1;
 	IS_PERK_REQUIRED = False;
 	sScriptVersion = '2.1.4';
@@ -220,7 +220,7 @@ begin
 		if (m_iTempLevel >= 5) and (m_iTempLevel <= 1000) then begin
 			GlobalSmithingReq := m_iTempLevel;
 			
-			GlobalArmorBonus := GlobalSmithingReq / 25.0;
+			GlobalArmorBonus := GlobalSmithingReq / 15.0;
 			GlobalArmorPriceBonus := 1 + Round(GlobalSmithingReq / 45.0);
 			GlobalWeaponDamageBonus := Round(GlobalSmithingReq / 15.0);
 			GlobalWeaponPriceBonus := 1 + Round(GlobalSmithingReq / 80.0);
