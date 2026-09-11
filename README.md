@@ -1,21 +1,53 @@
 
 ---
 
-## 📜 ClarityForge: Preparation & Usage Guide
+## 📜 ClarityForge: Usage Guide
 
 **ClarityForge** is a metadata-driven balancing and sanitization engine for Skyrim SE/AE. It uses **MO2 Metadata** to determine progression and material types, allowing you to balance outfits across different mods.
+For the **Preparation Before Script Running** section, here is a clean, structured layout you can use in your `README.md`:
+
+## ⚙️ Preparation Before Script Running
+
+Before executing the script in xEdit (SSEEdit), ensure your environment and plugin load order are properly configured.
+
+### 1. Script Path Setup
+Set the path to your Mod Organizer 2 mods directory inside `ClarityForge.pas`:
+
+const MO2_MODS_DIR = 'D:\GAMES\MO2\mods\';
+
+### 2. Plugin Selection in xEdit
+
+When launching xEdit, you must load all relevant `.esp` / `.esm` files that your setup depends on for the script to resolve records correctly. It is generally recommended to select all active plugins, but pay special attention to mandatory master files based on your setup:
+
+* **Base Requirements:**
+* `Skyrim.esm`
+* `Update.esm`
+
+
+* **Requiem Setups:**
+* `Requiem.esm`
+
+
+* **Requiem for a Dream (RFAD) Setups:**
+* `Requiem.esm`
+* `Update.esm`
+* `Fozars_Dragonborn_-_Requiem_Patch.esp`
+
+> **Note:** Make sure all required plugins are checked in the xEdit module selection window before proceeding with the script execution.
 
 ---
 
 ## 🏷️ The NameCode System (MO2 Metadata)
 
 The script identifies mods by scanning the **Notes** field in your Mod Organizer 2 entries.
+![alt text](img/EnableNotesForMO2.png)
 
 ### **How to Tag a Mod:**
 
 Add the NameCode to your mod's **Notes** in the MO2 UI.
 **Pattern:** `[Any Text] CF_[MaterialCode][SmithingLevel]`
 **Example Note:** `Dark Elf Blader - CBBE 3BA CF_En74`
+![alt text](img/mo2_lightarmor_notes.png)
 
 ### **Supported Material Codes**
 
@@ -35,9 +67,9 @@ Add the NameCode to your mod's **Notes** in the MO2 UI.
 | Heavy Armor | Daedric | **Dc** | Daedric |
 | Heavy Armor | Dragonplate | **Dp** | Dragonplate |
 
-![alt text](img/mo2_lightarmor_notes.png)
 
-> **Note on Scaling:** In the example above, `74` represents the **Smithing Skill** required. The script uses this number to calculate the actual **Character Level** requirement automatically.
+
+> **Note on Scaling:** In the example above, `CF_Lr19`, number `19` represents the **Smithing Skill** required. The script uses this number to calculate the actual **Character Level** requirement automatically.
 
 ---
 
