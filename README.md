@@ -186,10 +186,10 @@ When **ClarityForge** completes its run, it automatically generates a new plugin
 ### 1. File Handling & Renaming
 * **File Existence Limit:** The script cannot run if `ClarityForge.esp` already exists in your load order or output folder. If it exists, xEdit will throw an error and abort the script.
 * **Segmenting Large Load Orders:** If you have a large number of armors and outfits, it is recommended to process them in batches (e.g., process Light Armors first, then Heavy Armors):
-  1 Select and run the script on Light Armors.
-  2 Rename the resulting `ClarityForge.esp` to something specific, such as `ClarityForge - Light Armors.esp`.
-  3 Run the script on Heavy Armors.
-  4 Rename the second generated plugin to `ClarityForge - Heavy Armors.esp`.
+1.Select and run the script on Light Armors.
+2.Rename the resulting `ClarityForge.esp` to something specific, such as `ClarityForge - Light Armors.esp`.
+3.Run the script on Heavy Armors.
+4.Rename the second generated plugin to `ClarityForge - Heavy Armors.esp`.
 
 ### 2. Load Order Placement
 * Always place all generated `ClarityForge` plugins (e.g., `ClarityForge.esp`, `ClarityForge - Light Armors.esp`, `ClarityForge - Heavy Armors.esp`) at the **very bottom of your mod load order**.
