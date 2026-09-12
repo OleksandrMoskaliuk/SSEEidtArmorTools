@@ -221,7 +221,7 @@ begin
 		if (m_iTempLevel >= 5) and (m_iTempLevel <= 1000) then begin
 			GlobalSmithingReq := m_iTempLevel;
 			
-			GlobalArmorBonus := GlobalSmithingReq / 1.5;
+			GlobalArmorBonus := Sqrt(GlobalSmithingReq) / 10.0;
 			GlobalArmorPriceBonus := 1 + Round(GlobalSmithingReq / 45.0);
 			GlobalWeaponDamageBonus := Round(GlobalSmithingReq / 15.0);
 			GlobalWeaponPriceBonus := 1 + Round(GlobalSmithingReq / 80.0);
