@@ -11,12 +11,12 @@ For the **Preparation Before Script Running** section, here is a clean, structur
 To install **ClarityForge**, place the script files into your xEdit (SSEEdit) scripts directory:
 
 Copy `ClarityForge.pas` and `SK_UtilsRemake.pas` into your SSEEdit installation folder under `Edit Scripts/`:
-
+```
 SSEEdit/
 └── Edit Scripts/
-	├── ClarityForge.pas
-	└── SK_UtilsRemake.pas
-
+    ├── ClarityForge.pas
+    └── SK_UtilsRemake.pas
+```
 ## ⚙️ Preparation Before Script Running
 
 Before executing the script in xEdit (SSEEdit), ensure your environment and plugin load order are properly configured.
