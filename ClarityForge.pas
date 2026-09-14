@@ -502,7 +502,7 @@ begin
 	if (bipedFlags and $00002000) <> 0 then Result := Result + 'Ears ';      { 43 }
 	if (bipedFlags and $00004000) <> 0 then Result := Result + 'Cape ';      { 44 }
 	if (bipedFlags and $00008000) <> 0 then Result := Result + 'Misc45 ';    { 45 }
-	if (bipedFlags and $00010000) <> 0 then Result := Result + 'Misc46 ';    { 46 }
+	if (bipedFlags and $00010000) <> 0 then Result := Result + 'Cape46 ';    { 46 }
 	if (bipedFlags and $00020000) <> 0 then Result := Result + 'Backpack ';  { 47 }
 	if (bipedFlags and $00040000) <> 0 then Result := Result + 'Misc48 ';    { 48 }
 	if (bipedFlags and $00080000) <> 0 then Result := Result + 'Misc49 ';    { 49 }
@@ -609,7 +609,8 @@ begin
 			or (slotName = 'Backpack')
 			or (slotName = 'Amulet')
 			or (slotName = 'Ring')
-			or (slotName = 'Ears') then begin
+			or (slotName = 'Ears') 
+			or (slotName = 'Cape46') then begin
 				hasGameplaySlot := True;
 				Break;				// one is enough
 			end;
@@ -731,7 +732,7 @@ begin
 		Exit;
 	end;
 
-	bisClothing := (IsVisualSlot(Slots)) or (Pos('Backpack ', Slots) > 0);
+	bisClothing := (IsVisualSlot(Slots)) or (Pos('Backpack ', Slots) > 0) or (Pos('Cape46 ', Slots) > 0);
 		
 	if bisClothing then begin
 		SetEditValue(armorTypeField, 'Clothing');
@@ -896,12 +897,13 @@ begin
 		
 		if FOR_REQUIEM then begin
 			// Tempering, exclude Jewelry and Accessories
-			if (not IsVisualSlot(m_Slots))
-			and (Pos('Ring ', m_Slots) = 0)
-			and (Pos('Amulet ', m_Slots) = 0)
-			and (Pos('Ears ', m_Slots) = 0)
-			and (Pos('Circlet ', m_Slots) = 0)
-			and (Pos('Backpack ', m_Slots) = 0) then begin
+			if (IsVisualSlot(m_Slots) = False) and 
+			((Pos('Ring ', m_Slots) > 0) = False) and 
+			((Pos('Amulet ', m_Slots) > 0) = False) and 
+			((Pos('Ears ', m_Slots) > 0) = False) and 
+			((Pos('Circlet ', m_Slots) > 0) = False) and 
+			((Pos('Backpack ', m_Slots) > 0) = False) and 
+			((Pos('Cape46 ', m_Slots) > 0) = False) then begin
 				
 				m_RequiemKeyword := '';
 				
@@ -3675,11 +3677,12 @@ begin
 			end;
 			
 			{ -- Jewelry & Accessories Section -- }
-			if (Pos(GetFirstPersonFlags(itemRecord), 'Ring ') > 0) 
-			or (Pos(GetFirstPersonFlags(itemRecord), 'Amulet ') > 0)
-			or (Pos(GetFirstPersonFlags(itemRecord), 'Ears ') > 0)    
-			or (Pos(GetFirstPersonFlags(itemRecord), 'Circlet ') > 0)   
-			or (Pos(GetFirstPersonFlags(itemRecord), 'Backpack ') > 0) then begin
+			if (Pos('Ring ', GetFirstPersonFlags(itemRecord)) > 0)
+			or (Pos('Amulet ', GetFirstPersonFlags(itemRecord)) > 0)
+			or (Pos('Ears ', GetFirstPersonFlags(itemRecord)) > 0)
+			or (Pos('Circlet ', GetFirstPersonFlags(itemRecord)) > 0)
+			or (Pos('Backpack ', GetFirstPersonFlags(itemRecord)) > 0)
+			or (Pos('Cape46 ', GetFirstPersonFlags(itemRecord)) > 0) then begin
 				
 				{ Generic Base for all Jewelry/Backpacks }
 				addItemV2(recipeItems, GetMaterial('LeatherStrips'), 2);
