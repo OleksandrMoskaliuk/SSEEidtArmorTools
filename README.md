@@ -89,9 +89,8 @@ Add the NameCode to your mod's **Notes** in the MO2 UI.
 ## 🧩 Compatibility & Overhauls (3BFTweaks / Requiem)
 
 * **Perk-Free Gating:** Set `IS_PERK_REQUIRED` to `False` to ensure compatibility with overhauls that change Perk IDs. Crafting relies strictly on your numerical **Smithing Skill** and **Character Level**.
-* **Jewelry & Circlet Logic:** Items in **Slot 42 (Circlet)**, **Ears**, **Rings**, or **Amulets** are forced to **Clothing**. This prevents them from breaking "Mage Armor" perks.
+* **Jewelry, Circlet & Accessory Logic:** Items using **Slot 42 (Circlet)**, **Ears**, **Rings**, **Amulets**, **Slot 46 (Cape)**, or **Slot 47 (Backpack)** are treated as **Clothing**. This allows custom armor pieces assigned to Slot 46 or 47 to be as functional items for enchantments without breaking "Mage Armor" perks and also available for enchantments.
 * **Helmet Definition:** Items using **Slot 30 (Head)** or **Slot 31 (Hair)** are treated as functional **Armor**.
-
 ---
 
 ## ⚙️ Script Configuration
